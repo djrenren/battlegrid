@@ -1,0 +1,13 @@
+.gridsvg {
+    padding: 0;
+    display: block;
+}
+.gridsvg:active {
+    cursor: move;
+}
+.grid {
+    margin: 0;
+    display: grid;
+    justify-items: center;
+    align-items: center;
+}
