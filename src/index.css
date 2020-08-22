@@ -1,25 +1,36 @@
-body,
-html {
+
+* {
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
     "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  max-height: 100%;
-  height: 100%;
   overflow: hidden;
   display: block;
+  position: relative;
+  height: 100vh;
   padding: 0;
 }
 
-* {
-  box-sizing: border-box;
+body {
+  white-space: nowrap;
 }
+
 
 #root {
   width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   overflow: hidden;
+  position: relative;
+  display: grid;
+  grid-auto-rows: 1fr;
+  grid-auto-columns: minmax(0, 1fr);
 }
 
 code {

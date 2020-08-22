@@ -1,12 +1,12 @@
 .gridsvg {
     padding: 0;
     margin: 0;
-    display: inline-block;
-    width: auto;
-    height: auto;
+    display: block;
     overflow: hidden !important;
 }
 .gridsvg * {
+    margin: 0;
+    padding: 0;
     overflow: hidden;
 }
 .grid:active {
@@ -16,9 +16,9 @@
     margin: 0;
     padding: 0;
     width: 100%;
+    height: auto;
     max-height: 100%;
-    display: grid;
-    justify-items: center;
-    align-items: center;
+    position: relative;
     overflow: scroll;
+    grid-auto-rows: 1fr;
 }

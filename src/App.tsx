@@ -26,7 +26,7 @@ const App = connect()(function App() {
     });
   };
   return (
-    <div className="App" style={{ position: "relative" }}>
+    <div className="App">
       <Grid dimX={x} dimY={y}>
         {
           <rect

@@ -20,6 +20,7 @@ type Offset = [number, number];
 function Grid(props: PropsWithChildren<GridProps>) {
   let ref = useRef<HTMLDivElement>(null);
   let svgRef = useRef<SVGSVGElement>(null);
+  let commitRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // We track performance critical state using refs and commit manually
   let [scaleState, unsafeSetScale] = useState(1);
@@ -29,6 +30,7 @@ function Grid(props: PropsWithChildren<GridProps>) {
 
   // These setters keep the UI in sync with the instance variables
   let setOffset = useCallback((o: Offset, apply?: boolean) => {
+    console.log(o)
     o = [
       Math.min(svgRef.current!.scrollWidth - ref.current!.offsetWidth, Math.max(o[0], 0)),
       Math.min(svgRef.current!.scrollHeight - ref.current!.offsetHeight, Math.max(o[1], 0))
@@ -46,9 +48,9 @@ function Grid(props: PropsWithChildren<GridProps>) {
   }, [svgRef, props.dimX, props.dimY]);
 
   let commitTransform = useCallback(() => {
-    unsafeSetScale(scale.current);
-    unsafeSetOffset(offset.current);
-  }, [setOffset, offset, setScale, scale])
+      unsafeSetScale(scale.current);
+      unsafeSetOffset(offset.current);
+  }, [offset, scale])
 
 
   // Does fancy math to zoom around a mouse location. Location given relative to viewport
@@ -63,7 +65,7 @@ function Grid(props: PropsWithChildren<GridProps>) {
   }, [setScale, setOffset, offset])
 
   // FFX & Chrome emulate pinch to zoom as control + mousewheel
-  const scroll = useCallback((ev: any) => {
+  const wheel = useCallback((ev: any) => {
     if (ev.ctrlKey && svgRef) {
       ev.preventDefault();
       let mouseX = ev.pageX - window.scrollX;
@@ -71,11 +73,15 @@ function Grid(props: PropsWithChildren<GridProps>) {
       let delta = -1 * ev.deltaY * 0.05 * scale.current;
       let newScale = scale.current + delta;
       performZoom(mouseX, mouseY, scale.current, newScale);
-      window.requestAnimationFrame(commitTransform);
-    } else {
-      setOffset([ref.current!.scrollLeft, ref.current!.scrollTop], false)
+      commitTransform();
     }
-  }, [ref, svgRef, scale, offset]);
+  }, [ref, svgRef, scale, commitTransform, performZoom, setOffset]);
+
+  const scroll = useCallback((ev: any) => {
+    setOffset([ref.current!.scrollLeft, ref.current!.scrollTop], false)
+    //setOffset([offset.current[0] + ev.deltaX, offset.current[1] + ev.deltaY], false)
+    commitTransform()
+  }, [setOffset, ref, commitTransform]);
 
   useEffect(() => {
     const wasd = (ev: KeyboardEvent) => {
@@ -140,7 +146,7 @@ function Grid(props: PropsWithChildren<GridProps>) {
       elem.removeEventListener("pointermove", move);
       elem.removeEventListener("pointerup", up);
     }
-  }, [setOffset, ref, offset])
+  }, [setOffset, ref, offset, commitTransform])
   useEffect(() => {
     const elem = ref.current!;
     let initialscale = 1;
@@ -151,7 +157,8 @@ function Grid(props: PropsWithChildren<GridProps>) {
     };
     const gesture = (ev: any) => {
       ev.preventDefault();
-      performZoom(ev.clientX, ev.clientY, scale.current, ev.scale * initialscale);
+
+      performZoom(ev.clientX, ev.clientY, scale.current, (ev.scale-1) + initialscale);
     };
     const endgesture = (ev: any) => {
       ev.preventDefault();
@@ -161,12 +168,18 @@ function Grid(props: PropsWithChildren<GridProps>) {
     elem.addEventListener("gesturestart", startgesture);
     elem.addEventListener("gestureend", endgesture);
     elem.addEventListener("gesturechange", gesture);
-    elem.addEventListener("wheel", scroll)
+    svgRef.current!.addEventListener("gesturestart", endgesture);
+    elem.addEventListener("wheel", wheel)
+    elem.addEventListener("scroll", scroll)
+
+    let svgElem = svgRef.current!;
     return () => {
       elem.removeEventListener("gesturestart", startgesture);
       elem.removeEventListener("gestureend", endgesture);
+      svgElem.removeEventListener("gesturestart", endgesture);
       elem.removeEventListener("gesturechange", gesture);
-      elem.removeEventListener("wheel", scroll)
+      elem.removeEventListener("wheel", wheel);
+      elem.removeEventListener("scroll", scroll);
     };
   });
 
@@ -186,7 +199,6 @@ function Grid(props: PropsWithChildren<GridProps>) {
         className="gridsvg"
         style={{
           display: "block",
-          position: "relative",
           //transition: "all 0.01s",
           //transitionTimingFunction: "ease-out",
           background: "white",
@@ -205,7 +217,7 @@ function Grid(props: PropsWithChildren<GridProps>) {
             ></path>
           </pattern>
         </defs>
-        <rect width={props.dimX-.1} height={props.dimY-.1} fill="url(#grid)"></rect>
+        <rect x=".1" y=".1" width={props.dimX-1} height={props.dimY-1} fill="url(#grid)"></rect>
         {props.children}
       </svg>
     </div>
