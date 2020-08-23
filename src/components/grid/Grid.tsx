@@ -15,6 +15,10 @@ interface Transform {
   scrollY: number,
 }
 
+function clamp(val: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, val))
+}
+
 type Offset = [number, number];
 
 function Grid(props: PropsWithChildren<GridProps>) {
@@ -57,7 +61,7 @@ function Grid(props: PropsWithChildren<GridProps>) {
   const performZoom = useCallback((x: number, y: number, oldScale: number, newScale: number) => {
     console.log(x, y, oldScale, newScale);
     newScale = Math.max(minZoom, Math.min(newScale, maxZoom));
-    const delta = newScale - oldScale;
+    const delta = clamp(newScale - oldScale, -.05, .05);
     let left = (x + offset.current[0]) * delta / oldScale;
     let top = (y + offset.current[1]) * delta / oldScale;
     setScale(newScale);
@@ -77,11 +81,6 @@ function Grid(props: PropsWithChildren<GridProps>) {
     }
   }, [ref, svgRef, scale, commitTransform, performZoom, setOffset]);
 
-  const scroll = useCallback((ev: any) => {
-    setOffset([ref.current!.scrollLeft, ref.current!.scrollTop], false)
-    //setOffset([offset.current[0] + ev.deltaX, offset.current[1] + ev.deltaY], false)
-    commitTransform()
-  }, [setOffset, ref, commitTransform]);
 
   useEffect(() => {
     const wasd = (ev: KeyboardEvent) => {
@@ -149,34 +148,46 @@ function Grid(props: PropsWithChildren<GridProps>) {
   }, [setOffset, ref, offset, commitTransform])
   useEffect(() => {
     const elem = ref.current!;
-    let initialscale = 1;
+    
+    const scroll = (ev: any) => {
+      if (initialscale !== null) {
+        return false
+      }
+      setOffset([ref.current!.scrollLeft, ref.current!.scrollTop], false)
+      //setOffset([offset.current[0] + ev.deltaX, offset.current[1] + ev.deltaY], false)
+      commitTransform()
+    }
+
+    let initialscale: number | null = null;
     // Use gesture events for iOS devices cuz it's smooooooth
     const startgesture = (ev: any) => {
       ev.preventDefault();
+      console.log("Start Gesture")
       initialscale = scale.current;
     };
     const gesture = (ev: any) => {
       ev.preventDefault();
-
-      performZoom(ev.clientX, ev.clientY, scale.current, (ev.scale-1) + initialscale);
+      console.log("Gesture")
+      performZoom(ev.clientX, ev.clientY, scale.current, ev.scale * initialscale!);
+      return false;
     };
     const endgesture = (ev: any) => {
       ev.preventDefault();
+      initialscale = null;
       commitTransform();
+      console.log("End Gesture")
+      return false;
     };
 
     elem.addEventListener("gesturestart", startgesture);
     elem.addEventListener("gestureend", endgesture);
     elem.addEventListener("gesturechange", gesture);
-    svgRef.current!.addEventListener("gesturestart", endgesture);
     elem.addEventListener("wheel", wheel)
     elem.addEventListener("scroll", scroll)
 
-    let svgElem = svgRef.current!;
     return () => {
       elem.removeEventListener("gesturestart", startgesture);
       elem.removeEventListener("gestureend", endgesture);
-      svgElem.removeEventListener("gesturestart", endgesture);
       elem.removeEventListener("gesturechange", gesture);
       elem.removeEventListener("wheel", wheel);
       elem.removeEventListener("scroll", scroll);
@@ -217,7 +228,10 @@ function Grid(props: PropsWithChildren<GridProps>) {
             ></path>
           </pattern>
         </defs>
-        <rect x=".1" y=".1" width={props.dimX-1} height={props.dimY-1} fill="url(#grid)"></rect>
+        <rect style={{
+          resize: "both",
+          overflow: "auto",
+        }} x=".1" y=".1" width={ props.dimX - 1 } height={ props.dimY - 1 } fill="url(#grid)" ></rect>
         {props.children}
       </svg>
     </div>
