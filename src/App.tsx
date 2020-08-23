@@ -26,7 +26,7 @@ const App = connect()(function App() {
     });
   };
   return (
-    <div className="App">
+    <div className="full-height-container">
       <Grid dimX={x} dimY={y}>
         {
           <rect

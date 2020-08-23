@@ -22,19 +22,16 @@ function Grid(props: PropsWithChildren<GridProps>) {
   let svgRef = useRef<SVGSVGElement>(null);
 
   useNavigation(ref, svgRef, props.dimX, props.dimY);
-  
 
   return (
-    <div className="full-height-container">
-      <div className="grid full-height-container" ref={ref}>
+    <div className="grid-surface full-height-container">
+      <div className="grid" ref={ref}>
         <svg
           viewBox={`0 0 ${props.dimX} ${props.dimY}`}
           xmlns="http://www.w3.org/2000/svg"
           className="gridsvg"
           style={{
             display: "block",
-            //transition: "all 0.01s",
-            //transitionTimingFunction: "ease-out",
             background: "white",
             overflow: "hidden",
           }}

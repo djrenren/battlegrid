@@ -68,6 +68,7 @@ export function useNavigation(
     (x: number, y: number, oldScale: number, newScale: number) => {
       const delta = clamp(newScale - oldScale, -0.05, 0.05);
       newScale = clamp(oldScale + delta, minZoom, maxZoom);
+      // if we don't return early, we'll end up sliding around
       if (newScale === oldScale) {
         return;
       }
