@@ -33,6 +33,18 @@ body {
   grid-auto-columns: minmax(0, 1fr);
 }
 
+.full-height-container {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  position: relative;
+  grid-auto-rows: 1fr;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
