@@ -5,9 +5,10 @@ import {
   useCallback,
   useLayoutEffect,
   useEffect,
+  RefObject,
 } from "react";
 
-type Offset = [number, number];
+export type Offset = [number, number];
 let minZoom = 0.2;
 let maxZoom = 2;
 
@@ -20,7 +21,7 @@ export function useNavigation(
   canvas: MutableRefObject<SVGSVGElement | null>,
   dimX: number,
   dimY: number
-) {
+): [RefObject<number>, RefObject<Offset>, any] {
   // We track performance critical state using refs and commit to react state manually
   let [scaleState, unsafeSetScale] = useState(1);
   let scale = useRef(scaleState);
@@ -79,10 +80,19 @@ export function useNavigation(
     },
     [setScale, setOffset, offset]
   );
+
+  useEffect(() => {
+    viewport.current?.addEventListener("wheel", (ev) => {
+      if (ev.ctrlKey) {
+        ev.preventDefault()
+      }
+    }, {passive: false});
+  });
+
   const wheel = useCallback(
     (ev: any) => {
       if (ev.ctrlKey && canvas) {
-        ev.preventDefault();
+        ev.stopPropagation();
         let mouseX = ev.pageX - window.scrollX;
         let mouseY = ev.pageY - window.scrollY;
         let delta = -1 * ev.deltaY * 0.05 * scale.current;
@@ -132,48 +142,61 @@ export function useNavigation(
     };
   });
 
-  useEffect(() => {
-    const elem = viewport.current!;
-    let prevX = 0;
-    let prevY = 0;
-
-    const down = (ev: PointerEvent) => {
-      if (ev.pointerType === "mouse") {
-        elem.setPointerCapture(ev.pointerId);
+  let [prevX, setPrevX] = useState(0);
+  let [prevY, setPrevY] = useState(0);
+  let [capture, setCapture] = useState<number | null>(null);
+  let [ignore, setIgnore] = useState(false);
+  const enter = useCallback((ev: PointerEvent) => {
+    if (ev.buttons === 1 && ev.pointerType === "mouse") {
+      setIgnore(true);
+    }
+  }, []);
+  const down = useCallback(
+    (ev: PointerEvent) => {
+      console.log("GRID DOWN");
+      if (!ignore && ev.buttons === 1 && ev.pointerType === "mouse") {
+        ev.preventDefault();
+        setCapture(ev.pointerId);
+        setPrevX(ev.clientX);
+        setPrevY(ev.clientY);
       }
-      prevX = ev.clientX;
-      prevY = ev.clientY;
-    };
-    elem.addEventListener("pointerdown", down);
-    let ticking = false;
-    const move = (ev: PointerEvent) => {
-      if (ev.buttons === 1 && ev.pointerType === "mouse") {
+    },
+    [setPrevX, setPrevY, ignore]
+  );
+  const move = useCallback(
+    (ev: PointerEvent) => {
+      console.log("move");
+      if (ev.buttons !== 1) {
+        setIgnore(false);
+      }
+      if (capture !== null && ev.pointerType === "mouse") {
         setOffset([
           offset.current[0] + prevX - ev.clientX,
           offset.current[1] + prevY - ev.clientY,
         ]);
 
-        prevX = ev.clientX;
-        prevY = ev.clientY;
+        setPrevX(ev.clientX);
+        setPrevY(ev.clientY);
       }
-    };
-    elem.addEventListener("pointermove", move);
-    const up = (ev: PointerEvent) => {
-      elem.releasePointerCapture(ev.pointerId);
-      commitTransform();
-    };
-    elem.addEventListener("pointerup", up);
-    return () => {
-      elem.removeEventListener("pointerdown", down);
-      elem.removeEventListener("pointermove", move);
-      elem.removeEventListener("pointerup", up);
-    };
-  }, [setOffset, viewport, offset, commitTransform]);
-  useEffect(() => {
-    const elem = viewport.current!;
+    },
+    [setOffset, offset, capture, prevX, prevY]
+  );
+  const up = useCallback(
+    (ev: PointerEvent) => {
+      if (capture !== null) {
+        ev.preventDefault();
+        viewport.current!.releasePointerCapture(capture);
+        commitTransform();
+        setCapture(null);
+      }
+    },
+    [commitTransform, capture, viewport]
+  );
 
-    const scroll = (ev: any) => {
-      if (initialscale !== null) {
+  let [zooming, setZooming] = useState(false);
+  const scroll = useCallback(
+    (ev: any) => {
+      if (zooming) {
         return false;
       }
       setOffset(
@@ -182,14 +205,18 @@ export function useNavigation(
       );
       //setOffset([offset.current[0] + ev.deltaX, offset.current[1] + ev.deltaY], false)
       commitTransform();
-    };
+    },
+    [setOffset, zooming, viewport, commitTransform]
+  );
 
-    let initialscale: number | null = null;
-    // Use gesture events for iOS devices cuz it's smooooooth
+  let [initialscale, setIS] = useState(scale.current);
+  useEffect(() => {
+    // Use gesture events foriOS devices cuz it's smooooooth
     const startgesture = (ev: any) => {
       ev.preventDefault();
       console.log("Start Gesture");
-      initialscale = scale.current;
+      setIS(scale.current);
+      setZooming(true);
     };
     const gesture = (ev: any) => {
       ev.preventDefault();
@@ -202,32 +229,40 @@ export function useNavigation(
       );
       return false;
     };
+
     const endgesture = (ev: any) => {
       ev.preventDefault();
-      initialscale = null;
+      setIS(1);
       commitTransform();
       console.log("End Gesture");
+      setZooming(false);
       return false;
     };
+    let elem = viewport.current!;
     elem.addEventListener("gesturestart", startgesture);
     elem.addEventListener("gestureend", endgesture);
     elem.addEventListener("gesturechange", gesture);
-    elem.addEventListener("wheel", wheel);
-    elem.addEventListener("scroll", scroll);
 
     return () => {
       elem.removeEventListener("gesturestart", startgesture);
       elem.removeEventListener("gestureend", endgesture);
       elem.removeEventListener("gesturechange", gesture);
-      elem.removeEventListener("wheel", wheel);
-      elem.removeEventListener("scroll", scroll);
     };
   });
-
   /* eslint-disable react-hooks/exhaustive-deps */
   useLayoutEffect(() => {
     setScale(scaleState);
     setOffset(offsetState);
   }, [dimX, dimY]);
   /* eslint-enable react-hooks/exhaustive-deps */
+
+  let listeners = {
+    onPointerEnter: enter,
+    onPointerDown: down,
+    onPointerMove: move,
+    onPointerUp: up,
+    onWheelCapture: wheel,
+    onScroll: scroll,
+  };
+  return [scale, offset, listeners];
 }

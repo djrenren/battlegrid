@@ -9,16 +9,16 @@
     padding: 0;
     overflow: hidden;
 }
-.grid:active {
+.viewport:active {
     cursor: move;
 }
 .dragover {
     background: rgba(255,0,255,.9)
 }
-.grid {
+.viewport {
     margin: 0;
     padding: 0;
-    width: auto;
+    width: 100%;
     max-height: 100%;
     position: relative;
     display: inline-grid;

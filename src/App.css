@@ -4,39 +4,21 @@
   overflow: hidden;
   white-space: nowrap;
   position: relative;
+  display: grid;
+  grid:
+    [viewport-top] 1fr
+    [toolbar-top] 40px
+    [toolbar-bot] 15px
+    [viewport-bot]/
+    [viewport-left] minmax(0, 1fr) [toolbar-left]auto[toolbar-right]minmax(0, 1fr)[viewport-right];
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.App > .grid {
+  grid-area: viewport-top / viewport-left / viewport-right / viewport-bot;
+  z-index: 1;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.App > .toolbar {
+  grid-area: toolbar-top / toolbar-left / toolbar-bot / toolbar-right;
+  z-index: 1000000;
 }

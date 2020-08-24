@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import "./App.css";
-import Grid from "./components/grid/Grid";
-import { connect, useSelector } from "react-redux";
-import { RootState } from "./redux";
+import Grid, { GridSpace } from "./components/grid2/Grid";
+import { connect } from "react-redux";
+import Toolbar from "./components/toolbar/Toolbar";
+import { Offset } from "./components/grid2/util";
 
 interface Rect {
   x: number;
@@ -26,8 +27,9 @@ const App = connect()(function App() {
     });
   };
   return (
-    <div className="full-height-container">
-      <Grid dimX={x} dimY={y}>
+    <div className="App">
+      <Grid dimensions={[x,y] as Offset<GridSpace>} />
+      {/* <Grid dimX={x} dimY={y}>
         {
           <rect
             x={rect.x}
@@ -38,37 +40,25 @@ const App = connect()(function App() {
           ></rect>
         }
         <rect x="10" y="10" width="10" height="10" fill="blue"></rect>
-      </Grid>
+      </Grid> */}
+      <Toolbar>
       <button
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
         onClick={click}
       >
         Add Rect
       </button>
       <button
-        style={{
-          position: "absolute",
-          top: 30,
-          left: 0,
-        }}
         onClick={() => setX(x => x + 1)}
       >
         Add Column
       </button>
       <button
-        style={{
-          position: "absolute",
-          top: 60,
-          left: 0,
-        }}
         onClick={() => setY(y => y + 1)}
       >
         Add Row 
       </button>
+
+      </Toolbar>
     </div>
   );
 });
