@@ -18,10 +18,10 @@
     "react-hammerjs": "^1.0.1",
     "react-redux": "^7.2.1",
     "react-scripts": "3.4.3",
-    "react-spring": "^8.0.27",
-    "react-use-gesture": "^7.0.15",
+    "react-spring": "^9.0.0-rc.3",
+    "react-use-gesture": "^8.0.0-alpha.2",
     "redux": "^4.0.5",
-    "typescript": "~3.7.2"
+    "typescript": "3.8"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -1,11 +1,12 @@
 import {
-  PropsWithChildren,
+  PropsWithChildren, useRef,
 } from "react";
 import { Offset, Coord } from "./util";
 import React from "react";
-import { Overlay } from "./Overlay";
+import Overlay  from "./Overlay";
 import "./grid.css";
-import { Viewport, GridSpace } from "./Viewport";
+import { Viewport, GridSpace, ViewportRef } from "./Viewport";
+import useDrop from "../util/useDrop";
 
 
 export interface GridProps {
@@ -13,15 +14,33 @@ export interface GridProps {
 }
 
 export function Grid(props: PropsWithChildren<GridProps>) {
-    let dim = [30, 30] as Offset<GridSpace>;
-    return (
-        <Viewport
+  let dropLayer = useRef<HTMLDivElement>(null);
+  let viewport = useRef<ViewportRef>(null);
+  let [dragging, drag, dragHandlers] = useDrop(dropLayer, () => { });
+  let gridDrag: Coord<GridSpace>;
+  if (dragging) {
+    gridDrag = viewport.current!.clientToGrid([drag.x, drag.y]);
+  }
+  return (
+    <div className="grid" {...dragHandlers} ref={dropLayer}>
+      <Viewport
+        ref={viewport}
             baseScalar={1}
-            baseUnit="in"
-            dimensions={[30, 30] as Offset<GridSpace>}
+        baseUnit="in"
+        width={props.dimensions[0]}
+        height={props.dimensions[1]}
         >
-            {/* <Overlay height={dim[0]} width={dim[1]} /> */}
-        </Viewport>
+        {dragging ? <rect
+          x={Math.floor(gridDrag![0])} 
+          y={Math.floor(gridDrag![1])} 
+          width="1"
+          height="1"
+          fill="#aaa"
+        ></rect> : null}
+        <Overlay height={props.dimensions[1]} width={props.dimensions[0]} />
+    
+      </Viewport>
+      </div>
   );
 }
 

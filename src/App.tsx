@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import "./App.css";
-import Grid, { GridSpace } from "./components/grid2/Grid";
+import Grid from "./components/grid2/Grid";
 import { connect } from "react-redux";
 import Toolbar from "./components/toolbar/Toolbar";
 import { Offset } from "./components/grid2/util";
+import { GridSpace } from "./components/grid2/Viewport";
 
 interface Rect {
   x: number;

@@ -1,13 +1,15 @@
-import { useRef, useState, useCallback, useEffect, EffectCallback, useLayoutEffect, PropsWithChildren } from "react";
+import { useRef, useState, useCallback, useEffect, EffectCallback, useLayoutEffect, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo } from "react";
 import { Coord, coord_clamp, clamp, add, Offset, sub } from "./util";
 import { useDrag, useWheel, useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
+import { useSpring } from "react-spring";
 import React from "react";
 
 export interface ViewportProps {
-    baseScalar: number,
-    baseUnit: string,
-    dimensions: Offset<GridSpace>,
+  baseScalar: number,
+  baseUnit: string,
+  height: number,
+  width: number,
 }
 export type GridSpace = "gridspace";
 type ViewSpace = "gridspace";
@@ -28,11 +30,19 @@ function getMouseCoords(ev: MouseEvent) {
   let mouseY = ev.pageY - window.scrollY;
   return [mouseX, mouseY];
 }
-export function Viewport(props: PropsWithChildren<ViewportProps>) {
+
+export interface ViewportRef {
+  clientToGrid(coord: [number, number]): Coord<GridSpace>
+}
+
+export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildren<ViewportProps>> = (props, ref) => {
     const viewport = useRef<HTMLDivElement>(null);
-    const [scaleState, setScaleState] = useState(1);
-    const [offsetState, setOffsetState] = useState([0, 0] as Coord<ViewSpace>);
-    const setScrollPos = useCallback((o: Coord<ViewSpace>) => {
+  const canvas = useRef<SVGSVGElement>(null);
+  const [transform, setTransform] = useState({
+    scale: 1,
+    offset: [0, 0] as Coord<ViewSpace>,
+  });
+    const setScrollPos = (o: Coord<ViewSpace>) => {
       o = coord_clamp(
         o,
         [0, 0],
@@ -41,121 +51,138 @@ export function Viewport(props: PropsWithChildren<ViewportProps>) {
           viewport.current!.scrollHeight - viewport.current!.offsetHeight,
         ]
       );
-      setOffsetState(o);
-    }, []);
+      setTransform(t => ({
+        ...t,
+        offset: o
+      }));
+    }
   
     // Does fancy math to zoom around a mouse location. Location given relative to viewport
-    const performZoom = useCallback(
+    const performZoom = 
       (origin: Coord<ViewSpace>, oldScale: number, newScale: number) => {
-        console.log(origin, oldScale, newScale);
         const delta = clamp(newScale - oldScale, -0.05, 0.05);
         newScale = clamp(oldScale + delta, minScale, maxScale);
         // if we don't return early, we'll end up sliding around
         if (newScale === oldScale) {
-          console.log("early return?");
           return;
         }
-        console.log("SCROLL POS", offsetState);
-        let left = ((origin[0] + offsetState[0]) * delta) / oldScale;
-        let top = ((origin[1] + offsetState[1]) * delta) / oldScale;
-        setScaleState(newScale);
-        console.log(newScale);
-        setScrollPos(add(offsetState, [left, top] as Offset<ViewSpace>));
-      },
-      [setScaleState, setScrollPos, offsetState]
-    );
+        setTransform(t => {
+          let left = ((origin[0] + t.offset[0]) * delta) / oldScale;
+          let top = ((origin[1] + t.offset[1]) * delta) / oldScale;
+          return {
+            scale: newScale,
+            offset: add(t.offset, [left, top] as Offset<ViewSpace>),
+          }
+        });
+      }
   
     const drag = useDrag((state) => {
-      if (state.buttons === 1) {
-        setScrollPos(sub(offsetState, state.delta as Offset<ViewSpace>));
+      if (state.buttons !== 1) {
+        return;
       }
+      setTransform(t => {
+        let o = sub(t.offset, state.delta as Offset<ViewSpace>);
+        o = coord_clamp(
+          o,
+          [0, 0],
+          [
+            viewport.current!.scrollWidth - viewport.current!.offsetWidth,
+            viewport.current!.scrollHeight - viewport.current!.offsetHeight,
+          ]
+        );
+        return {
+          ...t,
+          offset: o
+        };
+      });
     });
   
-    const wheel = useWheel(
-      useCallback(
-        (state: FullGestureState<"wheel">) => {
-          if (state.ctrlKey) {
-            console.log(state);
-            state.event?.preventDefault();
-            state.event?.stopPropagation();
-            //@ts-ignore
-            state.event?.stopImmediatePropagation();
-            let origin = getMouseCoords(state.event as any);
-            let delta = -1 * (state.delta[1] ?? 0) * 0.05 * scaleState;
-            console.log("delta", delta);
-            let newScale = scaleState + delta;
-            performZoom(origin as Coord<ViewSpace>, scaleState, newScale);
-          }
-        },
-        [scaleState, performZoom]
-      ),
-      {
-        domTarget: viewport,
-        eventOptions: {
-          passive: false,
-        },
-      }
-    );
-  
     const initialScale = useRef(1);
-    const initialDistance = useRef(1);
     const pinch = useGesture(
       {
         onPinch: useCallback(
           (state: FullGestureState<"pinch">) => {
             state.event?.preventDefault();
-            console.log("pinching", state);
-            if (state.initial)
-              performZoom(
+            state.event?.stopPropagation();
+            //@ts-ignore
+            const deltaY = state.event?.deltaY
+            const origin = 
                 (state.origin || getMouseCoords(state.event! as any)) as Coord<
                   ViewSpace
-                >,
-                scaleState,
-                state.da[0] / state.initial[0] - 1 + initialScale.current!
-              );
+              >
+            let newScale: number;
+            if (deltaY) {
+              let delta = -1 * deltaY * 0.05 * transform.scale;
+              newScale = transform.scale + delta;
+            } else {
+              newScale = state.da[0] / state.initial[0] - 1 + initialScale.current!;
+            }
+            performZoom(
+              origin,
+              transform.scale,
+              newScale
+            );
           },
-          [initialScale, performZoom, scaleState]
+          [transform]
         ),
         onPinchStart: useCallback(
           (state: FullGestureState<"pinch">) => {
             state.event?.preventDefault();
             console.log("pinchstarting");
-            initialScale.current = scaleState;
-            initialDistance.current = state.da[0];
+            initialScale.current = transform.scale;
           },
-          [initialDistance, scaleState]
+          [transform]
         ),
       },
       {
         domTarget: viewport,
         eventOptions: {
           passive: false,
+          capture: true,
         },
       }
     );
+  
+  
+  useImperativeHandle(ref, () => ({
+    clientToGrid(coord: [number, number]): Coord<GridSpace> {
+      const rect = canvas.current!.getBoundingClientRect();
+      console.log(rect);
+      return [
+        (coord[0] - rect.left) / 96 / transform.scale,
+        (coord[1] - rect.top) / 96 / transform.scale,
+      ] as Coord<GridSpace>;
+    }
+  }), [transform.scale]);
 
     // Wheel must come first to prevent its use by pinch,
     // because the logic for how to zoom on each is different
-    useEffect(wheel as EffectCallback, [wheel]);
     useEffect(pinch as EffectCallback, [pinch]);
     const scroll = useGesture({
-      onScroll() {
-            setOffsetState([viewport.current!.scrollLeft, viewport.current!.scrollTop] as Coord<ViewSpace>);
+      onScroll(state: FullGestureState<'scroll'>) {
+        console.log("OOPS", state.pinching);
+        setTransform(t => ({
+          ...t,
+          offset: [viewport.current!.scrollLeft, viewport.current!.scrollTop] as Coord<ViewSpace>,
+        }));
       },
     });
     useLayoutEffect(() => {
-      viewport.current?.scrollTo(...(offsetState as [number, number]));
-    }, [viewport, offsetState]);
+      viewport.current?.scrollTo(...(transform.offset as [number, number]));
+    }, [transform.offset]);
     return (
-        <div className="grid viewport" {...drag()} {...scroll()} ref={viewport}>
-            <svg
-                viewBox={`0 0 ${props.dimensions[0]} ${props.dimensions[0]}`}
+        <div className="grid viewport" ref={viewport}>
+        <svg
+          ref={canvas}
+                viewBox={`0 0 ${props.width} ${props.height}`}
                 style={{
-                    width: `${props.dimensions[0] * props.baseScalar * scaleState}${props.baseUnit}`,
-                    height: `${props.dimensions[1] * props.baseScalar * scaleState}${props.baseUnit}`
+                    width: `${props.width * props.baseScalar * transform.scale}${props.baseUnit}`,
+                    height: `${props.height * props.baseScalar * transform.scale}${props.baseUnit}`
                 }}>
                 {props.children}
             </svg>
         </div>
     )
 }
+
+export const Viewport = memo(forwardRef(ViewportElem));
