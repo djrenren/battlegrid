@@ -6,6 +6,7 @@ export interface DragState {
 
 export default function useDrop(
   ref: React.RefObject<Element | null>,
+  onDrag: (x: number, y: number) => void,
   onDrop: (ev: DragEvent) => void
 ): [boolean, DragState, any] {
   let [dragDepth, setDragDepth] = useState(0);
@@ -16,6 +17,7 @@ export default function useDrop(
   console.log(dragDepth)
   const dropStub = (ev: DragEvent) => {
     ev.preventDefault();
+    console.log("DROPPED!")
     let [x, y] = [ev.clientX, ev.clientY];
     setDragDepth(0);
     setDragState({
@@ -46,12 +48,8 @@ export default function useDrop(
     };
   const onDragOver = (ev: DragEvent) => {
     ev.preventDefault();
-    let [x, y] = [ev.clientX, ev.clientY];
-    setDragState({
-      x,
-      y,
-    });
-    };
+    onDrag(ev.clientX, ev.clientY)
+  };
     return [dragDepth > 0, dragState, {
         onDragEnter,
         onDragLeave,
