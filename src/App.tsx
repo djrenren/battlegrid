@@ -16,7 +16,7 @@ function getRandomInt(max: number) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 const App = connect()(function App() {
-  let [rect, setRect] = useState<Rect>({ x: 0, y: 0, width: 2, height: 2 });
+  let [,setRect] = useState<Rect>({ x: 0, y: 0, width: 2, height: 2 });
   let [x, setX] = useState(30);
   let [y, setY] = useState(30);
   const click = () => {

@@ -1,5 +1,4 @@
-import React, { useRef } from "react";
-import useDrop from "../util/useDrop";
+import React from "react";
 import { GridSpace } from "./Viewport";
 import { Coord } from "./util";
 

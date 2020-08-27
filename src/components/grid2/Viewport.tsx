@@ -1,8 +1,7 @@
-import { useRef, useState, useCallback, useEffect, EffectCallback, useLayoutEffect, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo } from "react";
-import { Coord, coord_clamp, clamp, add, Offset, sub } from "./util";
-import { useDrag, useWheel, useGesture } from "react-use-gesture";
+import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo } from "react";
+import { Coord, clamp } from "./util";
+import { useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
-import { useSpring } from "react-spring";
 import React from "react";
 
 export interface ViewportProps {
@@ -16,14 +15,6 @@ type ViewSpace = "gridspace";
 
 const minScale = 0.2;
 const maxScale = 2;
-
-export function coord<T>(vals: [number, number]): Coord<T> {
-  return vals as Coord<T>;
-}
-
-export function offset<T>(vals: [number, number]): Offset<T> {
-  return vals as Offset<T>;
-}
 
 export interface ViewportRef {
   clientToGrid(coord: [number, number]): Coord<GridSpace>
@@ -56,21 +47,6 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
     canvas.current!.style.fontSize = `${transform.current.scale * props.baseScalar}${props.baseUnit}`
     viewport.current!.scrollTo(transform.current.offset[0] * 96 * transform.current.scale, transform.current.offset[1] * transform.current.scale * 96)
   }
-    const setScrollPos = (o: Coord<ViewSpace>) => {
-      o = coord_clamp(
-        o,
-        [0, 0],
-        [
-          viewport.current!.scrollWidth - viewport.current!.offsetWidth,
-          viewport.current!.scrollHeight - viewport.current!.offsetHeight,
-        ]
-      );
-      setTransform(t => ({
-        ...t,
-        offset: o
-      }));
-    }
-  
     // Does fancy math to zoom around a mouse location. Location given relative to viewport
     const performZoom = 
       (origin: Coord<GridSpace>, oldScale: number, newScale: number) => {
@@ -82,8 +58,6 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
         }
         setTransform(t => {
           console.log(transform.current.scale);
-          let left = ((origin[0]*transform.current.scale + t.offset[0]) * delta) / oldScale;
-          let top = ((origin[1]*transform.current.scale + t.offset[1]) * delta) / oldScale;
           return {
             scale: newScale,
             offset: [
@@ -94,29 +68,29 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
         });
       }
   
-    const drag = useDrag((state) => {
-      if (state.buttons !== 1) {
-        return;
-      }
-      setTransform(t => {
-        let o = sub(t.offset, state.delta as Offset<ViewSpace>);
-        o = coord_clamp(
-          o,
-          [0, 0],
-          [
-            viewport.current!.scrollWidth - viewport.current!.offsetWidth,
-            viewport.current!.scrollHeight - viewport.current!.offsetHeight,
-          ]
-        );
-        return {
-          ...t,
-          offset: o
-        };
-      });
-    });
+    // const drag = useDrag((state) => {
+    //   if (state.buttons !== 1) {
+    //     return;
+    //   }
+    //   setTransform(t => {
+    //     console.log(state);
+    //     let o = clientToGrid(sub(state.initial as Offset<ViewSpace>, state.delta as Offset<ViewSpace>));
+    //     o = coord_clamp(
+    //       o,
+    //       [0, 0],
+    //       [
+    //         props.width, props.height
+    //       ]
+    //     );
+    //     return {
+    //       ...t,
+    //       offset: o
+    //     };
+    //   });
+    // });
   
     const initialScale = useRef(1);
-    const pinch = useGesture(
+    useGesture(
       {
         onPinchEnd: () => {
           initialScale.current = transform.current.scale;
@@ -128,7 +102,6 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
             //@ts-ignore
             const deltaY = state.event?.deltaY
             const event = state.event! as any as MouseEvent;
-            const rect = canvas.current!.getBoundingClientRect();
             const origin = 
                 clientToGrid([event.clientX, event.clientY]) as Coord<
                   ViewSpace
@@ -174,7 +147,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
   
   useImperativeHandle(ref, () => ({
     clientToGrid,
-  }), [transform.current.scale]);
+  }), []);
 
     // Wheel must come first to prevent its use by pinch,
     // because the logic for how to zoom on each is different

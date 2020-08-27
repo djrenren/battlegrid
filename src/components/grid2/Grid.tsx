@@ -1,7 +1,7 @@
 import {
   PropsWithChildren, useRef, useState, memo,
 } from "react";
-import { Offset, Coord } from "./util";
+import { Coord } from "./util";
 import React from "react";
 import Overlay  from "./Overlay2";
 import "./grid.css";
@@ -78,6 +78,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
           }}
         ></div> : null}
         {items.map(i => <img
+          alt=""
           key={i.id + ""}
           src={i.href}
           style={{
