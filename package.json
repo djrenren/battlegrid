@@ -1,6 +1,7 @@
 {
   "name": "battlegrid",
   "version": "0.1.0",
+  "homepage": "/battlegrid",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
@@ -15,7 +16,6 @@
     "immutable": "^4.0.0-rc.12",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "react-hammerjs": "^1.0.1",
     "react-redux": "^7.2.1",
     "react-scripts": "3.4.3",
     "react-spring": "^9.0.0-rc.3",
