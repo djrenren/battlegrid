@@ -2,6 +2,9 @@ import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useIm
 import { Coord, clamp } from "./util";
 import { useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
+import { useSpring, useMotionValue } from "framer-motion";
+
+
 import React from "react";
 
 export interface ViewportProps {
@@ -11,7 +14,8 @@ export interface ViewportProps {
   width: number,
 }
 export type GridSpace = "gridspace";
-type ViewSpace = "gridspace";
+export type CanvasSpace = "canvasspace";
+export type ClientSpace = "clientspace";
 
 const minScale = 0.2;
 const maxScale = 2;
@@ -22,13 +26,14 @@ export interface ViewportRef {
 
 export interface Transform {
   scale: number,
-  offset: Coord<ViewSpace>,
+  offset: Coord<GridSpace>,
 }
 
 export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildren<ViewportProps>> = (props, ref) => {
   const viewport = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
-  const transform = useRef({
+
+  const transform = useRef<Transform>({
     scale: 1,
     offset: [0, 0] as Coord<GridSpace>,
   });
@@ -63,7 +68,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
             offset: [
                 t.offset[0] - (t.offset[0] - origin[0]) * delta / oldScale,
                 t.offset[1] - (t.offset[1] - origin[1]) * delta / oldScale,
-            ] as Coord<ViewSpace>
+            ] as Coord<GridSpace>
           }
         });
       }
@@ -101,11 +106,8 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
             state.event?.stopPropagation();
             //@ts-ignore
             const deltaY = state.event?.deltaY
-            const event = state.event! as any as MouseEvent;
-            const origin = 
-                clientToGrid([event.clientX, event.clientY]) as Coord<
-                  ViewSpace
-              >
+            const origin =
+              clientToGrid(state.origin as any);
             console.log(origin);
             let newScale: number;
             if (deltaY) {

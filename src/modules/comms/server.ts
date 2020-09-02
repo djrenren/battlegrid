@@ -1,0 +1,62 @@
+import React from "react";
+import Peer from "peerjs";
+import { ConnId } from ".";
+
+type Config = {
+  onConnect?(label: ConnId): void
+  onDisconnect?(label: ConnId): void
+}
+
+export class Server {
+  private peer: Peer;
+  private clients: Map<string, Peer.DataConnection>;
+  readonly id: string;
+
+  private constructor(id: string, peer: Peer, config: Config) {
+    this.peer = peer;
+    this.id = id;
+    this.clients = new Map();
+
+    this.peer.on('connection', conn => {
+      conn.on('open', () => {
+        const label = conn.label as ConnId;
+        this.clients.set(label, conn);
+        config.onConnect && config.onConnect(label);
+        config.onDisconnect && conn.on('close', () => {
+          console.log("Disconnecting?")
+          config.onDisconnect!(label)
+        })
+      })
+    })
+
+    this.peer.on('disconnected', () => {
+      console.error("ACK! Disconnect from signaler.")
+    })
+  }
+
+  static async create(config: Config): Promise<Server> {
+    const peer = new Peer(undefined, {debug: 3});
+    let connected = false;
+    return new Promise((resolve, reject) => {
+      peer.on("open", id => {
+        connected = true;
+        resolve(new Server(id, peer, config))
+      });
+
+      peer.on("error", (e) => {
+        connected && reject(`Failed to create server: ${e}`)
+      })
+    })
+  }
+
+  broadcast_json(msg: any) {
+    for (let c of this.clients.values()) {
+      console.log("sending!");
+      c.send(msg);
+    }
+  }
+
+  send(label: ConnId, msg: any) {
+    this.clients.get(label)!.send(msg);
+  }
+}

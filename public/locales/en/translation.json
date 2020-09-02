@@ -1,0 +1,4 @@
+{
+  "hello": "Hello i18n world!",
+  "joinFailure": "Unable to join room. Resetting URL"
+}

@@ -1,12 +1,15 @@
 import {
   PropsWithChildren, useRef, useState, memo,
 } from "react";
-import { Coord } from "./util";
+import { Coord, add, floor, sub } from "./util";
 import React from "react";
 import Overlay  from "./Overlay2";
 import "./grid.css";
 import { Viewport, GridSpace, ViewportRef } from "./Viewport";
 import useDrop from "../util/useDrop";
+import { GridItem } from "./GridItem";
+import SelectionBox from "./SelectionBox";
+import { getStartGestureState } from "react-use-gesture/dist/recognizers/Recognizer";
 
 
 export interface GridProps {
@@ -15,9 +18,12 @@ export interface GridProps {
 
 export function Grid(props: PropsWithChildren<GridProps>) {
   let dropLayer = useRef<HTMLDivElement>(null);
+  let selection = useRef<any>(null);
+  let [selectionOffset, setSelectionOffset] = useState<any>(null);
   let viewport = useRef<ViewportRef>(null);
   let hoverHint = useRef<HTMLDivElement>(null);
   let [items, setItems] = useState<any[]>([]);
+
   let [dragging, drag, dragHandlers] = useDrop(dropLayer, (x, y) => {
     if (hoverHint.current) {
       let coords = viewport.current!.clientToGrid([x, y]);
@@ -56,6 +62,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   if (dragging) {
     gridDrag = viewport.current!.clientToGrid([drag.x, drag.y]);
   }
+  console.log(items);
   return (
     <div className="grid" {...dragHandlers} ref={dropLayer}>
       <Viewport
@@ -77,21 +84,38 @@ export function Grid(props: PropsWithChildren<GridProps>) {
             background: "#aaa",
           }}
         ></div> : null}
-        {items.map(i => <img
-          alt=""
-          key={i.id + ""}
-          src={i.href}
-          style={{
-            position: "absolute",
-            left: i.x+"em",
-            top: i.y+"em",
-            width: "1em",
-            height: "1em",
-            display: "block",
-          }} 
-        ></img>)}
+        {items.map(i => <GridItem
+          key={i.id}
+          loc={add([i.x, i.y] as any, selection.current?.id === i.id ? selectionOffset as any : [0,0]) as any}
+          dim={[1, 1] as any}
+          onClick={() => {
+            selection.current = i;
+            setSelectionOffset([0,0])
+          }}
+        ><img src={i.href} style={{ display: "block", width: "100%", height: "100%"}} /></GridItem>) }
 
         <Overlay width={props.dimensions[0]} height={props.dimensions[1]} />
+        {
+          selection.current && <SelectionBox
+            key=""
+            loc={add(selectionOffset!, [selection.current.x, selection.current.y] as any) as any}
+            dim={[1, 1] as any}
+            onSelectionDrag={(coord) => setSelectionOffset(floor(sub(viewport.current!.clientToGrid(coord), [selection.current.x, selection.current.y] as any)))}
+            onSelectionDrop={(coord) => {
+              const loc = floor(viewport.current!.clientToGrid(coord));
+              const currId = selection.current.id;
+              setItems(items => items.map(it => {
+                if (it.id === currId) {
+                  return {...it, x: loc[0], y: loc[1]}
+                } else {
+                  return it;
+                }
+              }))
+              setSelectionOffset(null);
+              selection.current = null;
+            }}
+          />
+        }
     
       </Viewport>
       </div>

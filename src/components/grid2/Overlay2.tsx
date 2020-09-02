@@ -18,6 +18,7 @@ function Overlay2(props: OverlayProps) {
     height: props.height + 'em',
     backgroundPosition: "top left",
     background: `repeating-linear-gradient(to right, grey, grey ${thickness}, transparent ${thickness} 1em), repeating-linear-gradient(to bottom, grey, grey ${thickness}, transparent ${thickness} 1em)`,
+    pointerEvents: "none",
   }}></div>
   );
 }

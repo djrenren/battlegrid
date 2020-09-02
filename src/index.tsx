@@ -1,19 +1,26 @@
-import React from 'react';
+import React, {Suspense} from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import App from './components/App';
 import { Provider } from 'react-redux';
-import { createStore } from 'redux';
-import { rootReducer } from './redux';
+import store from './store'
+import { connect } from './modules/comms';
+import './i18n';
 //import * as serviceWorker from './serviceWorker';
 
-const store = createStore(rootReducer);
+const urlParams = new URLSearchParams(window.location.search);
+const game = window.location.hash;
+if (game) {
+  store.dispatch(connect(game.substr(1)));
+}
 
 ReactDOM.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <App />
-    </Provider>
+    <Suspense fallback={null}>
+      <Provider store={store}>
+        <App />
+      </Provider>
+    </Suspense>
   </React.StrictMode>,
   document.getElementById('root')
 );

@@ -6,7 +6,9 @@
   position: relative;
   display: grid;
   grid:
-    [viewport-top] 1fr
+    [viewport-top] 10px
+    [toast-top] auto
+    [toast-bottom] 1fr
     [toolbar-top] 40px
     [toolbar-bot] 15px
     [viewport-bot]/
@@ -20,5 +22,13 @@
 
 .App > .toolbar {
   grid-area: toolbar-top / toolbar-left / toolbar-bot / toolbar-right;
+  z-index: 1000000;
+}
+
+.App > .toastArea {
+  grid-area: toast-top / viewport-left / toast-bottom / viewport-right;
+  place-self: center center;
+  max-width: 700px;
+  width: 100%;
   z-index: 1000000;
 }
