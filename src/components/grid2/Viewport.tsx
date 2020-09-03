@@ -47,7 +47,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
       scale: newT.scale,
       offset: newOffset as any,
     }
-    console.log("offset", transform.current.offset);
+    ;
     canvas.current!.style.fontSize = `${transform.current.scale * props.baseScalar}${props.baseUnit}`
     viewport.current!.scrollTo(transform.current.offset[0] * 96 * transform.current.scale, transform.current.offset[1] * transform.current.scale * 96)
   }
@@ -61,7 +61,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
           return;
         }
         setTransform(t => {
-          console.log(transform.current.scale);
+          ;
           return {
             scale: newScale,
             offset: [
@@ -77,7 +77,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
     //     return;
     //   }
     //   setTransform(t => {
-    //     console.log(state);
+    //     ;
     //     let o = clientToGrid(sub(state.initial as Offset<ViewSpace>, state.delta as Offset<ViewSpace>));
     //     o = coord_clamp(
     //       o,
@@ -103,12 +103,12 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
           (state: FullGestureState<"pinch">) => {
             state.event?.preventDefault();
             state.event?.stopPropagation();
-            console.log("pinch continuing");
+            ;
             //@ts-ignore
             const deltaY = state.event?.deltaY
             //@ts-ignore
             const client_origin = state.origin || [state.event!.clientX, state.event!.clientY] 
-            console.log("client", client_origin);
+            ;
             const origin =
               clientToGrid(client_origin);
             let newScale: number;
@@ -128,15 +128,15 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
           (state: FullGestureState<"pinch">) => {
             state.event?.preventDefault();
             state.event?.stopPropagation();
-            console.log("pinchstarting");
+            ;
             initialScale.current = transform.current.scale;
-            console.log("initialscale", initialScale.current);
+            ;
           },
           [transform]
         ),
       },
       {
-        domTarget: viewport,
+        domTarget: canvas,
         eventOptions: {
           passive: false,
           capture: true,
@@ -147,10 +147,10 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
   useEffect(pinch, [pinch]);
   
   const clientToGrid = (coord: [number, number]): Coord<GridSpace> => {
-     console.log("canvas", canvas.current)
+     
       const rect = canvas.current!.getBoundingClientRect();
-    console.log("rect", rect);
-    console.log("coord", coord);
+    ;
+    ;
       return [
         (coord[0] - rect.left) / 96 / transform.current.scale,
         (coord[1] - rect.top) / 96 / transform.current.scale,
@@ -165,7 +165,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
     // because the logic for how to zoom on each is different
     const scroll = useGesture({
       onScrollEnd(state: FullGestureState<'scroll'>) {
-        console.log("OOPS", state.pinching);
+        ;
         setTransform(t => ({
           ...t,
           offset: [viewport.current!.scrollLeft / 96 / transform.current.scale, viewport.current!.scrollTop / 96 / transform.current.scale] as any,
@@ -176,18 +176,21 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
     //   viewport.current?.scrollTo(...(transform.current.offset as [number, number]));
     // }, []);
     return (
-      <div className="viewport" {...scroll()} ref={viewport}>
+      <div className="viewport" {...scroll()} ref={viewport} style={{
+          fontSize: `${transform.current.scale * props.baseScalar}${props.baseUnit}`,
+      }}>
+        <div className="padding">
         <div
           className="gridsvg"
           ref={canvas}
                 style={{
                   width: `${props.width}em`,
                   height: `${props.height}em`,
-                  fontSize: `${transform.current.scale * props.baseScalar}${props.baseUnit}`,
                   position: "relative",
                 }}>
                 {props.children}
             </div>
+        </div>
         </div>
     )
 }

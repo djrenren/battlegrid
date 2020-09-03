@@ -16,7 +16,7 @@ function SelectionBox(props: SelectionProps) {
       if (initialLoc.current) {
           ev.preventDefault();
           ev.stopPropagation();
-          console.log(ev.clientX, ev.clientY)
+          
           props.onSelectionDrag(coord(ev));
       }
   }, [props])
@@ -24,7 +24,7 @@ function SelectionBox(props: SelectionProps) {
       if (initialLoc.current !== null) {
           ev.preventDefault();
         ev.stopPropagation();
-        console.log("Drop!");
+        ;
           //(ev.currentTarget as HTMLDivElement).releasePointerCapture(ev.pointerId);
           props.onSelectionDrop(coord(ev));
         initialLoc.current = null;
@@ -41,7 +41,7 @@ function SelectionBox(props: SelectionProps) {
       onPointerDown={ev => {
                     ev.preventDefault();
                     ev.stopPropagation();
-                    console.log("CLICKED SELECTION ?D?D!")
+                    
         ev.currentTarget.setPointerCapture(ev.pointerId);
         initialLoc.current = coord(ev);
       }}

@@ -22,7 +22,7 @@ export class Server {
         this.clients.set(label, conn);
         config.onConnect && config.onConnect(label);
         config.onDisconnect && conn.on('close', () => {
-          console.log("Disconnecting?")
+          
           config.onDisconnect!(label)
         })
       })
@@ -50,7 +50,7 @@ export class Server {
 
   broadcast_json(msg: any) {
     for (let c of this.clients.values()) {
-      console.log("sending!");
+      ;
       c.send(msg);
     }
   }

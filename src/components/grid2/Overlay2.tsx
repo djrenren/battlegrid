@@ -9,6 +9,7 @@ export interface OverlayProps {
 }
 
 const thickness = "1px"
+const linecolor = "gray"
 function Overlay2(props: OverlayProps) {
   return (<div style={{
     position: "absolute",
@@ -17,7 +18,7 @@ function Overlay2(props: OverlayProps) {
     width: props.width + 'em',
     height: props.height + 'em',
     backgroundPosition: "top left",
-    background: `repeating-linear-gradient(to right, grey, grey ${thickness}, transparent ${thickness} 1em), repeating-linear-gradient(to bottom, grey, grey ${thickness}, transparent ${thickness} 1em)`,
+    background: `repeating-linear-gradient(to right, ${linecolor}, ${linecolor} ${thickness}, transparent ${thickness} 1em), repeating-linear-gradient(to bottom, ${linecolor}, ${linecolor} ${thickness}, transparent ${thickness} 1em)`,
     pointerEvents: "none",
   }}></div>
   );

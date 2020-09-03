@@ -14,7 +14,7 @@ export class Client {
       config.onMessage(d)
     })
     this.server.on('error', d => {
-      console.log("ERROR!")
+      
     })
   }
 
@@ -26,7 +26,7 @@ export class Client {
         const server = peer.connect(serverId, {reliable: true,});
         let client = new Client(server, config);
         server.on("open", () => {
-          console.log("Open sesame?")
+          
           connected = true;
           resolve(client)
         });

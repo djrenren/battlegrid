@@ -8,7 +8,7 @@ const store = configureStore({
     comms, grid, toast
   },
   middleware: m => [...m(), api => next => action => {
-    console.log(action);
+    ;
     state.host && state.host.broadcast_json(action);
     return next(action);
   }]

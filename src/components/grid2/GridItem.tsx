@@ -17,8 +17,8 @@ export const GridItem = memo((props: PropsWithChildren<GridItemProps>) => {
         position: "absolute",
         left: props.loc[0] + "em",
         top: props.loc[1] + "em",
-        width: 0.05 + props.dim[0] + "em",
-        height: 0.05 + props.dim[1] + "em",
+        width: props.dim[0] + "em",
+        height: props.dim[1] + "em",
         ...props.style,
       }}
       >

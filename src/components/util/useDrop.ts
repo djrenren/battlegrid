@@ -14,10 +14,10 @@ export default function useDrop(
     x: 0,
     y: 0,
   });
-  console.log(dragDepth)
+  
   const dropStub = (ev: DragEvent) => {
     ev.preventDefault();
-    console.log("DROPPED!")
+    
     let [x, y] = [ev.clientX, ev.clientY];
     setDragDepth(0);
     setDragState({

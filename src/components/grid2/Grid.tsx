@@ -31,10 +31,10 @@ export function Grid(props: PropsWithChildren<GridProps>) {
     },
     (ev) => {
       let coords = viewport.current!.clientToGrid([ev.clientX, ev.clientY]);
-      console.log("DROP!");
+      ;
       let dataItems = ev.dataTransfer?.items ?? [];
       let addItem = (s: string, i: number) => {
-        console.log("adding item?");
+        ;
         let item = {
           id: "" + Math.random(),
           x: Math.floor(coords[0]) + i,
@@ -43,13 +43,13 @@ export function Grid(props: PropsWithChildren<GridProps>) {
           height: 1,
           href: s,
         };
-        console.log("DROPPING? ", item);
+        ;
         setItems([...items, item]);
       };
-      console.log("event", ev);
-      console.log("items", dataItems);
+      ;
+      ;
       for (let i = 0; i < dataItems.length; i++) {
-        console.log(dataItems[i]);
+        ;
         if (dataItems[i].kind.startsWith("image/")) {
           addItem(window.URL.createObjectURL(dataItems[i].getAsFile()), 0);
         } else if (dataItems[i].type === "text/uri-list") {
@@ -62,7 +62,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   if (dragging) {
     gridDrag = viewport.current!.clientToGrid([drag.x, drag.y]);
   }
-  console.log(items);
+  ;
   return (
     <div className="grid" {...dragHandlers} ref={dropLayer}>
       <Viewport
@@ -111,14 +111,6 @@ export function Grid(props: PropsWithChildren<GridProps>) {
           </GridItem>
         ))}
         <Overlay width={props.dimensions[0]} height={props.dimensions[1]} />
-        <div style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          height: "790px",
-          width: "1191px",
-          border: "1px solid blue"
-        }}></div>
         {selection.current && (
           <SelectionBox
             key=""
