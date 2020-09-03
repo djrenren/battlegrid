@@ -9,9 +9,9 @@ import './i18n';
 //import * as serviceWorker from './serviceWorker';
 
 const urlParams = new URLSearchParams(window.location.search);
-const game = window.location.hash;
+const game = urlParams.get("join");
 if (game) {
-  store.dispatch(connect(game.substr(1)));
+  store.dispatch(connect(game));
 }
 
 ReactDOM.render(

@@ -1,6 +1,6 @@
 import { GridSpace } from "./Viewport";
 import { Coord, Offset } from "./util";
-import { PropsWithChildren, memo, StyleHTMLAttributes, HTMLAttributes } from "react";
+import { PropsWithChildren, memo } from "react";
 import React from "react";
 
 export interface GridItemProps extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {

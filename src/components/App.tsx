@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import "./App.css";
 import Grid from "./grid2/Grid";
-import { connect, useSelector, useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Toolbar from "./toolbar/Toolbar";
 import { Offset } from "./grid2/util";
 import { GridSpace } from "./grid2/Viewport";
@@ -18,9 +18,7 @@ interface Rect {
   width: number;
   height: number;
 }
-function getRandomInt(max: number) {
-  return Math.floor(Math.random() * Math.floor(max));
-}
+
 function App() {
   let comms = useSelector((state: RootStore) => {
     console.log(state);

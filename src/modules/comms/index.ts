@@ -34,7 +34,7 @@ export const start_hosting = createAsyncThunk('posts/fetchPosts', async (_: unde
       dispatch(slice.actions.addPlayer(label))
     }
   })
-  window.location.hash = `#${state.host.id}`
+  window.history.pushState({}, "", `?join=${state.host.id}`)
   return state.host.id;
 });
 

@@ -2,7 +2,6 @@ import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useIm
 import { Coord, clamp } from "./util";
 import { useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
-import { useSpring, useMotionValue } from "framer-motion";
 
 
 import React from "react";

@@ -1,5 +1,5 @@
 import { ClientSpace } from "./Viewport";
-import { Coord, Offset, coord, sub } from "./util";
+import { Coord, coord } from "./util";
 import { useRef, useCallback } from "react";
 import { GridItemProps, GridItem } from "./GridItem";
 import React, {PointerEvent} from "react";

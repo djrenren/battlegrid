@@ -1,4 +1,4 @@
-import { configureStore, Store } from '@reduxjs/toolkit'
+import { configureStore } from '@reduxjs/toolkit'
 import comms, {state} from './modules/comms'
 import grid from './modules/grid'
 import toast from './modules/toast'

@@ -8,7 +8,7 @@ export interface OverlayProps {
   onDrop?: (coord: Coord<GridSpace>) => void;
 }
 
-const thickness = "0.05em"
+const thickness = "1px"
 function Overlay2(props: OverlayProps) {
   return (<div style={{
     position: "absolute",
