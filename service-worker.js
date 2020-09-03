@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/battlegrid/precache-manifest.eb915361d3bcf8880dc3a5b72600ed8a.js"
+  "/battlegrid/precache-manifest.122cb7f6976eef47bc85ea13d6627db8.js"
 );
 
 self.addEventListener('message', (event) => {
