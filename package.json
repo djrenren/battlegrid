@@ -22,7 +22,7 @@
     "react-i18next": "^11.7.2",
     "react-redux": "^7.2.1",
     "react-scripts": "3.4.3",
-    "react-use-gesture": "^8.0.0-alpha.2",
+    "react-use-gesture": "^7.0.16",
     "redux": "^4.0.5",
     "typescript": "3.8"
   },

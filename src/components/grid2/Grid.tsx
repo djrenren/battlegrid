@@ -110,8 +110,15 @@ export function Grid(props: PropsWithChildren<GridProps>) {
             />
           </GridItem>
         ))}
-
         <Overlay width={props.dimensions[0]} height={props.dimensions[1]} />
+        <div style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          height: "790px",
+          width: "1191px",
+          border: "1px solid blue"
+        }}></div>
         {selection.current && (
           <SelectionBox
             key=""

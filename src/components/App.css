@@ -10,19 +10,19 @@
     [toast-top] auto
     [toast-bottom] 1fr
     [toolbar-top] 40px
-    [toolbar-bot] 15px
+    [toolbar-bot] 5px
     [viewport-bot]/
     [viewport-left] minmax(0, 1fr) [toolbar-left]auto[toolbar-right]minmax(0, 1fr)[viewport-right];
 }
 
 .App > .grid {
-  grid-area: viewport-top / viewport-left / viewport-right / viewport-bot;
+  grid-area: viewport-top / viewport-left / viewport-bot / viewport-right;
+  position: relative;
   z-index: 1;
 }
 
 .App > .toolbar {
   grid-area: toolbar-top / toolbar-left / toolbar-bot / toolbar-right;
-  z-index: 1000000;
 }
 
 .App > .toastArea {

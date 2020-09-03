@@ -1,4 +1,4 @@
-import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo } from "react";
+import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo, useEffect } from "react";
 import { Coord, clamp } from "./util";
 import { useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
@@ -94,7 +94,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
     // });
   
     const initialScale = useRef(1);
-    useGesture(
+    const pinch = useGesture(
       {
         onPinchEnd: () => {
           initialScale.current = transform.current.scale;
@@ -103,11 +103,14 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
           (state: FullGestureState<"pinch">) => {
             state.event?.preventDefault();
             state.event?.stopPropagation();
+            console.log("pinch continuing");
             //@ts-ignore
             const deltaY = state.event?.deltaY
+            //@ts-ignore
+            const client_origin = state.origin || [state.event!.clientX, state.event!.clientY] 
+            console.log("client", client_origin);
             const origin =
-              clientToGrid(state.origin as any);
-            console.log(origin);
+              clientToGrid(client_origin);
             let newScale: number;
             if (deltaY) {
               let delta = -1 * deltaY * 0.05 * transform.current.scale;
@@ -123,8 +126,11 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
           },
         onPinchStart: useCallback(
           (state: FullGestureState<"pinch">) => {
+            state.event?.preventDefault();
+            state.event?.stopPropagation();
             console.log("pinchstarting");
             initialScale.current = transform.current.scale;
+            console.log("initialscale", initialScale.current);
           },
           [transform]
         ),
@@ -137,9 +143,14 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
         },
       }
     );
+  //@ts-ignore
+  useEffect(pinch, [pinch]);
   
-   const clientToGrid = (coord: [number, number]): Coord<GridSpace> => {
+  const clientToGrid = (coord: [number, number]): Coord<GridSpace> => {
+     console.log("canvas", canvas.current)
       const rect = canvas.current!.getBoundingClientRect();
+    console.log("rect", rect);
+    console.log("coord", coord);
       return [
         (coord[0] - rect.left) / 96 / transform.current.scale,
         (coord[1] - rect.top) / 96 / transform.current.scale,

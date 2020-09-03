@@ -1,10 +1,10 @@
 .toolbar {
     background: white;
-    height: 100%;
+    max-height: 100%;
     box-shadow: 0 0 5px #888888;
     display: inline-flexbox;
     flex-basis: auto;
     position: relative;
-    padding: 5px;
+    padding: 0;
     border-radius: 3px;
 }

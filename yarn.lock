@@ -9520,10 +9520,10 @@ react-scripts@3.4.3:
   optionalDependencies:
     fsevents "2.1.2"
 
-react-use-gesture@^8.0.0-alpha.2:
-  version "8.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/react-use-gesture/-/react-use-gesture-8.0.0-alpha.2.tgz#b0231e8f27e9c359bf6049730c21576b7be28ffa"
-  integrity sha512-glTuBR1KLw29tFneYHJVsMgqRDc07x4LwBmMrWwHRWSfz/hT/xZtKWNIKKa6iOcvqkWk0DlBIwWjYWhuWkEfPg==
+react-use-gesture@^7.0.16:
+  version "7.0.16"
+  resolved "https://registry.yarnpkg.com/react-use-gesture/-/react-use-gesture-7.0.16.tgz#501985261ef9c815a377b6ff9be6df5a85fbb54f"
+  integrity sha512-gwgX+E+WQG0T1uFVl3z8j3ZwH3QQGIgVl7VtQEC2m0IscSs668sSps4Ss3CFp3Vns8xx0j9TVK4aBXH6+YrpEg==
 
 react@^16.13.1:
   version "16.13.1"
