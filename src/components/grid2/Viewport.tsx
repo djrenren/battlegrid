@@ -37,7 +37,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
     offset: [0, 0] as Coord<GridSpace>,
   });
 
-  const setTransform = (f: (t: Transform) => Transform) => {
+  const setTransform = (f: (t: Transform) => Transform, apply=true) => {
     const newT = f(transform.current);
     const newOffset = [
       clamp(newT.offset[0], 0, props.width),
@@ -47,9 +47,13 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
       scale: newT.scale,
       offset: newOffset as any,
     }
-    ;
-    viewport.current!.style.fontSize = `${transform.current.scale * props.baseScalar}${props.baseUnit}`
-    viewport.current!.scrollTo(transform.current.offset[0] * 96 * transform.current.scale, transform.current.offset[1] * transform.current.scale * 96)
+      ;
+    
+    if (apply) {
+      viewport.current!.style.fontSize = `${transform.current.scale * props.baseScalar}${props.baseUnit}`
+      viewport.current!.scrollTo(transform.current.offset[0] * 96 * transform.current.scale, transform.current.offset[1] * transform.current.scale * 96)
+
+    }
   }
     // Does fancy math to zoom around a mouse location. Location given relative to viewport
     const performZoom = 
@@ -169,7 +173,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
         setTransform(t => ({
           ...t,
           offset: [viewport.current!.scrollLeft / 96 / transform.current.scale, viewport.current!.scrollTop / 96 / transform.current.scale] as any,
-        }));
+        }), false);
       },
     });
     return (

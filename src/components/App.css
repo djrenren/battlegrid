@@ -45,7 +45,7 @@
 @media (prefers-color-scheme: dark) {
 :root {
   --accent: #4242ef;
-  --background: rgb(40,40,40);
+  --background: rgb(14,14,14);
   --background-panel: rgb(60,60,60);
   --shadow: 0 0 10px #030303;
   --text: canvastext;
