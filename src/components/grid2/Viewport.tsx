@@ -180,10 +180,9 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
       <div className="viewport" {...scroll()} ref={viewport} style={{
           fontSize: `${transform.current.scale * props.baseScalar}${props.baseUnit}`,
       }}>
-        <div className="padding">
+        <div className="padding" ref={canvas}>
         <div
           className="gridsvg"
-          ref={canvas}
                 style={{
                   width: `${props.width}em`,
                   height: `${props.height}em`,
