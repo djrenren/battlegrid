@@ -1,23 +1,24 @@
 import {createSlice, createAsyncThunk} from "@reduxjs/toolkit"
 import { Client } from "./client";
-import { Server } from "./server";
+import { Server, ServerClient } from "./server";
 import { issueToast } from "../toast";
 
 export const state = {
-  client: null as Client | null,
-  host: null as Server | null,
-
+  conn: null as null | ServerClient
 }
 
 export type ConnId = string & {
   _connId: 'connid' 
 } 
 
-export const connect = createAsyncThunk('posts/fetchPosts', async (gameId: string, { dispatch }) => {
+export const connect = createAsyncThunk('comms/connect', async (gameId: string, { dispatch }) => {
   try {
-    state.client = await Client.connect(gameId, {
+    state.conn = await Client.connect(gameId, {
       onMessage(m: any) {
         dispatch(m);
+      },
+      onConnect(c) {
+        console.log("connected to server!")
       }
     });
     return gameId;
@@ -28,35 +29,67 @@ export const connect = createAsyncThunk('posts/fetchPosts', async (gameId: strin
   }
 });
 
-export const start_hosting = createAsyncThunk('posts/fetchPosts', async (_: undefined, {dispatch}) => {
-  state.host = await Server.create({
+export const host = createAsyncThunk('comms/host', async (_: undefined, {dispatch}) => {
+  const server = await Server.create({
     onConnect(label) {
-      dispatch(slice.actions.addPlayer(label))
+      console.log("Connected to " + label)
+    },
+    onMessage(m) {
+      dispatch(m);
     }
   })
-  window.history.pushState({}, "", `?join=${state.host.id}`)
-  return state.host.id;
+  state.conn = server;
+  window.history.pushState({}, "", `?join=${server.id}`)
+  return server.id;
 });
 
 export const slice = createSlice({
   name: 'conn',
   initialState: {
-    connected: false,
+    status: 'offline' as 'offline' | 'pending' | 'connected',
     hosting: false,
     gameId: null as string | null,
-    players: [] as ConnId[],
   },
-  reducers: {
-    addPlayer(state, { payload }) {
-      state.players.push(payload)
-    }
-  },
+  reducers: {},
   extraReducers: builder => {
+    // Client connection logic
+    builder.addCase(connect.pending, (state, _) => {
+      state.status = 'pending';
+    })
     builder.addCase(connect.fulfilled, (state, { payload }) => {
-      state.gameId = payload
-      state.connected = true
+      state.gameId = payload;
+      state.status = 'connected'; 
+    })
+    builder.addCase(connect.rejected, (state, _) => {
+      state.status = 'offline';
+    })
+
+    // Hosting events
+    builder.addCase(host.pending, (state, _) => {
+      state.status = 'pending';
+    })
+    builder.addCase(host.fulfilled, (state, {payload}) => {
+      state.status = 'connected';
+      state.gameId = payload;
+      state.hosting = true;
+    })
+    builder.addCase(host.rejected, (state, _) => {
+      state.status = 'offline';
     })
   }
 })
+
+export function shared<S, A>(f: (state: S, action: { payload: A }) => void): { reducer: typeof f, prepare: (action: A) => any }{
+  return {
+    reducer: f,
+    prepare: a => ({
+      payload: a,
+      meta: state.conn ? {
+        shared: true,
+        src: state.conn.id
+      } : {},
+    })
+  }
+}
 
 export default slice.reducer;

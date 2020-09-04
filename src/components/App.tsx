@@ -6,7 +6,7 @@ import Toolbar from "./toolbar/Toolbar";
 import { Offset } from "./grid2/util";
 import { GridSpace } from "./grid2/Viewport";
 import { RootStore } from "../store";
-import { start_hosting } from "../modules/comms";
+import { host } from "../modules/comms";
 import { setDimensions } from "../modules/grid";
 import { ToastArea } from "./toasts/ToastArea";
 import { issueToast } from "../modules/toast";
@@ -36,14 +36,11 @@ function App() {
         <button onClick={() => dispatch(setDimensions({width: dim[0] + 1, height: dim[1]}))}>Add Column</button>
         <button onClick={() => dispatch(setDimensions({width: dim[0], height: dim[1] + 1}))}>Add Row</button>
         <button onClick={() => dispatch(issueToast(t("hello")))}>Say hi</button>
-        {!comms.connected && (
-          <button onClick={() => dispatch(start_hosting())}>Host</button>
+        {comms.status === 'offline' && (
+          <button onClick={() => dispatch(host())}>Host</button>
         )}
 
         {comms.hosting && `hosting: ${comms.gameId}`}
-        {comms.connected &&
-          !comms.hosting &&
-          comms.players.map((p) => <span key={p}>{p}</span>)}
       </Toolbar>
     </div>
   );

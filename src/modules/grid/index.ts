@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { shared } from "../comms";
 
 export const slice = createSlice({
   name: 'grid',
@@ -7,10 +8,10 @@ export const slice = createSlice({
     height: 10,
   },
   reducers: {
-    setDimensions(state, { payload }: {payload: {width: number, height: number}}) {
-      state.width = payload.width;
-      state.height = payload.height;
-    }
+    setDimensions: shared((state: {width: number, height: number}, { payload }: { payload: { width: number, height: number } }) => {
+        state.width = payload.width;
+        state.height = payload.height;
+    })
   }
 })
 

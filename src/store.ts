@@ -8,8 +8,7 @@ const store = configureStore({
     comms, grid, toast
   },
   middleware: m => [...m(), api => next => action => {
-    ;
-    state.host && state.host.broadcast_json(action);
+    state.conn && action.meta?.shared && action.meta?.src === state.conn?.id && state.conn.send(action);
     return next(action);
   }]
 })
