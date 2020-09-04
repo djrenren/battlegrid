@@ -21,7 +21,7 @@ interface Rect {
 
 function App() {
   let comms = useSelector((state: RootStore) => {
-    ;
+    console.log(state);
     return state.comms
   });
   let dim = useSelector((state: RootStore) => [state.grid.width, state.grid.height])

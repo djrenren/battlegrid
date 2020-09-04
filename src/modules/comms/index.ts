@@ -2,6 +2,7 @@ import {createSlice, createAsyncThunk} from "@reduxjs/toolkit"
 import { Client } from "./client";
 import { Server, ServerClient } from "./server";
 import { issueToast } from "../toast";
+import { RootStore } from "../../store";
 
 export const state = {
   conn: null as null | ServerClient
@@ -29,10 +30,10 @@ export const connect = createAsyncThunk('comms/connect', async (gameId: string, 
   }
 });
 
-export const host = createAsyncThunk('comms/host', async (_: undefined, {dispatch}) => {
+export const host = createAsyncThunk('comms/host', async (_: undefined, {getState, dispatch}) => {
   const server = await Server.create({
     onConnect(label) {
-      console.log("Connected to " + label)
+      server.sendTo(label, syncAction(getState() as any))
     },
     onMessage(m) {
       dispatch(m);
@@ -43,8 +44,8 @@ export const host = createAsyncThunk('comms/host', async (_: undefined, {dispatc
   return server.id;
 });
 
-export const slice = createSlice({
-  name: 'conn',
+export const comms = createSlice({
+  name: 'comms',
   initialState: {
     status: 'offline' as 'offline' | 'pending' | 'connected',
     hosting: false,
@@ -92,4 +93,12 @@ export function shared<S, A>(f: (state: S, action: { payload: A }) => void): { r
   }
 }
 
-export default slice.reducer;
+function syncAction(state: RootStore) {
+  return {
+    type: 'STATE_SYNC',
+    payload: {
+      grid: state.grid
+    },
+  }
+};
+export default comms.reducer;

@@ -67,4 +67,8 @@ export class Server implements ServerClient {
   send(msg: any) {
     this.broadcast_json(msg);
   }
+
+  sendTo(label: string, msg: any) {
+    this.clients.get(label)!.send(msg);
+  }
 }
