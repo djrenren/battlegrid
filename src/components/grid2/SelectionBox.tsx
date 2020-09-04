@@ -35,8 +35,8 @@ function SelectionBox(props: SelectionProps) {
       loc={props.loc} 
       dim={props.dim}
       style={{
-        border: "0.05em solid ActiveBorder",
-        boxShadow: "0 0 5px activeborder"
+        border: "2px solid buttonFace",
+        boxShadow: "0 0 10px buttonFace"
       }}
       onPointerDown={ev => {
                     ev.preventDefault();

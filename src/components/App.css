@@ -5,14 +5,14 @@
   white-space: nowrap;
   position: relative;
   display: grid;
+  background: var(--background);
   grid:
-    [viewport-top] 10px
+    [viewport-top] auto
+    [toolbar-bot] 5px
     [toast-top] auto
     [toast-bottom] 1fr
-    [toolbar-top] 40px
-    [toolbar-bot] 5px
     [viewport-bot]/
-    [viewport-left] minmax(0, 1fr) [toolbar-left]auto[toolbar-right]minmax(0, 1fr)[viewport-right];
+    [viewport-left] minmax(0, 1fr)[viewport-right];
 }
 
 .App > .grid {
@@ -22,7 +22,7 @@
 }
 
 .App > .toolbar {
-  grid-area: toolbar-top / toolbar-left / toolbar-bot / toolbar-right;
+  grid-area: viewport-top / viewport-left / toolbar-bot / toolbar-right;
   z-index: 10000;
 }
 
@@ -36,14 +36,18 @@
 
 :root {
   --accent: #4242ef;
-  --background: #ffffff;
-  --text: #020210;
+  --background: Field;
+  --background-panel: rgb(246, 246, 246);
+  --shadow: 0 0 10px rgb(100, 100, 100);
+  --text: canvastext;
 }
 
-/* switch values over dark color scheme */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020210;
-    --text: #ffffff;
-  }
+:root {
+  --accent: #4242ef;
+  --background: rgb(40,40,40);
+  --background-panel: rgb(60,60,60);
+  --shadow: 0 0 10px #030303;
+  --text: canvastext;
+}
 }

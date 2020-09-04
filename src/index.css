@@ -49,3 +49,8 @@ body, .full-height-container {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
+
+:root {
+  color-scheme: light dark;
+}
+

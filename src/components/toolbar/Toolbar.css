@@ -1,10 +1,13 @@
 .toolbar {
-    background: white;
     max-height: 100%;
-    box-shadow: 0 0 5px #888888;
+    background: var(--background-panel);
+    box-shadow: var(--shadow);
     display: inline-flexbox;
     flex-basis: auto;
     position: relative;
-    padding: 0;
-    border-radius: 3px;
+    padding: 5px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    align-self: center;
+    justify-self: center;
 }

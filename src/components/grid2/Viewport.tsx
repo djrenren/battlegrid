@@ -48,7 +48,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
       offset: newOffset as any,
     }
     ;
-    canvas.current!.style.fontSize = `${transform.current.scale * props.baseScalar}${props.baseUnit}`
+    viewport.current!.style.fontSize = `${transform.current.scale * props.baseScalar}${props.baseUnit}`
     viewport.current!.scrollTo(transform.current.offset[0] * 96 * transform.current.scale, transform.current.offset[1] * transform.current.scale * 96)
   }
     // Does fancy math to zoom around a mouse location. Location given relative to viewport
@@ -71,7 +71,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
           }
         });
       }
-  
+      
     // const drag = useDrag((state) => {
     //   if (state.buttons !== 1) {
     //     return;
@@ -136,7 +136,7 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
         ),
       },
       {
-        domTarget: canvas,
+        domTarget: viewport,
         eventOptions: {
           passive: false,
           capture: true,
@@ -172,9 +172,6 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
         }));
       },
     });
-    // useLayoutEffect(() => {
-    //   viewport.current?.scrollTo(...(transform.current.offset as [number, number]));
-    // }, []);
     return (
       <div className="viewport" {...scroll()} ref={viewport} style={{
           fontSize: `${transform.current.scale * props.baseScalar}${props.baseUnit}`,

@@ -3,8 +3,8 @@ import { createSlice } from "@reduxjs/toolkit";
 export const slice = createSlice({
   name: 'grid',
   initialState: {
-    width: 30,
-    height: 30,
+    width: 15,
+    height: 10,
   },
   reducers: {
     setDimensions(state, { payload }: {payload: {width: number, height: number}}) {
