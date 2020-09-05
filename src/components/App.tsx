@@ -3,14 +3,14 @@ import "./App.css";
 import Grid from "./grid2/Grid";
 import { useSelector, useDispatch } from "react-redux";
 import Toolbar from "./toolbar/Toolbar";
-import { Offset } from "./grid2/util";
-import { GridSpace } from "./grid2/Viewport";
+import { Offset, GridSpace } from "../modules/grid/units";
 import { RootStore } from "../store";
 import { host } from "../modules/comms";
 import { setDimensions } from "../modules/grid";
 import { ToastArea } from "./toasts/ToastArea";
 import { issueToast } from "../modules/toast";
 import { useTranslation } from "react-i18next";
+import { Loading } from "./toolkit/Loading";
 
 interface Rect {
   x: number;
@@ -38,6 +38,9 @@ function App() {
         <button onClick={() => dispatch(issueToast(t("hello")))}>Say hi</button>
         {comms.status === 'offline' && (
           <button onClick={() => dispatch(host())}>Host</button>
+        )}
+        {comms.status === 'pending' && (
+          <Loading />
         )}
 
         {comms.hosting && `hosting: ${comms.gameId}`}

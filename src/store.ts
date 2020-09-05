@@ -2,16 +2,14 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit'
 import comms, {state} from './modules/comms'
 import grid from './modules/grid'
 import toast from './modules/toast'
+import { applySync } from './modules/sync';
 
 console.log(comms);
 const mainReducer = combineReducers({ comms, grid, toast });
 const store = configureStore({
   reducer(state, action): ReturnType<typeof mainReducer> {
     if (action.type === 'STATE_SYNC') {
-      return {
-        ...state,
-        grid: action.payload.grid
-      }
+      return applySync(state, action as any);
     }
     return mainReducer(state, action);
   },

@@ -1,5 +1,5 @@
 import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo, useEffect } from "react";
-import { Coord, clamp } from "./util";
+import { Coord, clamp, GridSpace } from "../../modules/grid/units";
 import { useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
 
@@ -12,9 +12,6 @@ export interface ViewportProps {
   height: number,
   width: number,
 }
-export type GridSpace = "gridspace";
-export type CanvasSpace = "canvasspace";
-export type ClientSpace = "clientspace";
 
 const minScale = 0.2;
 const maxScale = 2;
@@ -180,8 +177,8 @@ export const ViewportElem: ForwardRefRenderFunction<ViewportRef, PropsWithChildr
       <div className="viewport" {...scroll()} ref={viewport} style={{
           fontSize: `${transform.current.scale * props.baseScalar}${props.baseUnit}`,
       }}>
-        <div className="padding" ref={canvas}>
-        <div
+        <div className="padding" >
+        <div ref={canvas}
           className="gridsvg"
                 style={{
                   width: `${props.width}em`,

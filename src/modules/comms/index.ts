@@ -2,7 +2,7 @@ import {createSlice, createAsyncThunk} from "@reduxjs/toolkit"
 import { Client } from "./client";
 import { Server, ServerClient } from "./server";
 import { issueToast } from "../toast";
-import { RootStore } from "../../store";
+import { syncAction } from "../sync";
 
 export const state = {
   conn: null as null | ServerClient
@@ -44,7 +44,7 @@ export const host = createAsyncThunk('comms/host', async (_: undefined, {getStat
   return server.id;
 });
 
-export const comms = createSlice({
+export let comms = createSlice({
   name: 'comms',
   initialState: {
     status: 'offline' as 'offline' | 'pending' | 'connected',
@@ -93,12 +93,4 @@ export function shared<S, A>(f: (state: S, action: { payload: A }) => void): { r
   }
 }
 
-function syncAction(state: RootStore) {
-  return {
-    type: 'STATE_SYNC',
-    payload: {
-      grid: state.grid
-    },
-  }
-};
 export default comms.reducer;

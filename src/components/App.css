@@ -1,6 +1,7 @@
 .App {
   text-align: center;
   width: 100%;
+  color: var(--text);
   overflow: hidden;
   white-space: nowrap;
   position: relative;
@@ -46,8 +47,8 @@
 :root {
   --accent: #4242ef;
   --background: rgb(14,14,14);
-  --background-panel: rgb(60,60,60);
+  --background-panel: rgb(50,50,50);
   --shadow: 0 0 10px #030303;
-  --text: canvastext;
+  --text: rgb(246,246,246);
 }
 }

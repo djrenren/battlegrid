@@ -1,8 +1,7 @@
-import { ClientSpace } from "./Viewport";
-import { Coord, coord } from "./util";
 import { useRef, useCallback } from "react";
 import { GridItemProps, GridItem } from "./GridItem";
 import React, {PointerEvent} from "react";
+import { ClientSpace, Coord, coord } from "../../modules/grid/units";
 
 interface SelectionProps extends GridItemProps {
   onSelectionDrag: (offset: Coord<ClientSpace>) => void,
@@ -35,8 +34,8 @@ function SelectionBox(props: SelectionProps) {
       loc={props.loc} 
       dim={props.dim}
       style={{
-        border: "2px solid buttonFace",
-        boxShadow: "0 0 10px buttonFace"
+        border: "2px solid highlight",
+        boxShadow: "0 0 10px highlight"
       }}
       onPointerDown={ev => {
                     ev.preventDefault();

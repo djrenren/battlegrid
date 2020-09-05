@@ -1,12 +1,15 @@
 import { PropsWithChildren, useRef, useState, memo } from "react";
-import { Coord, add, floor, sub } from "./util";
+import { Coord, add, floor, sub, GridSpace } from "../../modules/grid/units";
 import React from "react";
-import Overlay from "./Overlay2";
+import Overlay from "./Overlay";
 import "./grid.css";
-import { Viewport, GridSpace, ViewportRef } from "./Viewport";
+import { Viewport, ViewportRef } from "./Viewport";
 import useDrop from "../util/useDrop";
 import { GridItem } from "./GridItem";
 import SelectionBox from "./SelectionBox";
+import { useSelector, useDispatch } from "react-redux";
+import { RootStore } from "../../store";
+import { addImage, Image, updateImage } from "../../modules/grid";
 
 export interface GridProps {
   dimensions: [number, number];
@@ -18,7 +21,8 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   let [selectionOffset, setSelectionOffset] = useState<any>(null);
   let viewport = useRef<ViewportRef>(null);
   let hoverHint = useRef<HTMLDivElement>(null);
-  let [items, setItems] = useState<any[]>([]);
+  let items = useSelector((state: RootStore) => state.grid.images);
+  let dispatch = useDispatch();
 
   let [dragging, drag, dragHandlers] = useDrop(
     dropLayer,
@@ -31,25 +35,17 @@ export function Grid(props: PropsWithChildren<GridProps>) {
     },
     (ev) => {
       let coords = viewport.current!.clientToGrid([ev.clientX, ev.clientY]);
-      ;
       let dataItems = ev.dataTransfer?.items ?? [];
       let addItem = (s: string, i: number) => {
-        ;
         let item = {
           id: "" + Math.random(),
-          x: Math.floor(coords[0]) + i,
-          y: Math.floor(coords[1]),
-          width: 1,
-          height: 1,
+          loc: [Math.floor(coords[0]) + i, Math.floor(coords[1])],
+          dim: [1,1],
           href: s,
         };
-        ;
-        setItems([...items, item]);
+        dispatch(addImage(item as unknown as Image));
       };
-      ;
-      ;
       for (let i = 0; i < dataItems.length; i++) {
-        ;
         if (dataItems[i].kind.startsWith("image/")) {
           addItem(window.URL.createObjectURL(dataItems[i].getAsFile()), 0);
         } else if (dataItems[i].type === "text/uri-list") {
@@ -62,7 +58,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   if (dragging) {
     gridDrag = viewport.current!.clientToGrid([drag.x, drag.y]);
   }
-  ;
+
   return (
     <div className="grid" {...dragHandlers} ref={dropLayer}>
       <Viewport
@@ -86,24 +82,25 @@ export function Grid(props: PropsWithChildren<GridProps>) {
             }}
           ></div>
         ) : null}
-        {items.map((i) => (
+        {Object.values(items).map((i) => (
           <GridItem
             key={i.id}
             loc={
               add(
-                [i.x, i.y] as any,
+                i.loc,
                 selection.current?.id === i.id
                   ? (selectionOffset as any)
                   : [0, 0]
               ) as any
             }
-            dim={[1, 1] as any}
+            dim={i.dim}
             onClick={() => {
               selection.current = i;
               setSelectionOffset([0, 0]);
             }}
           >
             <img
+              onDragStart={(ev) => ev.preventDefault()}
               alt=""
               src={i.href}
               style={{ display: "block", width: "100%", height: "100%" }}
@@ -115,34 +112,25 @@ export function Grid(props: PropsWithChildren<GridProps>) {
           <SelectionBox
             key=""
             loc={
-              add(selectionOffset!, [
-                selection.current.x,
-                selection.current.y,
-              ] as any) as any
+              add(selectionOffset!, selection.current.loc) as any
             }
-            dim={[1, 1] as any}
+            dim={selection.current.dim}
             onSelectionDrag={(coord) =>
               setSelectionOffset(
                 floor(
-                  sub(viewport.current!.clientToGrid(coord), [
-                    selection.current.x,
-                    selection.current.y,
-                  ] as any)
+                  sub(viewport.current!.clientToGrid(coord), selection.current.loc)
                 )
               )
             }
             onSelectionDrop={(coord) => {
               const loc = floor(viewport.current!.clientToGrid(coord));
-              const currId = selection.current.id;
-              setItems((items) =>
-                items.map((it) => {
-                  if (it.id === currId) {
-                    return { ...it, x: loc[0], y: loc[1] };
-                  } else {
-                    return it;
-                  }
-                })
-              );
+              dispatch(updateImage({
+                id: selection.current.id,
+                img: {
+                  ...items[selection.current.id],
+                  loc
+                }
+              }));
               setSelectionOffset(null);
               selection.current = null;
             }}

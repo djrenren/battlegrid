@@ -1,4 +1,6 @@
-import { ClientSpace } from "./Viewport";
+export type GridSpace = "gridspace";
+export type CanvasSpace = "canvasspace";
+export type ClientSpace = "clientspace";
 
 interface Unit<T> {
     _unitBrand: T
