@@ -16,16 +16,14 @@ function Overlay(props: OverlayProps) {
     right: `${-thickness/2}em`,
     top: `${-thickness/2}em`,
     bottom: `${-thickness/2}em`,
-    // width: props.width + 'em',
-    // height: props.height + 'em',
     background: `
       repeating-linear-gradient(to right, ${linecolor}, ${linecolor} ${thickness}em, transparent ${thickness}em 1em),
       repeating-linear-gradient(to bottom, ${linecolor}, ${linecolor} ${thickness}em, transparent ${thickness}em 1em)`,
       // repeating-linear-gradient(to right, ${linecolor}, ${linecolor} ${thickness / 2}em, transparent ${thickness / 2}em ${1 - thickness / 2}em, ${linecolor} ${1 - thickness / 2}em 1em),
       // repeating-linear-gradient(to bottom, ${linecolor}, ${linecolor} ${thickness / 2}em, transparent ${thickness / 2}em ${1 - thickness / 2}em, ${linecolor} ${1 - thickness / 2}em 1em)`,
     pointerEvents: "none",
-    border: `${thickness/2} solid ${linecolor}`
-    
+    border: `${thickness/2} solid ${linecolor}`,
+    transition: "position 2s" 
   }}></div>
   );
 }
