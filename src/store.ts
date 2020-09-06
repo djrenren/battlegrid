@@ -4,8 +4,13 @@ import grid from './modules/grid'
 import toast from './modules/toast'
 import { applySync } from './modules/sync';
 
-console.log(comms);
 const mainReducer = combineReducers({ comms, grid, toast });
+export type RootStore = ReturnType<typeof mainReducer>;
+
+const initialState: RootStore = localStorage.getItem('reduxState')
+  ? JSON.parse(localStorage.getItem('reduxState')!)
+  : mainReducer(undefined, { type: 'null' });
+
 const store = configureStore({
   reducer(state, action): ReturnType<typeof mainReducer> {
     if (action.type === 'STATE_SYNC') {
@@ -20,9 +25,10 @@ const store = configureStore({
     state.conn && action.meta?.shared && action.meta?.src === state.conn?.id && state.conn.send(action);
     return next(action);
   }],
-  preloadedState: mainReducer(undefined, { type: 'null' }),
+  preloadedState: initialState,
 })
 
-
+store.subscribe(() => {
+  localStorage.setItem('reduxState', JSON.stringify(store.getState()));
+});
 export default store;
-export type RootStore = ReturnType<typeof mainReducer>

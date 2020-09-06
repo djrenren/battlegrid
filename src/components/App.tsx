@@ -6,7 +6,7 @@ import Toolbar from "./toolbar/Toolbar";
 import { Offset, GridSpace } from "../modules/grid/units";
 import { RootStore } from "../store";
 import { host } from "../modules/comms";
-import { setDimensions } from "../modules/grid";
+import { setDimensions, reset } from "../modules/grid";
 import { ToastArea } from "./toasts/ToastArea";
 import { issueToast } from "../modules/toast";
 import { useTranslation } from "react-i18next";
@@ -35,6 +35,7 @@ function App() {
       <Toolbar>
         <button onClick={() => dispatch(setDimensions({width: dim[0] + 1, height: dim[1]}))}>Add Column</button>
         <button onClick={() => dispatch(setDimensions({width: dim[0], height: dim[1] + 1}))}>Add Row</button>
+        <button onClick={() => dispatch(reset({}))}>Reset</button>
         <button onClick={() => dispatch(issueToast(t("hello")))}>Say hi</button>
         {comms.status === 'offline' && (
           <button onClick={() => dispatch(host())}>Host</button>
