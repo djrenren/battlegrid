@@ -1,10 +1,10 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "6874aaada37be21c8549fa0e786efbc2",
+    "revision": "6c5c3d65249c9c20782728a380986336",
     "url": "/battlegrid/index.html"
   },
   {
-    "revision": "0ec6bb531ff0069aa5f4",
+    "revision": "132d6de3b2f22b9e2fef",
     "url": "/battlegrid/static/css/main.9d34e759.chunk.css"
   },
   {
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/battlegrid/static/js/2.ee7ae534.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "0ec6bb531ff0069aa5f4",
-    "url": "/battlegrid/static/js/main.ddd76af3.chunk.js"
+    "revision": "132d6de3b2f22b9e2fef",
+    "url": "/battlegrid/static/js/main.ef90b461.chunk.js"
   },
   {
     "revision": "82d2d981967f3d7e82e6",
