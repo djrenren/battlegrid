@@ -19,11 +19,10 @@ function Overlay(props: OverlayProps) {
     background: `
       repeating-linear-gradient(to right, ${linecolor}, ${linecolor} ${thickness}em, transparent ${thickness}em 1em),
       repeating-linear-gradient(to bottom, ${linecolor}, ${linecolor} ${thickness}em, transparent ${thickness}em 1em)`,
-      // repeating-linear-gradient(to right, ${linecolor}, ${linecolor} ${thickness / 2}em, transparent ${thickness / 2}em ${1 - thickness / 2}em, ${linecolor} ${1 - thickness / 2}em 1em),
-      // repeating-linear-gradient(to bottom, ${linecolor}, ${linecolor} ${thickness / 2}em, transparent ${thickness / 2}em ${1 - thickness / 2}em, ${linecolor} ${1 - thickness / 2}em 1em)`,
     pointerEvents: "none",
-    border: `${thickness/2} solid ${linecolor}`,
-    transition: "position 2s" 
+    borderRight: `${thickness}em solid ${linecolor}`,
+    borderBottom: `${thickness}em solid ${linecolor}`,
+    transition: "position 2s"
   }}></div>
   );
 }
