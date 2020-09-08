@@ -1,5 +1,5 @@
 import { Coord, Offset, GridSpace } from "../../modules/grid/units";
-import { PropsWithChildren, memo } from "react";
+import { PropsWithChildren, memo, forwardRef } from "react";
 import React from "react";
 import { motion } from "framer-motion";
 
@@ -9,10 +9,11 @@ export interface GridItemProps extends React.DetailedHTMLProps<React.HTMLAttribu
   style?: Omit<React.CSSProperties, 'position' | 'left' | 'top' | 'width' | 'height'>,
 }
 
-export const GridItem = memo((props: PropsWithChildren<GridItemProps>) => {
+export const GridItem = memo(forwardRef((props: PropsWithChildren<GridItemProps>, ref) => {
   return (
     <motion.div
       {...props as any}
+      ref={ref}
       style={{
         position: "absolute",
         ...props.style,
@@ -29,4 +30,4 @@ export const GridItem = memo((props: PropsWithChildren<GridItemProps>) => {
       {props.children}
     </motion.div>
   )
-});
+}));

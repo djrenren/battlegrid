@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { GridItemProps, GridItem } from "./GridItem";
 import React, {PointerEvent} from "react";
 import { ClientSpace, Coord, coord } from "../../modules/grid/units";
@@ -29,9 +29,15 @@ function SelectionBox(props: SelectionProps) {
         initialLoc.current = null;
       }
   }, [props])
+
+  const itemRef = useRef<HTMLDivElement>();
+  useEffect(() => {
+    itemRef.current?.addEventListener('touchmove', ev => ev.preventDefault());
+  })
   return (
     <GridItem
-      loc={props.loc} 
+      ref={itemRef}
+      loc={props.loc}
       dim={props.dim}
       style={{
         border: "2px solid highlight",

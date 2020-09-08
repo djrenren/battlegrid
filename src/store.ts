@@ -7,7 +7,7 @@ import { applySync } from './modules/sync';
 const mainReducer = combineReducers({ comms, grid, toast });
 export type RootStore = ReturnType<typeof mainReducer>;
 
-const storedState: RootStore = localStorage.getItem('reduxState') ?? JSON.parse(localStorage.getItem('reduxState')!);
+const storedState: RootStore = localStorage.getItem('reduxState') ? JSON.parse(localStorage.getItem('reduxState')!) : null;
 const initialState: RootStore = mainReducer(undefined, { type: 'null' });
 if (storedState?.grid) {
   initialState.grid = storedState?.grid

@@ -37,6 +37,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
       let coords = viewport.current!.clientToGrid([ev.clientX, ev.clientY]);
       let dataItems = ev.dataTransfer?.items ?? [];
       let addItem = (s: string, i: number) => {
+        console.log(s);
         let item = {
           id: "" + Math.random(),
           loc: [Math.floor(coords[0]) + i, Math.floor(coords[1])],
@@ -45,7 +46,14 @@ export function Grid(props: PropsWithChildren<GridProps>) {
         };
         dispatch(addImage(item as unknown as Image));
       };
+      console.log("DataItems", dataItems.length)
       for (let i = 0; i < dataItems.length; i++) {
+        // console.log(dataItems[i]);
+        // if (dataItems[i].kind === "string") {
+        //   dataItems[i].getAsString(s => console.log(s))
+        // } else {
+        //   dataItems[i].getAsFile())
+        // }
         if (dataItems[i].kind.startsWith("image/")) {
           addItem(window.URL.createObjectURL(dataItems[i].getAsFile()), 0);
         } else if (dataItems[i].type === "text/uri-list") {
