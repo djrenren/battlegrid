@@ -4,7 +4,7 @@ export function syncAction(state: RootStore) {
   return {
     type: "STATE_SYNC",
     payload: {
-      grid: state.grid,
+      game: state.game,
     },
   };
 }
@@ -15,6 +15,6 @@ export function applySync(
 ): RootStore {
   return {
     ...state,
-    grid: action.payload.grid,
+    game: action.payload.game,
   };
 }

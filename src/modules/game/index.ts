@@ -9,15 +9,20 @@ export type Image = {
   href: string
 }
 
+export type GameState = typeof initialState;
 const initialState = {
+  id: "local", 
   width: 15,
   height: 10,
   images: {} as { [id: string]: Image},
 }
-export const slice = createSlice({
-  name: 'grid',
+export let game = createSlice({
+  name: 'game',
   initialState: initialState as typeof initialState,
   reducers: {
+    loadGame(state, { payload }: { payload: GameState }) {
+      return payload;
+    },
     setDimensions: shared((state: {width: number, height: number}, { payload }: { payload: { width: number, height: number } }) => {
         state.width = payload.width;
         state.height = payload.height;
@@ -32,5 +37,5 @@ export const slice = createSlice({
   }
 })
 
-export default slice.reducer;
-export let { setDimensions, addImage, updateImage, reset } = slice.actions;
+export default game.reducer;
+export let { setDimensions, addImage, updateImage, reset, loadGame } = game.actions;

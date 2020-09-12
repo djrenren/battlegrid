@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import { GridItemProps, GridItem } from "./GridItem";
 import React, {PointerEvent} from "react";
-import { ClientSpace, Coord, coord } from "../../modules/grid/units";
+import { ClientSpace, Coord, coord } from "../../modules/game/units";
 
 interface SelectionProps extends GridItemProps {
   onSelectionDrag: (offset: Coord<ClientSpace>) => void,

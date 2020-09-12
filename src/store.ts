@@ -1,17 +1,14 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
 import comms, {state} from './modules/comms'
-import grid from './modules/grid'
+import game from './modules/game'
 import toast from './modules/toast'
 import { applySync } from './modules/sync';
+import { persistState } from './modules/game/persist';
 
-const mainReducer = combineReducers({ comms, grid, toast });
+const mainReducer = combineReducers({ comms, game, toast });
 export type RootStore = ReturnType<typeof mainReducer>;
 
-const storedState: RootStore = localStorage.getItem('reduxState') ? JSON.parse(localStorage.getItem('reduxState')!) : null;
 const initialState: RootStore = mainReducer(undefined, { type: 'null' });
-if (storedState?.grid) {
-  initialState.grid = storedState?.grid
-}
 
 const store = configureStore({
   reducer(state, action): ReturnType<typeof mainReducer> {
@@ -24,6 +21,7 @@ const store = configureStore({
     // Send out all actions that originated on this peer
     // if we didn't check that it came from this peer, we'd
     // bounce messages back and forth forever
+    console.log("connection?", state.conn);
     state.conn && action.meta?.shared && action.meta?.src === state.conn?.id && state.conn.send(action);
     return next(action);
   }],
@@ -31,6 +29,8 @@ const store = configureStore({
 })
 
 store.subscribe(() => {
-  localStorage.setItem('reduxState', JSON.stringify(store.getState()));
+  const state = store.getState() as RootStore;
+  persistState(state.game.id, state.game);
 });
+
 export default store;

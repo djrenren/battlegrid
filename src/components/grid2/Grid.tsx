@@ -1,5 +1,5 @@
 import { PropsWithChildren, useRef, useState, memo } from "react";
-import { Coord, add, floor, sub, GridSpace } from "../../modules/grid/units";
+import { Coord, add, floor, sub, GridSpace } from "../../modules/game/units";
 import React from "react";
 import Overlay from "./Overlay";
 import "./grid.css";
@@ -9,7 +9,7 @@ import { GridItem } from "./GridItem";
 import SelectionBox from "./SelectionBox";
 import { useSelector, useDispatch } from "react-redux";
 import { RootStore } from "../../store";
-import { addImage, Image, updateImage } from "../../modules/grid";
+import { addImage, Image, updateImage } from "../../modules/game";
 
 export interface GridProps {
   dimensions: [number, number];
@@ -21,7 +21,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   let [selectionOffset, setSelectionOffset] = useState<any>(null);
   let viewport = useRef<ViewportRef>(null);
   let hoverHint = useRef<HTMLDivElement>(null);
-  let items = useSelector((state: RootStore) => state.grid.images);
+  let items = useSelector((state: RootStore) => state.game.images);
   let dispatch = useDispatch();
 
   let [dragging, drag, dragHandlers] = useDrop(

@@ -3,8 +3,11 @@ import { Client } from "./client";
 import { Server, ServerClient } from "./server";
 import { issueToast } from "../toast";
 import { syncAction } from "../sync";
+import { PeerID } from "./peer";
+import { loadGame } from "../game";
+import { RootStore } from "../../store";
 
-export const state = {
+export let state = {
   conn: null as null | ServerClient
 }
 
@@ -12,13 +15,17 @@ export type ConnId = string & {
   _connId: 'connid' 
 } 
 
-export const connect = createAsyncThunk('comms/connect', async (gameId: string, { dispatch }) => {
+export const connect = createAsyncThunk('comms/connect', async (gameId: PeerID, { dispatch }) => {
   try {
-    state.conn = await Client.connect(gameId, {
+    state.conn = await Client.create(gameId, {
       onMessage(m: any) {
         dispatch(m);
       },
+      onDisconnect() {
+        dispatch(comms.actions.disconnected())
+      },
       onConnect(c) {
+        dispatch(comms.actions.connected())
         console.log("connected to server!")
       }
     });
@@ -30,8 +37,8 @@ export const connect = createAsyncThunk('comms/connect', async (gameId: string, 
   }
 });
 
-export const host = createAsyncThunk('comms/host', async (_: undefined, {getState, dispatch}) => {
-  const server = await Server.create({
+export const host = createAsyncThunk('comms/host', async (id: string | undefined, {getState, dispatch}) => {
+  const server = await Server.create(id, {
     onConnect(label) {
       server.sendTo(label, syncAction(getState() as any))
     },
@@ -40,7 +47,15 @@ export const host = createAsyncThunk('comms/host', async (_: undefined, {getStat
     }
   })
   state.conn = server;
-  window.history.pushState({}, "", `?join=${server.id}`)
+  dispatch(loadGame({
+    ...(getState() as RootStore).game,
+    id: server.id,
+  }))
+  sessionStorage.setItem("hosting", JSON.stringify([
+    ...JSON.parse(sessionStorage.getItem("hosting") ?? "[]"),
+    server.id
+  ]));
+  window.history.pushState({}, "", `?game=${server.id}`)
   return server.id;
 });
 
@@ -51,7 +66,14 @@ export let comms = createSlice({
     hosting: false,
     gameId: null as string | null,
   },
-  reducers: {},
+  reducers: {
+    disconnected(state, action: {}) {
+      state.status = "pending";
+    },
+    connected(state, action: {}) {
+      state.status = "connected";
+    }
+  },
   extraReducers: builder => {
     // Client connection logic
     builder.addCase(connect.pending, (state, _) => {

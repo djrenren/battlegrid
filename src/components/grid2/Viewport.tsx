@@ -1,5 +1,5 @@
 import { useRef, useCallback, PropsWithChildren, ForwardRefRenderFunction, useImperativeHandle, forwardRef, memo, useEffect } from "react";
-import { Coord, clamp, GridSpace } from "../../modules/grid/units";
+import { Coord, clamp, GridSpace } from "../../modules/game/units";
 import { useGesture } from "react-use-gesture";
 import { FullGestureState } from "react-use-gesture/dist/types";
 

@@ -25,6 +25,7 @@ export class Server implements ServerClient {
 
     this.peer.on('connection', conn => {
       conn.on('open', () => {
+        console.log("NEW CLIENT");
         const label = conn.label as ConnId;
         this.clients.set(label, conn);
         config.onConnect && config.onConnect(label);
@@ -35,6 +36,12 @@ export class Server implements ServerClient {
           this.broadcast_json(d, conn.label)
           config.onMessage && config.onMessage(d);
         });
+        conn.on('close', () => {
+          this.clients.delete(conn.label)
+        })
+        conn.on('error', () => {
+          this.clients.delete(conn.label)
+        })
       })
     })
 
@@ -43,8 +50,8 @@ export class Server implements ServerClient {
     })
   }
 
-  static async create(config: Config): Promise<Server> {
-    const peer = new Peer(undefined, { debug: 3 });
+  static async create(id: undefined | string, config: Config): Promise<Server> {
+    const peer = new Peer(id, { debug: 3 });
     let connected = false;
     return new Promise((resolve, reject) => {
       peer.on("open", id => {

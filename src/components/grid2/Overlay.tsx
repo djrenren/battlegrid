@@ -1,5 +1,5 @@
 import React from "react";
-import { Coord, GridSpace } from "../../modules/grid/units";
+import { Coord, GridSpace } from "../../modules/game/units";
 
 export interface OverlayProps {
   width: number,

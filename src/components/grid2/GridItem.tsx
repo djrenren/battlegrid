@@ -1,4 +1,4 @@
-import { Coord, Offset, GridSpace } from "../../modules/grid/units";
+import { Coord, Offset, GridSpace } from "../../modules/game/units";
 import { PropsWithChildren, memo, forwardRef } from "react";
 import React from "react";
 import { motion } from "framer-motion";

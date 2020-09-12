@@ -3,10 +3,10 @@ import "./App.css";
 import Grid from "./grid2/Grid";
 import { useSelector, useDispatch } from "react-redux";
 import Toolbar from "./toolbar/Toolbar";
-import { Offset, GridSpace } from "../modules/grid/units";
+import { Offset, GridSpace } from "../modules/game/units";
 import { RootStore } from "../store";
 import { host } from "../modules/comms";
-import { setDimensions, reset } from "../modules/grid";
+import { setDimensions, reset } from "../modules/game";
 import { ToastArea } from "./toasts/ToastArea";
 import { issueToast } from "../modules/toast";
 import { useTranslation } from "react-i18next";
@@ -24,7 +24,7 @@ function App() {
     console.log(state);
     return state.comms
   });
-  let dim = useSelector((state: RootStore) => [state.grid.width, state.grid.height])
+  let dim = useSelector((state: RootStore) => [state.game.width, state.game.height])
   let dispatch = useDispatch();
   const { t } = useTranslation();
 
@@ -46,6 +46,9 @@ function App() {
 
         {comms.hosting && `hosting: ${comms.gameId}`}
       </Toolbar>
+      {comms.status === 'pending' && (
+        <div className="loading"></div>
+      )}
     </div>
   );
 }
