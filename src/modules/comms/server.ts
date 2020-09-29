@@ -1,5 +1,6 @@
 import Peer from "peerjs";
 import { ConnId } from ".";
+import { create_peer, PeerID } from "./peer";
 
 type Config = {
   onConnect?(label: ConnId): void
@@ -51,17 +52,8 @@ export class Server implements ServerClient {
   }
 
   static async create(id: undefined | string, config: Config): Promise<Server> {
-    const peer = new Peer(id, { debug: 3 });
-    let connected = false;
-    return new Promise((resolve, reject) => {
-      peer.on("open", id => {
-        connected = true;
-        resolve(new Server(id, peer, config))
-      });
-      peer.on("error", e => {
-        connected && reject(`Failed to create server: ${e}`)
-      })
-    })
+    const peer = await create_peer(id as PeerID);
+    return new Server(peer.id, peer, config);
   }
 
   private broadcast_json(msg: any, exclude: string | null = null) {

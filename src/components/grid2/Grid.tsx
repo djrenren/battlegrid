@@ -61,12 +61,6 @@ export function Grid(props: PropsWithChildren<GridProps>) {
       };
       console.log("DataItems", dataItems.length)
       for (let i = 0; i < dataItems.length; i++) {
-        // console.log(dataItems[i]);
-        // if (dataItems[i].kind === "string") {
-        //   dataItems[i].getAsString(s => console.log(s))
-        // } else {
-        //   dataItems[i].getAsFile())
-        // }
         console.log(dataItems[i].type)
         if (dataItems[i].type.startsWith("image/")) {
           const dataURL = await getDataURL(dataItems[i].getAsFile()!);
@@ -126,7 +120,8 @@ export function Grid(props: PropsWithChildren<GridProps>) {
               ) as any
             }
             dim={i.dim}
-            onClick={() => {
+            onPointerDown={(ev) => {
+              ev.preventDefault();
               selection.current = i;
               setSelectionOffset([0, 0]);
             }}

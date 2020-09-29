@@ -12,8 +12,8 @@ function SelectionBox(props: SelectionProps) {
   const initialLoc = useRef<Coord<ClientSpace> | null>(null)
   // Represents the distance in client pixels from selection element origin to click point
   const onPointerMove = useCallback((ev: PointerEvent<HTMLElement>) => {
-      if (initialLoc.current) {
-          ev.preventDefault();
+      if (initialLoc.current || ev.type === 'mouse') {
+          //ev.preventDefault();
           ev.stopPropagation();
           
           props.onSelectionDrag(coord(ev));
