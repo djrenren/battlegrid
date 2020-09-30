@@ -8,34 +8,41 @@ export type Image = {
   dim: Offset<GridSpace>,
   href: string
 }
-
 export type GameState = typeof initialState;
-const initialState = {
-  id: "local", 
-  width: 15,
-  height: 10,
-  images: {} as { [id: string]: Image},
+let initialState = {
+  id: "local",
+  maps: [{
+    width: 15,
+    height: 10,
+    images: {} as { [id: string]: Image},
+  }]
 }
 export let game = createSlice({
   name: 'game',
   initialState: initialState as typeof initialState,
   reducers: {
+    forkGame(state, action: { payload: string }) {
+      state.id = action.payload;
+    },
     loadGame(state, { payload }: { payload: GameState }) {
       return payload;
     },
-    setDimensions: shared((state: {width: number, height: number}, { payload }: { payload: { width: number, height: number } }) => {
-        state.width = payload.width;
-        state.height = payload.height;
+    setDimensions: shared((state: any, { payload }: { payload: { map: number, width: number, height: number } }) => {
+      const { map, width, height } = payload;
+        state.maps[map].width = width;
+        state.maps[map].height = height;
     }),
-    addImage: shared((state: any, action: { payload: Image }) => {
-      state.images[action.payload.id] = action.payload;
+    addImage: shared((state: any, action: { payload: { map: number, img: Image } }) => {
+      const {map, img} = action.payload;
+      state.maps[map].images[img.id] = img;
     }),
-    updateImage: shared((state: any, action: { payload: { id: string, img: Image } }) => {
-      state.images[action.payload.id] = action.payload.img;
+    updateImage: shared((state: GameState, action: { payload: { map: number, id: string, img: Partial<Image> } }) => {
+      const {map, id, img} = action.payload;
+      state.maps[map].images[id] = {...state.maps[map].images[id], ...img}
     }),
     reset: shared((state: any, action: {payload: any}) => state = initialState)
   }
 })
 
 export default game.reducer;
-export let { setDimensions, addImage, updateImage, reset, loadGame } = game.actions;
+export let { setDimensions, addImage, updateImage, reset, loadGame, forkGame } = game.actions;

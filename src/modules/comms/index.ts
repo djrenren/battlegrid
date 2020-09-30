@@ -4,8 +4,10 @@ import { Server, ServerClient } from "./server";
 import { issueToast } from "../toast";
 import { syncAction } from "../sync";
 import { PeerID } from "./peer";
-import { loadGame } from "../game";
+import { forkGame, loadGame } from "../game";
 import { RootStore } from "../../store";
+import { v4 as uuid } from "uuid";
+import { Session } from "../../storage/session";
 
 export let state = {
   conn: null as null | ServerClient
@@ -37,33 +39,30 @@ export const connect = createAsyncThunk('comms/connect', async (gameId: PeerID, 
   }
 });
 
-export const host = createAsyncThunk('comms/host', async (id: string | undefined, {getState, dispatch}) => {
-  const server = await Server.create(id, {
+export const host = createAsyncThunk('comms/host', async (_: undefined, { getState, dispatch }) => {
+  const server = await Server.create((getState() as RootStore).comms.clientId, {
     onConnect(label) {
       server.sendTo(label, syncAction(getState() as any))
     },
     onMessage(m) {
       dispatch(m);
     }
-  })
+  });
+  
   state.conn = server;
-  dispatch(loadGame({
-    ...(getState() as RootStore).game,
-    id: server.id,
-  }))
-  sessionStorage.setItem("hosting", JSON.stringify([
-    ...JSON.parse(sessionStorage.getItem("hosting") ?? "[]"),
-    server.id
-  ]));
-  window.history.pushState({}, "", `?game=${server.id}`)
+  Session.set('was_hosting', server.id);
+  dispatch(forkGame(server.id));
+  window.history.pushState(null, "", `?game=${server.id}`)
   return server.id;
 });
 
 export let comms = createSlice({
   name: 'comms',
   initialState: {
+    // NOTE: offline denotes a totally offline game, not a disconnected state
     status: 'offline' as 'offline' | 'pending' | 'connected',
     hosting: false,
+    clientId: Session.get('comms_id'),
     gameId: null as string | null,
   },
   reducers: {
@@ -102,9 +101,9 @@ export let comms = createSlice({
   }
 })
 
-export function shared<S, A>(f: (state: S, action: { payload: A }) => void): { reducer: typeof f, prepare: (action: A) => any }{
+export function shared<S, A>(f: (state: S, action: { payload: A }) => void): { reducer: (state: any, action: {payload: A}) => void,  prepare: (action: A) => any }{
   return {
-    reducer: f,
+    reducer: f as any,
     prepare: a => ({
       payload: a,
       meta: state.conn ? {

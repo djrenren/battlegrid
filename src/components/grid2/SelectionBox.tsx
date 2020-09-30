@@ -32,7 +32,7 @@ function SelectionBox(props: SelectionProps) {
 
   const itemRef = useRef<HTMLDivElement>();
   useEffect(() => {
-    itemRef.current?.addEventListener('touchmove', ev => ev.preventDefault());
+    itemRef.current?.addEventListener('touchmove', ev => ev.preventDefault(), {passive: false});
   })
   return (
     <GridItem
@@ -41,7 +41,7 @@ function SelectionBox(props: SelectionProps) {
       dim={props.dim}
       style={{
         border: "2px solid highlight",
-        boxShadow: "0 0 10px highlight"
+        boxShadow: "0 0 10px highlight",
       }}
       onPointerDown={ev => {
                     ev.preventDefault();

@@ -2,10 +2,11 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit'
 import comms, {state} from './modules/comms'
 import game from './modules/game'
 import toast from './modules/toast'
+import players from './modules/players'
 import { applySync } from './modules/sync';
 import { persistState } from './modules/game/persist';
 
-const mainReducer = combineReducers({ comms, game, toast });
+const mainReducer = combineReducers({ comms, game, toast, players });
 export type RootStore = ReturnType<typeof mainReducer>;
 
 const initialState: RootStore = mainReducer(undefined, { type: 'null' });
@@ -30,6 +31,7 @@ const store = configureStore({
 
 store.subscribe(() => {
   const state = store.getState() as RootStore;
+  console.log(state);
   persistState(state.game.id, state.game);
 });
 

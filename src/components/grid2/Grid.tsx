@@ -34,7 +34,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   let [selectionOffset, setSelectionOffset] = useState<any>(null);
   let viewport = useRef<ViewportRef>(null);
   let hoverHint = useRef<HTMLDivElement>(null);
-  let items = useSelector((state: RootStore) => state.game.images);
+  let items = useSelector((state: RootStore) => state.game.maps[0].images);
   let dispatch = useDispatch();
 
   let [dragging, drag, dragHandlers] = useDrop(
@@ -57,7 +57,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
           dim: [1,1],
           href: s,
         };
-        dispatch(addImage(item as unknown as Image));
+        dispatch(addImage({ map: 0, img: item as unknown as Image }));
       };
       console.log("DataItems", dataItems.length)
       for (let i = 0; i < dataItems.length; i++) {
@@ -152,9 +152,9 @@ export function Grid(props: PropsWithChildren<GridProps>) {
             onSelectionDrop={(coord) => {
               const loc = floor(viewport.current!.clientToGrid(coord));
               dispatch(updateImage({
+                map: 0,
                 id: selection.current.id,
                 img: {
-                  ...items[selection.current.id],
                   loc
                 }
               }));

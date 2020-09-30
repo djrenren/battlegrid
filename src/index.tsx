@@ -9,19 +9,23 @@ import { connect, host } from './modules/comms';
 import './i18n';
 import { gameState } from './modules/game/persist';
 import { PeerID } from './modules/comms/peer';
+import { Session } from './storage/session';
 //import * as serviceWorker from './serviceWorker';
 
 const urlParams = new URLSearchParams(window.location.search);
 
-// Load, connect, or host game
+// Load the game if we have it stored
 const game = urlParams.get("game");
 let state = gameState(game ?? "local");
+if (state) {
+  store.dispatch(loadGame(state))
+}
+// If we found saved data
 if (game) {
   console.log("Found game: ", game);
-  if (state && JSON.parse(sessionStorage.getItem("hosting") ?? "[]").includes(game)) {
+  if (Session.get('was_hosting') === game) {
     console.log("REHOSTING!");
-    store.dispatch(loadGame(state));
-    store.dispatch(host(game));
+    store.dispatch(host());
   } else {
     console.log("Huh")
     store.dispatch(connect(game as PeerID));
