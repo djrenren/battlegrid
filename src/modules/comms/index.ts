@@ -8,6 +8,7 @@ import { forkGame, loadGame } from "../game";
 import { RootStore } from "../../store";
 import { v4 as uuid } from "uuid";
 import { Session } from "../../storage/session";
+import { removePlayer } from "../players";
 
 export let state = {
   conn: null as null | ServerClient
@@ -17,9 +18,9 @@ export type ConnId = string & {
   _connId: 'connid' 
 } 
 
-export const connect = createAsyncThunk('comms/connect', async (gameId: PeerID, { dispatch }) => {
+export const connect = createAsyncThunk('comms/connect', async (gameId: PeerID, { getState, dispatch }) => {
   try {
-    state.conn = await Client.create(gameId, {
+    state.conn = await Client.create(gameId, (getState() as RootStore).comms.clientId as PeerID, {
       onMessage(m: any) {
         dispatch(m);
       },
@@ -46,6 +47,9 @@ export const host = createAsyncThunk('comms/host', async (_: undefined, { getSta
     },
     onMessage(m) {
       dispatch(m);
+    },
+    onDisconnect(label) {
+      dispatch(removePlayer(label))
     }
   });
   

@@ -26,22 +26,27 @@ export class Server implements ServerClient {
 
     this.peer.on('connection', conn => {
       conn.on('open', () => {
-        console.log("NEW CLIENT");
-        const label = conn.label as ConnId;
+        console.log("NEW CLIENT", conn.peer);
+        const label = conn.peer as ConnId;
         this.clients.set(label, conn);
         config.onConnect && config.onConnect(label);
-        config.onDisconnect && conn.on('close', () => {
-          config.onDisconnect!(label)
-        })
         conn.on('data', d => {
-          this.broadcast_json(d, conn.label)
+          this.broadcast_json(d, conn.peer)
           config.onMessage && config.onMessage(d);
         });
         conn.on('close', () => {
-          this.clients.delete(conn.label)
+          this.clients.delete(conn.peer)
         })
         conn.on('error', () => {
-          this.clients.delete(conn.label)
+          this.clients.delete(conn.peer)
+        })
+        config.onDisconnect && conn.on('close', () => {
+          console.log('close?')
+          config.onDisconnect!(label)
+        })
+        config.onDisconnect && conn.on('error', () => {
+          console.log('error?')
+          config.onDisconnect!(label)
         })
       })
     })

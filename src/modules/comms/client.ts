@@ -19,13 +19,13 @@ export class Client implements ServerClient {
   private dc: DataConnection
   private remote_id: PeerID
   private config: ClientConfig
-  get id(): string {
-    return this.dc.label
-  }
-  private constructor(dc: DataConnection, remote_id: PeerID, config: ClientConfig) {
+  id: PeerID
+
+  private constructor(dc: DataConnection, remote_id: PeerID, local_id: PeerID, config: ClientConfig) {
     this.dc = dc;
     this.remote_id = remote_id;
     this.config = config;
+    this.id = local_id;
 
     this.attachListeners(this.dc);
   }
@@ -35,7 +35,7 @@ export class Client implements ServerClient {
       const attemptConnect = async () => {
         this.config.onDisconnect();
         try {
-          this.dc = await connect_to_game(this.remote_id);
+          this.dc = await connect_peer(await create_peer(this.id), this.remote_id);
           this.attachListeners(this.dc);
         } catch {
           console.log("failed to reconnect");
@@ -49,7 +49,7 @@ export class Client implements ServerClient {
       const attemptConnect = async () => {
         this.config.onDisconnect();
         try {
-          this.dc = await connect_to_game(this.remote_id);
+          this.dc = await connect_peer(await create_peer(this.id), this.remote_id)
           this.attachListeners(this.dc);
         } catch {
           console.log("failed to reconnect");
@@ -71,12 +71,8 @@ export class Client implements ServerClient {
     this.dc.send(msg);
   }
 
-  static async create(remote_id: PeerID, config: ClientConfig): Promise<Client> {
-    const dc = await connect_to_game(remote_id);
-    return new Client(dc, remote_id, config);
+  static async create(remote_id: PeerID, local_id: PeerID, config: ClientConfig): Promise<Client> {
+    const dc = await connect_peer(await create_peer(local_id), remote_id);
+    return new Client(dc, remote_id, local_id, config);
   }
-}
-
-async function connect_to_game(id: PeerID): Promise<DataConnection> {
-  return await connect_peer(await create_peer(), id);
 }

@@ -30,9 +30,10 @@ function App() {
   let dispatch = useDispatch();
   const { t } = useTranslation();
 
+  let players = useSelector((state: RootStore) => Object.values(state.players).map(p => p.name));
   return (
     <div className="App">
-      {/* <JoinOverlay /> */}
+      <JoinOverlay />
       <ToastArea />
       <Grid dimensions={dim as Offset<GridSpace>} />
       <Toolbar>
@@ -48,6 +49,7 @@ function App() {
         )}
 
         {comms.hosting && `hosting: ${comms.gameId}`}
+        {players.map(p => <p>{p}</p>)}
       </Toolbar>
     </div>
   );
