@@ -1,27 +1,38 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { createAsyncThunk } from "@reduxjs/toolkit";
+import { Action, createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Session } from "../storage/session";
-import { shared } from "./comms";
+import { shared, state } from "./comms";
 
-type PlayersState = { [id: string]: Player };
-const initialState = {} as PlayersState;
+type PlayersState = {
+  online: string[],
+  data: { [id: string]: Player }
+};
+const initialState = {
+  online: [],
+  data: Session.get('players'),
+} as PlayersState;
+
 export const players = createSlice({
   name: "players",
   initialState,
   reducers: {
-    addPlayer: shared((state: PlayersState, action: { payload: Player }) => {
-      state[action.payload.id] = action.payload;
+    playerJoined: shared((state: PlayersState, action: PayloadAction<string>) => {
+      state.online.push(action.payload);
+      state.data[action.payload] = state.data[action.payload] || {
+        name: null
+      };
     }),
-    removePlayer: shared((state: PlayersState, action: { payload: string }) => {
-      delete state[action.payload]
+    removePlayer: shared((state: PlayersState, action: PayloadAction<string>) => {
+      state.online = state.online.filter(p => p !== action.payload)
+    }),
+    changeName: shared((state: PlayersState, action: PayloadAction<{ player: string, name: string }>) => {
+      state.data[action.payload.player].name = action.payload.name;
     })
   },
 })
 
 export default players.reducer;
-export const { addPlayer, removePlayer } = players.actions;
+export const {playerJoined, removePlayer, changeName} = players.actions;
 
 export type Player = {
-  name: string,
-  id: string
+  name: string | null,
 }

@@ -1,4 +1,5 @@
 import { v4 as uuid } from "uuid"
+import { Player } from "../modules/players";
 
 // Provides a strongly-typed interface to our session variables 
 
@@ -7,10 +8,8 @@ const defaults = {
   was_hosting: () => null as null | string,
   // Denote the session-specific comms_id
   comms_id: uuid,
-  // The most recently entered player name
-  player_name: () => null as null | string,
-  // game data
-  game: () => null,
+  // The player object created for this session
+  players: () => ({}) as {[id: string]: Player},
 }
 
 type SessionMap = typeof defaults;

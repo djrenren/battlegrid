@@ -30,7 +30,7 @@ function App() {
   let dispatch = useDispatch();
   const { t } = useTranslation();
 
-  let players = useSelector((state: RootStore) => Object.values(state.players).map(p => p.name));
+  let players = useSelector((state: RootStore) => state.players.online.map(p => state.players.data[p].name));
   return (
     <div className="App">
       <JoinOverlay />
@@ -49,7 +49,7 @@ function App() {
         )}
 
         {comms.hosting && `hosting: ${comms.gameId}`}
-        {players.map(p => <p>{p}</p>)}
+        {players.map(p => <p>{p || "unknown"}</p>)}
       </Toolbar>
     </div>
   );

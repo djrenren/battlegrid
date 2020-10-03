@@ -17,19 +17,23 @@ const urlParams = new URLSearchParams(window.location.search);
 // Load the game if we have it stored
 const game = urlParams.get("game");
 let state = gameState(game ?? "local");
-if (state) {
-  store.dispatch(loadGame(state))
-}
+
 // If we found saved data
 if (game) {
   console.log("Found game: ", game);
   if (Session.get('was_hosting') === game) {
     console.log("REHOSTING!");
+    if (state) {
+      store.dispatch(loadGame(state))
+    }
+    Session.get('players')
     store.dispatch(host());
   } else {
     console.log("Huh")
     store.dispatch(connect(game as PeerID));
   }
+} else if (state) {
+      store.dispatch(loadGame(state))
 }
 
 ReactDOM.render(

@@ -1,14 +1,12 @@
-import {createSlice, createAsyncThunk} from "@reduxjs/toolkit"
-import { Client } from "./client";
-import { Server, ServerClient } from "./server";
+import {createSlice, createAsyncThunk, PayloadAction} from "@reduxjs/toolkit"
+import { game_server, ServerClient } from "./server";
 import { issueToast } from "../toast";
 import { syncAction } from "../sync";
-import { PeerID } from "./peer";
 import { forkGame, loadGame } from "../game";
 import { RootStore } from "../../store";
-import { v4 as uuid } from "uuid";
 import { Session } from "../../storage/session";
-import { removePlayer } from "../players";
+import { playerJoined, Player, removePlayer } from "../players";
+import { game_client } from "./client2";
 
 export let state = {
   conn: null as null | ServerClient
@@ -18,38 +16,47 @@ export type ConnId = string & {
   _connId: 'connid' 
 } 
 
-export const connect = createAsyncThunk('comms/connect', async (gameId: PeerID, { getState, dispatch }) => {
+export const connect = createAsyncThunk('comms/connect', async (gameId: string, { getState, dispatch }) => {
+  const clientId = (getState() as RootStore).comms.clientId;
   try {
-    state.conn = await Client.create(gameId, (getState() as RootStore).comms.clientId as PeerID, {
+    state.conn = await game_client(gameId, clientId, {
       onMessage(m: any) {
         dispatch(m);
       },
       onDisconnect() {
         dispatch(comms.actions.disconnected())
       },
-      onConnect(c) {
+      onInitialMessage(m: any) {
+        dispatch(m)
+      },
+      onConnect() {
         dispatch(comms.actions.connected())
-        console.log("connected to server!")
       }
     });
-    return gameId;
+    console.log("connected to server!")
   }
   catch(e) {
     dispatch(issueToast("joinFailure"));
+    console.log(e);
     throw e;
   }
 });
 
 export const host = createAsyncThunk('comms/host', async (_: undefined, { getState, dispatch }) => {
-  const server = await Server.create((getState() as RootStore).comms.clientId, {
-    onConnect(label) {
-      server.sendTo(label, syncAction(getState() as any))
+  const clientId = (getState() as RootStore).comms.clientId;
+  const server = await game_server(clientId, {
+    onConnect(player) {
+      server.sendTo(player, syncAction(getState() as any))
+      dispatch(playerJoined(player))
     },
     onMessage(m) {
       dispatch(m);
     },
     onDisconnect(label) {
       dispatch(removePlayer(label))
+    },
+    onStartup() {
+      dispatch(playerJoined(clientId))
     }
   });
   
@@ -82,8 +89,8 @@ export let comms = createSlice({
     builder.addCase(connect.pending, (state, _) => {
       state.status = 'pending';
     })
-    builder.addCase(connect.fulfilled, (state, { payload }) => {
-      state.gameId = payload;
+    builder.addCase(connect.fulfilled, (state, payload: any) => {
+      state.gameId = payload.gameId;
       state.status = 'connected'; 
     })
     builder.addCase(connect.rejected, (state, _) => {
@@ -105,7 +112,7 @@ export let comms = createSlice({
   }
 })
 
-export function shared<S, A>(f: (state: S, action: { payload: A }) => void): { reducer: (state: any, action: {payload: A}) => void,  prepare: (action: A) => any }{
+export function shared<S, A>(f: (state: S, action: PayloadAction<A>) => void): { reducer: (state: any, action: PayloadAction<A>)=> void,  prepare: (action: A) => any }{
   return {
     reducer: f as any,
     prepare: a => ({

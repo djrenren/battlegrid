@@ -29,8 +29,8 @@ export async function create_peer(id?: PeerID): Promise<Peer> {
   })
 }
 
-export async function connect_peer(peer: Peer, id: PeerID): Promise<DataConnection> {
-  const dc = peer.connect(id);
+export async function connect_peer(peer: Peer, id: PeerID, metadata?: any): Promise<DataConnection> {
+  const dc = peer.connect(id, {metadata});
   return new Promise((resolve, reject) => {
     let on_error = (e: any) => {
       cleanup();
