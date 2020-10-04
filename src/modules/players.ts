@@ -1,6 +1,6 @@
-import { Action, createSelector, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Session } from "../storage/session";
-import { shared, state } from "./comms";
+import { shared } from "./comms";
 
 type PlayersState = {
   online: string[],

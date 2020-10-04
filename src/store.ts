@@ -1,10 +1,10 @@
-import { configureStore, combineReducers, Store, AnyAction, AsyncThunkAction } from '@reduxjs/toolkit'
-import comms, {state} from './modules/comms'
+import { combineReducers, configureStore, Store } from '@reduxjs/toolkit'
+import comms, { state } from './modules/comms'
 import game from './modules/game'
-import toast from './modules/toast'
+import { persistState } from './modules/game/persist'
 import players from './modules/players'
-import { applySync } from './modules/sync';
-import { persistState } from './modules/game/persist';
+import { applySync } from './modules/sync'
+import toast from './modules/toast'
 import { Session } from './storage/session'
 
 const mainReducer = combineReducers({ comms, game, toast, players });

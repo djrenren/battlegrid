@@ -1,12 +1,12 @@
-import {createSlice, createAsyncThunk, PayloadAction} from "@reduxjs/toolkit"
-import { game_server, ServerClient } from "./server";
-import { issueToast } from "../toast";
-import { syncAction } from "../sync";
-import { forkGame, loadGame } from "../game";
-import { RootStore } from "../../store";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Session } from "../../storage/session";
-import { playerJoined, Player, removePlayer } from "../players";
+import { RootStore } from "../../store";
+import { forkGame } from "../game";
+import { playerJoined, removePlayer } from "../players";
+import { syncAction } from "../sync";
+import { issueToast } from "../toast";
 import { game_client } from "./client2";
+import { game_server, ServerClient } from "./server";
 
 export let state = {
   conn: null as null | ServerClient

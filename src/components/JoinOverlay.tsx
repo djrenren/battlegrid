@@ -1,9 +1,8 @@
-import { Dispatch } from "@reduxjs/toolkit";
-import React, { FormEvent, useCallback, useEffect } from "react";
+import React, { FormEvent, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { changeName } from "../modules/players";
 import { RootStore } from "../store";
-import "./JoinOverlay.css"
+import "./JoinOverlay.css";
 
 
 export function JoinOverlay() {
