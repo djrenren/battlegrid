@@ -1,34 +1,32 @@
 .toolbar {
-    max-height: 100%;
-    background: var(--background-panel);
-    box-shadow: var(--shadow);
-    display: inline-flexbox;
-    height: 40px;
-    flex-basis: auto;
-    position: relative;
-    padding: 5px;
-    border-bottom-right-radius: 10px;
-    border-bottom-left-radius: 10px;
-    align-self: center;
-    justify-self: center;
-    font-size: 14px;
+  max-height: 100%;
+  background: var(--background-panel);
+  box-shadow: var(--shadow);
+  display: inline-flexbox;
+  height: 40px;
+  flex-basis: auto;
+  position: relative;
+  padding: 5px;
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  align-self: center;
+  justify-self: center;
+  font-size: 14px;
 }
 
-
-
 .toolbar > button {
-    height: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: inherit;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: inherit;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: inherit;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: inherit;
 }
 .toolbar > button {
-    border-left: 1px solid gray !important;
+  border-left: 1px solid gray !important;
 }
 .toolbar > button:first-child {
-    border-left: none !important;
+  border-left: none !important;
 }

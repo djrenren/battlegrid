@@ -3,22 +3,24 @@ import { shared } from "../comms";
 import { Coord, GridSpace, Offset } from "./units";
 
 export type Image = {
-  id: string,
-  loc: Coord<GridSpace>,
-  dim: Offset<GridSpace>,
-  href: string
-}
+  id: string;
+  loc: Coord<GridSpace>;
+  dim: Offset<GridSpace>;
+  href: string;
+};
 export type GameState = typeof initialState;
 let initialState = {
   id: "local",
-  maps: [{
-    width: 15,
-    height: 10,
-    images: {} as { [id: string]: Image},
-  }]
-}
+  maps: [
+    {
+      width: 15,
+      height: 10,
+      images: {} as { [id: string]: Image },
+    },
+  ],
+};
 export let game = createSlice({
-  name: 'game',
+  name: "game",
   initialState: initialState as typeof initialState,
   reducers: {
     forkGame(state, action: { payload: string }) {
@@ -27,22 +29,43 @@ export let game = createSlice({
     loadGame(state, { payload }: { payload: GameState }) {
       return payload;
     },
-    setDimensions: shared((state: any, { payload }: { payload: { map: number, width: number, height: number } }) => {
-      const { map, width, height } = payload;
+    setDimensions: shared(
+      (
+        state: any,
+        { payload }: { payload: { map: number; width: number; height: number } }
+      ) => {
+        const { map, width, height } = payload;
         state.maps[map].width = width;
         state.maps[map].height = height;
-    }),
-    addImage: shared((state: any, action: { payload: { map: number, img: Image } }) => {
-      const {map, img} = action.payload;
-      state.maps[map].images[img.id] = img;
-    }),
-    updateImage: shared((state: GameState, action: { payload: { map: number, id: string, img: Partial<Image> } }) => {
-      const {map, id, img} = action.payload;
-      state.maps[map].images[id] = {...state.maps[map].images[id], ...img}
-    }),
-    reset: shared((state: any, action: {payload: any}) => state = initialState)
-  }
-})
+      }
+    ),
+    addImage: shared(
+      (state: any, action: { payload: { map: number; img: Image } }) => {
+        const { map, img } = action.payload;
+        state.maps[map].images[img.id] = img;
+      }
+    ),
+    updateImage: shared(
+      (
+        state: GameState,
+        action: { payload: { map: number; id: string; img: Partial<Image> } }
+      ) => {
+        const { map, id, img } = action.payload;
+        state.maps[map].images[id] = { ...state.maps[map].images[id], ...img };
+      }
+    ),
+    reset: shared(
+      (state: any, action: { payload: any }) => (state = initialState)
+    ),
+  },
+});
 
 export default game.reducer;
-export let { setDimensions, addImage, updateImage, reset, loadGame, forkGame } = game.actions;
+export let {
+  setDimensions,
+  addImage,
+  updateImage,
+  reset,
+  loadGame,
+  forkGame,
+} = game.actions;

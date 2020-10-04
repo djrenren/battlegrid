@@ -1,8 +1,8 @@
-// Provides a strongly-typed interface to our local stored variables 
+// Provides a strongly-typed interface to our local stored variables
 
 const defaults = {
   dummy: () => true,
-}
+};
 
 type LocalMap = typeof defaults;
 export const Local = {
@@ -18,6 +18,6 @@ export const Local = {
   },
 
   set<K extends keyof LocalMap>(key: K, v: ReturnType<LocalMap[K]>) {
-    localStorage.setItem(key, JSON.stringify(v))
-  }
-}
+    localStorage.setItem(key, JSON.stringify(v));
+  },
+};

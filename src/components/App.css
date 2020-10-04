@@ -13,7 +13,7 @@
     [toast-top] auto
     [toast-bottom] 1fr
     [viewport-bot]/
-    [viewport-left] minmax(0, 1fr)[viewport-right];
+    [viewport-left] minmax(0, 1fr) [viewport-right];
 }
 
 .App > .grid {
@@ -36,7 +36,7 @@
 }
 .App > .loading {
   grid-area: viewport-top / viewport-left / viewport-bot / viewport-right;
-  background: rgba(100,100,100,0.7);
+  background: rgba(100, 100, 100, 0.7);
   z-index: 1000000;
 }
 .App > #join {
@@ -54,11 +54,11 @@
 }
 
 @media (prefers-color-scheme: dark) {
-:root {
-  --accent: #4242ef;
-  --background: rgb(14,14,14);
-  --background-panel: rgb(50,50,50);
-  --shadow: 0 0 10px #030303;
-  --text: rgb(246,246,246);
-}
+  :root {
+    --accent: #4242ef;
+    --background: rgb(14, 14, 14);
+    --background-panel: rgb(50, 50, 50);
+    --shadow: 0 0 10px #030303;
+    --text: rgb(246, 246, 246);
+  }
 }

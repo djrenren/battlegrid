@@ -5,7 +5,7 @@ export function syncAction(state: RootStore) {
     type: "STATE_SYNC",
     payload: {
       game: state.game,
-      players: state.players
+      players: state.players,
     },
   };
 }
@@ -17,6 +17,6 @@ export function applySync(
   return {
     ...state,
     game: action.payload.game,
-    players: action.payload.players
+    players: action.payload.players,
   };
 }

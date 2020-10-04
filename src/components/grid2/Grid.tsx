@@ -1,15 +1,14 @@
-import { PropsWithChildren, useRef, useState, memo } from "react";
-import { Coord, add, floor, sub, GridSpace } from "../../modules/game/units";
-import React from "react";
-import Overlay from "./Overlay";
-import "./grid.css";
-import { Viewport, ViewportRef } from "./Viewport";
-import useDrop from "../util/useDrop";
-import { GridItem } from "./GridItem";
-import SelectionBox from "./SelectionBox";
-import { useSelector, useDispatch } from "react-redux";
-import { RootStore } from "../../store";
+import React, { memo, PropsWithChildren, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { addImage, Image, updateImage } from "../../modules/game";
+import { add, Coord, floor, GridSpace, sub } from "../../modules/game/units";
+import { RootStore } from "../../store";
+import useDrop from "../util/useDrop";
+import "./grid.css";
+import { GridItem } from "./GridItem";
+import Overlay from "./Overlay";
+import SelectionBox from "./SelectionBox";
+import { Viewport, ViewportRef } from "./Viewport";
 
 export interface GridProps {
   dimensions: [number, number];
@@ -20,12 +19,12 @@ async function getDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     reader.onload = () => resolve(reader.result as string);
     reader.readAsDataURL(file);
-  })
+  });
 }
 
 function extractURLFromHTML(html: string): string | null {
   const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
+  const doc = parser.parseFromString(html, "text/html");
   return doc.querySelector("img")?.src || null;
 }
 export function Grid(props: PropsWithChildren<GridProps>) {
@@ -54,28 +53,29 @@ export function Grid(props: PropsWithChildren<GridProps>) {
         let item = {
           id: "" + Math.random(),
           loc: [Math.floor(coords[0]), Math.floor(coords[1])],
-          dim: [1,1],
+          dim: [1, 1],
           href: s,
         };
-        dispatch(addImage({ map: 0, img: item as unknown as Image }));
+        dispatch(addImage({ map: 0, img: (item as unknown) as Image }));
       };
-      console.log("DataItems", dataItems.length)
+      console.log("DataItems", dataItems.length);
       for (let i = 0; i < dataItems.length; i++) {
-        console.log(dataItems[i].type)
+        console.log(dataItems[i].type);
         if (dataItems[i].type.startsWith("image/")) {
           const dataURL = await getDataURL(dataItems[i].getAsFile()!);
           addItem(dataURL);
           return;
-        } if (dataItems[i].type === "text/html") {
-          dataItems[i].getAsString(s => addItem(extractURLFromHTML(s)!));
+        }
+        if (dataItems[i].type === "text/html") {
+          dataItems[i].getAsString((s) => addItem(extractURLFromHTML(s)!));
           return;
         }
         if (dataItems[i].type === "application/x-moz-file-promise-url") {
-          dataItems[i].getAsString(addItem)
+          dataItems[i].getAsString(addItem);
           return;
         } else if (dataItems[i].kind === "string") {
           let t = dataItems[i].type;
-          dataItems[i].getAsString(s => console.log(t, s));
+          dataItems[i].getAsString((s) => console.log(t, s));
         }
       }
     }
@@ -138,26 +138,29 @@ export function Grid(props: PropsWithChildren<GridProps>) {
         {selection.current && (
           <SelectionBox
             key=""
-            loc={
-              add(selectionOffset!, selection.current.loc) as any
-            }
+            loc={add(selectionOffset!, selection.current.loc) as any}
             dim={selection.current.dim}
             onSelectionDrag={(coord) =>
               setSelectionOffset(
                 floor(
-                  sub(viewport.current!.clientToGrid(coord), selection.current.loc)
+                  sub(
+                    viewport.current!.clientToGrid(coord),
+                    selection.current.loc
+                  )
                 )
               )
             }
             onSelectionDrop={(coord) => {
               const loc = floor(viewport.current!.clientToGrid(coord));
-              dispatch(updateImage({
-                map: 0,
-                id: selection.current.id,
-                img: {
-                  loc
-                }
-              }));
+              dispatch(
+                updateImage({
+                  map: 0,
+                  id: selection.current.id,
+                  img: {
+                    loc,
+                  },
+                })
+              );
               setSelectionOffset(null);
               selection.current = null;
             }}

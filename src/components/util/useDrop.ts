@@ -1,7 +1,7 @@
 import { useState } from "react";
 export interface DragState {
-  x: number,
-  y: number,
+  x: number;
+  y: number;
 }
 
 export default function useDrop(
@@ -14,10 +14,10 @@ export default function useDrop(
     x: 0,
     y: 0,
   });
-  
+
   const dropStub = (ev: DragEvent) => {
     ev.preventDefault();
-    
+
     let [x, y] = [ev.clientX, ev.clientY];
     setDragDepth(0);
     setDragState({
@@ -30,7 +30,7 @@ export default function useDrop(
     ev.preventDefault();
     ev.stopPropagation();
     let [x, y] = [ev.clientX, ev.clientY];
-    setDragDepth(d => d + 1);
+    setDragDepth((d) => d + 1);
     setDragState({
       x,
       y,
@@ -40,20 +40,24 @@ export default function useDrop(
     ev.preventDefault();
     ev.stopPropagation();
     let [x, y] = [ev.clientX, ev.clientY];
-    setDragDepth(d => d - 1);
+    setDragDepth((d) => d - 1);
     setDragState({
       x,
       y,
     });
-    };
+  };
   const onDragOver = (ev: DragEvent) => {
     ev.preventDefault();
-    onDrag(ev.clientX, ev.clientY)
+    onDrag(ev.clientX, ev.clientY);
   };
-    return [dragDepth > 0, dragState, {
-        onDragEnter,
-        onDragLeave,
-        onDragOver,
-        onDrop: dropStub,
-    }]
+  return [
+    dragDepth > 0,
+    dragState,
+    {
+      onDragEnter,
+      onDragLeave,
+      onDragOver,
+      onDrop: dropStub,
+    },
+  ];
 }

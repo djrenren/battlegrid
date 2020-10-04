@@ -1,7 +1,7 @@
-import { v4 as uuid } from "uuid"
+import { v4 as uuid } from "uuid";
 import { Player } from "../modules/players";
 
-// Provides a strongly-typed interface to our session variables 
+// Provides a strongly-typed interface to our session variables
 
 const defaults = {
   // Denotes whether the user is currently hosting
@@ -9,8 +9,8 @@ const defaults = {
   // Denote the session-specific comms_id
   comms_id: uuid,
   // The player object created for this session
-  players: () => ({}) as {[id: string]: Player},
-}
+  players: () => ({} as { [id: string]: Player }),
+};
 
 type SessionMap = typeof defaults;
 export const Session = {
@@ -26,6 +26,6 @@ export const Session = {
   },
 
   set<K extends keyof SessionMap>(key: K, v: ReturnType<SessionMap[K]>) {
-    sessionStorage.setItem(key, JSON.stringify(v))
-  }
-}
+    sessionStorage.setItem(key, JSON.stringify(v));
+  },
+};

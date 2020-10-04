@@ -7,5 +7,5 @@ export function Loading() {
       <div className="double-bounce1"></div>
       <div className="double-bounce2"></div>
     </div>
-  )
+  );
 }
