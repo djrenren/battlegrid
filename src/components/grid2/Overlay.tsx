@@ -7,26 +7,45 @@ export interface OverlayProps {
   onDrop?: (coord: Coord<GridSpace>) => void;
 }
 
-const thickness = 0.05;
-const linecolor = "gray";
+const thickness = 0.025;
 function Overlay(props: OverlayProps) {
   return (
-    <div
-      style={{
-        position: "absolute",
+      <svg viewBox={`0 0 ${props.width + thickness} ${props.height + thickness}`} style={{
+      position: "absolute",
         left: `${-thickness / 2}em`,
-        right: `${-thickness / 2}em`,
         top: `${-thickness / 2}em`,
-        bottom: `${-thickness / 2}em`,
-        background: `
-      repeating-linear-gradient(to right, ${linecolor}, ${linecolor} ${thickness}em, transparent ${thickness}em 1em),
-      repeating-linear-gradient(to bottom, ${linecolor}, ${linecolor} ${thickness}em, transparent ${thickness}em 1em)`,
+        width: `${props.width + thickness}em`,
+        height: `${props.height + thickness}em`,
         pointerEvents: "none",
-        borderRight: `${thickness}em solid ${linecolor}`,
-        borderBottom: `${thickness}em solid ${linecolor}`,
         transition: "position 2s",
-      }}
-    ></div>
+      }}>
+        <defs>
+            <pattern
+              id="grid"
+              width="1"
+              height="1"
+              patternUnits="userSpaceOnUse"
+              shapeRendering="geometricPrecision"
+            >
+              <path
+                d="M 1 0 L 0 0 0 1"
+                fill="none"
+                stroke="gray"
+                strokeWidth={thickness * 2}
+              ></path>
+            </pattern>
+        </defs>
+        <rect
+            style={{
+              pointerEvents: "none",
+          }}
+          x={0}
+          y={0}
+            width={props.width + thickness}
+            height={props.height + thickness}
+            fill="url(#grid)"
+          ></rect>
+        </svg>
   );
 }
 export default React.memo(Overlay);
