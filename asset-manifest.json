@@ -1,22 +1,22 @@
 {
   "files": {
-    "main.css": "/battlegrid/static/css/main.82e4f74d.chunk.css",
-    "main.js": "/battlegrid/static/js/main.726bec15.chunk.js",
-    "main.js.map": "/battlegrid/static/js/main.726bec15.chunk.js.map",
+    "main.css": "/battlegrid/static/css/main.4b78ddb1.chunk.css",
+    "main.js": "/battlegrid/static/js/main.14fb5629.chunk.js",
+    "main.js.map": "/battlegrid/static/js/main.14fb5629.chunk.js.map",
     "runtime-main.js": "/battlegrid/static/js/runtime-main.13e9d5ce.js",
     "runtime-main.js.map": "/battlegrid/static/js/runtime-main.13e9d5ce.js.map",
     "static/js/2.f47bfd8f.chunk.js": "/battlegrid/static/js/2.f47bfd8f.chunk.js",
     "static/js/2.f47bfd8f.chunk.js.map": "/battlegrid/static/js/2.f47bfd8f.chunk.js.map",
     "index.html": "/battlegrid/index.html",
-    "precache-manifest.be70544bc1a77d71d038c2ade13cc07a.js": "/battlegrid/precache-manifest.be70544bc1a77d71d038c2ade13cc07a.js",
+    "precache-manifest.607a6fa4e2ffdfcbe03d2460e83a9841.js": "/battlegrid/precache-manifest.607a6fa4e2ffdfcbe03d2460e83a9841.js",
     "service-worker.js": "/battlegrid/service-worker.js",
-    "static/css/main.82e4f74d.chunk.css.map": "/battlegrid/static/css/main.82e4f74d.chunk.css.map",
+    "static/css/main.4b78ddb1.chunk.css.map": "/battlegrid/static/css/main.4b78ddb1.chunk.css.map",
     "static/js/2.f47bfd8f.chunk.js.LICENSE.txt": "/battlegrid/static/js/2.f47bfd8f.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.13e9d5ce.js",
     "static/js/2.f47bfd8f.chunk.js",
-    "static/css/main.82e4f74d.chunk.css",
-    "static/js/main.726bec15.chunk.js"
+    "static/css/main.4b78ddb1.chunk.css",
+    "static/js/main.14fb5629.chunk.js"
   ]
 }
