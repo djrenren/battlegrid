@@ -22,7 +22,7 @@ export interface ViewportProps {
 
 const min_scale = 0.5;
 const max_scale = 2;
-const scroll_factor = 0.08;
+const scroll_factor = 0.07;
 const scrollbar_px = 15;
 
 export interface ViewportRef {
@@ -40,7 +40,7 @@ function inch(px: number) {
 export const ViewportElem: ForwardRefRenderFunction<
   ViewportRef,
   PropsWithChildren<ViewportProps>
-> = (props, ref) => {
+  > = (props, ref) => {
   const viewport = useRef<HTMLDivElement>(null);
   const [pending_scroll, set_ps] = useState<[number, number] | null>(null);
   const [scale, set_scale] = useState(1);
@@ -92,10 +92,8 @@ export const ViewportElem: ForwardRefRenderFunction<
   );
 
   const onWheel = useCallback(
-    (ev: WheelEvent) => {
+    (ev: React.WheelEvent) => {
       if (!ev.ctrlKey) return;
-      ev.preventDefault();
-      ev.stopPropagation();
       const grid_loc = client_to_grid([ev.clientX, ev.clientY]);
       const delta = Math.max(-1, Math.min(1, -ev.deltaY)) * scroll_factor;
       performZoom2(grid_loc, delta);
@@ -106,9 +104,12 @@ export const ViewportElem: ForwardRefRenderFunction<
   // Set up wheel-based zooming / touchpad pinch-to-zoom on chrome and firefox
   useEffect(() => {
     const v = viewport.current!;
-    v.addEventListener("wheel", onWheel, { passive: false });
-    return () => v.removeEventListener("wheel", onWheel);
-  }, [onWheel]);
+    const prevDefault = (ev: WheelEvent) => ev.ctrlKey && ev.preventDefault();
+    v.addEventListener("wheel", prevDefault, { passive: false });
+    return () => {
+     v.removeEventListener("wheel", prevDefault);
+    }
+  }, []);
 
   let prev_scale = useRef(0);
   useEffect(() => {
@@ -155,6 +156,7 @@ export const ViewportElem: ForwardRefRenderFunction<
       set_ps(null);
     }
   }, [pending_scroll]);
+    
 
   return (
     <div
@@ -163,7 +165,9 @@ export const ViewportElem: ForwardRefRenderFunction<
       style={{
         overflow: "scroll",
         position: "relative",
+        touchAction: "pan-x pan-y"
       }}
+      onWheel={onWheel}
     >
       <div
         className="gridsvg"
