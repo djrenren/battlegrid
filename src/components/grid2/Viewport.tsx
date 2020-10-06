@@ -7,9 +7,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
-  useMemo,
   useRef,
-  useState,
 } from "react";
 import { Coord, GridSpace } from "../../modules/game/units";
 
@@ -40,44 +38,55 @@ function inch(px: number) {
 export const ViewportElem: ForwardRefRenderFunction<
   ViewportRef,
   PropsWithChildren<ViewportProps>
-  > = (props, ref) => {
+> = (props, ref) => {
   const viewport = useRef<HTMLDivElement>(null);
-  const [pending_scroll, set_ps] = useState<[number, number] | null>(null);
-  const [scale, set_scale] = useState(1);
-  const [v_dim, set_v_dim] = useState({
+  const canvas = useRef<HTMLDivElement>(null);
+  const scale = useRef(1);
+  const v_dim = useRef({
     width: 0,
     height: 0,
   });
-  const offset = useMemo(() => {
-    console.log(v_dim);
-    return [
-      Math.max(0, (v_dim.width - px(props.width) * scale) / 2),
-      Math.max(0, (v_dim.height - px(props.height) * scale) / 2),
+  const offset = useRef([0, 0] as [number, number]);
+  const manualRender = useCallback(() => {
+    offset.current = [
+      Math.max(0, (v_dim.current.width - px(props.width) * scale.current) / 2),
+      Math.max(
+        0,
+        (v_dim.current.height - px(props.height) * scale.current) / 2
+      ),
     ];
-  }, [props.width, props.height, v_dim, scale]);
+    canvas.current!.style.transform = `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale.current})`;
+  }, [props.width, props.height]);
 
   const performZoom2 = useCallback(
     (grid_pos: [number, number], proposed_delta: number) => {
       const new_scale = Math.min(
         max_scale,
-        Math.max(min_scale, scale + proposed_delta)
+        Math.max(min_scale, scale.current + proposed_delta)
       );
-      const delta = new_scale - scale;
-      set_scale(new_scale);
+      const delta = new_scale - scale.current;
+      scale.current = new_scale;
       const left = viewport.current!.scrollLeft;
       const top = viewport.current!.scrollTop;
-      set_ps([left + grid_pos[0] * delta, top + grid_pos[1] * delta]);
+      manualRender();
+      viewport.current!.scrollTo(
+        left + grid_pos[0] * delta,
+        top + grid_pos[1] * delta
+      );
     },
-    [scale]
+    [manualRender]
   );
 
   const client_to_grid = useCallback(
     ([x, y]: [number, number]): [number, number] => {
       const vx = x + viewport.current!.scrollLeft;
       const vy = y + viewport.current!.scrollTop;
-      return [(vx - offset[0]) / scale, (vy - offset[1]) / scale];
+      return [
+        (vx - offset.current[0]) / scale.current,
+        (vy - offset.current[1]) / scale.current,
+      ];
     },
-    [offset, scale]
+    [offset]
   );
 
   useImperativeHandle(
@@ -92,7 +101,7 @@ export const ViewportElem: ForwardRefRenderFunction<
   );
 
   const onWheel = useCallback(
-    (ev: React.WheelEvent) => {
+    (ev: WheelEvent) => {
       if (!ev.ctrlKey) return;
       const grid_loc = client_to_grid([ev.clientX, ev.clientY]);
       const delta = Math.max(-1, Math.min(1, -ev.deltaY)) * scroll_factor;
@@ -106,10 +115,12 @@ export const ViewportElem: ForwardRefRenderFunction<
     const v = viewport.current!;
     const prevDefault = (ev: WheelEvent) => ev.ctrlKey && ev.preventDefault();
     v.addEventListener("wheel", prevDefault, { passive: false });
+    v.addEventListener("wheel", onWheel);
     return () => {
-     v.removeEventListener("wheel", prevDefault);
-    }
-  }, []);
+      v.removeEventListener("wheel", prevDefault);
+      v.removeEventListener("wheel", onWheel);
+    };
+  }, [onWheel]);
 
   let prev_scale = useRef(0);
   useEffect(() => {
@@ -123,7 +134,7 @@ export const ViewportElem: ForwardRefRenderFunction<
       ev.preventDefault();
       ev.stopPropagation();
       const grid_loc = client_to_grid([ev.clientX, ev.clientY]);
-      const delta = ev.scale - prev_scale.current;
+      const delta = (ev.scale - prev_scale.current) * 2;
       prev_scale.current = ev.scale;
       console.log(delta);
       performZoom2(grid_loc, delta);
@@ -141,22 +152,15 @@ export const ViewportElem: ForwardRefRenderFunction<
     const viewport_handle = viewport.current!;
     const observer = new ResizeObserver((entries) => {
       const rect = entries.pop()!.contentRect;
-      set_v_dim({
+      v_dim.current = {
         width: rect.width,
         height: rect.height,
-      });
+      };
+      manualRender();
     });
     observer.observe(viewport_handle);
     return () => observer.disconnect();
-  }, []);
-
-  useLayoutEffect(() => {
-    if (pending_scroll) {
-      viewport.current!.scrollTo(...pending_scroll);
-      set_ps(null);
-    }
-  }, [pending_scroll]);
-    
+  }, [manualRender]);
 
   return (
     <div
@@ -165,18 +169,18 @@ export const ViewportElem: ForwardRefRenderFunction<
       style={{
         overflow: "scroll",
         position: "relative",
-        touchAction: "pan-x pan-y"
+        touchAction: "pan-x pan-y",
       }}
-      onWheel={onWheel}
     >
       <div
         className="gridsvg"
+        ref={canvas}
         style={{
           width: `${props.width}in`,
           height: `${props.height}in`,
           fontSize: "1in",
           position: "absolute",
-          transform: `translate(${offset[0]}px, ${offset[1]}px) scale(${scale})`,
+          transform: `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale})`,
           transformOrigin: "0 0",
           overflow: "hidden",
         }}
