@@ -6,11 +6,12 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
   useRef,
+  useState,
 } from "react";
-import { useGesture } from "react-use-gesture";
-import { FullGestureState } from "react-use-gesture/dist/types";
-import { clamp, Coord, GridSpace } from "../../modules/game/units";
+import { Coord, GridSpace } from "../../modules/game/units";
 
 export interface ViewportProps {
   baseScalar: number;
@@ -19,16 +20,21 @@ export interface ViewportProps {
   width: number;
 }
 
-const minScale = 0.2;
-const maxScale = 2;
+const min_scale = 0.5;
+const max_scale = 2;
+const scroll_factor = 0.08;
+const scrollbar_px = 15;
 
 export interface ViewportRef {
   clientToGrid(coord: [number, number]): Coord<GridSpace>;
 }
 
-export interface Transform {
-  scale: number;
-  offset: Coord<GridSpace>;
+function px(inch: number) {
+  return inch * 96;
+}
+
+function inch(px: number) {
+  return px / 96;
 }
 
 export const ViewportElem: ForwardRefRenderFunction<
@@ -36,181 +42,142 @@ export const ViewportElem: ForwardRefRenderFunction<
   PropsWithChildren<ViewportProps>
 > = (props, ref) => {
   const viewport = useRef<HTMLDivElement>(null);
-  const canvas = useRef<HTMLDivElement>(null);
-
-  const transform = useRef<Transform>({
-    scale: 1,
-    offset: [0, 0] as Coord<GridSpace>,
+  const [pending_scroll, set_ps] = useState<[number, number] | null>(null);
+  const [scale, set_scale] = useState(1);
+  const [v_dim, set_v_dim] = useState({
+    width: 0,
+    height: 0,
   });
-
-  const setTransform = (f: (t: Transform) => Transform, apply = true) => {
-    const newT = f(transform.current);
-    const newOffset = [
-      clamp(newT.offset[0], 0, props.width),
-      clamp(newT.offset[1], 0, props.height),
-    ];
-    transform.current = {
-      scale: newT.scale,
-      offset: newOffset as any,
-    };
-
-    if (apply) {
-      viewport.current!.style.fontSize = `${
-        transform.current.scale * props.baseScalar
-      }${props.baseUnit}`;
-      viewport.current!.scrollTo(
-        transform.current.offset[0] * 96 * transform.current.scale,
-        transform.current.offset[1] * transform.current.scale * 96
-      );
-    }
-  };
-  // Does fancy math to zoom around a mouse location. Location given relative to viewport
-  const performZoom = (
-    origin: Coord<GridSpace>,
-    oldScale: number,
-    newScale: number
-  ) => {
-    const delta = clamp(newScale - oldScale, -0.05, 0.05);
-    newScale = clamp(oldScale + delta, minScale, maxScale);
-    // if we don't return early, we'll end up sliding around
-    if (newScale === oldScale) {
-      return;
-    }
-    setTransform((t) => {
-      return {
-        scale: newScale,
-        offset: [
-          t.offset[0] - ((t.offset[0] - origin[0]) * delta) / oldScale,
-          t.offset[1] - ((t.offset[1] - origin[1]) * delta) / oldScale,
-        ] as Coord<GridSpace>,
-      };
-    });
-  };
-
-  // const drag = useDrag((state) => {
-  //   if (state.buttons !== 1) {
-  //     return;
-  //   }
-  //   setTransform(t => {
-  //     ;
-  //     let o = clientToGrid(sub(state.initial as Offset<ViewSpace>, state.delta as Offset<ViewSpace>));
-  //     o = coord_clamp(
-  //       o,
-  //       [0, 0],
-  //       [
-  //         props.width, props.height
-  //       ]
-  //     );
-  //     return {
-  //       ...t,
-  //       offset: o
-  //     };
-  //   });
-  // });
-
-  const initialScale = useRef(1);
-  const pinch = useGesture(
-    {
-      onPinchEnd: () => {
-        initialScale.current = transform.current.scale;
-      },
-      onPinch: (state: FullGestureState<"pinch">) => {
-        state.event?.preventDefault();
-        state.event?.stopPropagation();
-        //@ts-ignore
-        const deltaY = state.event?.deltaY;
-        //@ts-ignore
-        const client_origin = state.origin || [
-          //@ts-ignore
-          state.event!.clientX,
-          //@ts-ignore
-          state.event!.clientY,
-        ];
-        const origin = clientToGrid(client_origin);
-        let newScale: number;
-        if (deltaY) {
-          let delta = -1 * deltaY * 0.05 * transform.current.scale;
-          newScale = transform.current.scale + delta;
-        } else {
-          newScale = state.da[0] / state.initial[0] - 1 + initialScale.current!;
-        }
-        performZoom(origin, transform.current.scale, newScale);
-      },
-      onPinchStart: useCallback(
-        (state: FullGestureState<"pinch">) => {
-          state.event?.preventDefault();
-          state.event?.stopPropagation();
-          initialScale.current = transform.current.scale;
-        },
-        [transform]
-      ),
-    },
-    {
-      domTarget: viewport,
-      eventOptions: {
-        passive: false,
-        capture: true,
-      },
-    }
-  );
-  //@ts-ignore
-  useEffect(pinch, [pinch]);
-
-  const clientToGrid = (coord: [number, number]): Coord<GridSpace> => {
-    const rect = canvas.current!.getBoundingClientRect();
+  const offset = useMemo(() => {
+    console.log(v_dim);
     return [
-      (coord[0] - rect.left) / 96 / transform.current.scale,
-      (coord[1] - rect.top) / 96 / transform.current.scale,
-    ] as Coord<GridSpace>;
-  };
+      Math.max(0, (v_dim.width - px(props.width) * scale) / 2),
+      Math.max(0, (v_dim.height - px(props.height) * scale) / 2),
+    ];
+  }, [props.width, props.height, v_dim, scale]);
+
+  const performZoom2 = useCallback(
+    (grid_pos: [number, number], proposed_delta: number) => {
+      const new_scale = Math.min(
+        max_scale,
+        Math.max(min_scale, scale + proposed_delta)
+      );
+      const delta = new_scale - scale;
+      set_scale(new_scale);
+      const left = viewport.current!.scrollLeft;
+      const top = viewport.current!.scrollTop;
+      set_ps([left + grid_pos[0] * delta, top + grid_pos[1] * delta]);
+    },
+    [scale]
+  );
+
+  const client_to_grid = useCallback(
+    ([x, y]: [number, number]): [number, number] => {
+      const vx = x + viewport.current!.scrollLeft;
+      const vy = y + viewport.current!.scrollTop;
+      return [(vx - offset[0]) / scale, (vy - offset[1]) / scale];
+    },
+    [offset, scale]
+  );
 
   useImperativeHandle(
     ref,
     () => ({
-      clientToGrid,
+      //@ts-ignore
+      clientToGrid: (...args) => {
+        return client_to_grid(...args).map(inch);
+      },
     }),
-    []
+    [client_to_grid]
   );
 
-  // Wheel must come first to prevent its use by pinch,
-  // because the logic for how to zoom on each is different
-  const scroll = useGesture({
-    onScrollEnd(state: FullGestureState<"scroll">) {
-      setTransform(
-        (t) => ({
-          ...t,
-          offset: [
-            viewport.current!.scrollLeft / 96 / transform.current.scale,
-            viewport.current!.scrollTop / 96 / transform.current.scale,
-          ] as any,
-        }),
-        false
-      );
+  const onWheel = useCallback(
+    (ev: WheelEvent) => {
+      if (!ev.ctrlKey) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const grid_loc = client_to_grid([ev.clientX, ev.clientY]);
+      const delta = Math.max(-1, Math.min(1, -ev.deltaY)) * scroll_factor;
+      performZoom2(grid_loc, delta);
     },
-  });
+    [performZoom2, client_to_grid]
+  );
+
+  // Set up wheel-based zooming / touchpad pinch-to-zoom on chrome and firefox
+  useEffect(() => {
+    const v = viewport.current!;
+    v.addEventListener("wheel", onWheel, { passive: false });
+    return () => v.removeEventListener("wheel", onWheel);
+  }, [onWheel]);
+
+  let prev_scale = useRef(0);
+  useEffect(() => {
+    const v = viewport.current!;
+    const onGestureStart = (ev: any) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      prev_scale.current = ev.scale;
+    };
+    const onGestureChange = (ev: any) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const grid_loc = client_to_grid([ev.clientX, ev.clientY]);
+      const delta = ev.scale - prev_scale.current;
+      prev_scale.current = ev.scale;
+      console.log(delta);
+      performZoom2(grid_loc, delta);
+    };
+
+    v.addEventListener("gesturestart", onGestureStart);
+    v.addEventListener("gesturechange", onGestureChange);
+    return () => {
+      v.removeEventListener("gesturestart", onGestureStart);
+      v.removeEventListener("gesturechange", onGestureChange);
+    };
+  }, [client_to_grid, performZoom2, scale]);
+
+  useLayoutEffect(() => {
+    const viewport_handle = viewport.current!;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries.pop()!.contentRect;
+      set_v_dim({
+        width: rect.width,
+        height: rect.height,
+      });
+    });
+    observer.observe(viewport_handle);
+    return () => observer.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    if (pending_scroll) {
+      viewport.current!.scrollTo(...pending_scroll);
+      set_ps(null);
+    }
+  }, [pending_scroll]);
+
   return (
     <div
       className="viewport"
-      {...scroll()}
       ref={viewport}
       style={{
-        fontSize: `${transform.current.scale * props.baseScalar}${
-          props.baseUnit
-        }`,
+        overflow: "scroll",
+        position: "relative",
       }}
     >
-      <div className="padding">
-        <div
-          ref={canvas}
-          className="gridsvg"
-          style={{
-            width: `${props.width}em`,
-            height: `${props.height}em`,
-            position: "relative",
-          }}
-        >
-          {props.children}
-        </div>
+      <div
+        className="gridsvg"
+        style={{
+          width: `${props.width}in`,
+          height: `${props.height}in`,
+          fontSize: "1in",
+          position: "absolute",
+          transform: `translate(${offset[0]}px, ${offset[1]}px) scale(${scale})`,
+          transformOrigin: "0 0",
+          overflow: "hidden",
+        }}
+      >
+        {props.children}
       </div>
     </div>
   );
