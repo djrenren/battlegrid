@@ -12,6 +12,7 @@ function SelectionBox(props: SelectionProps) {
   // Represents the distance in client pixels from selection element origin to click point
   const onPointerMove = useCallback(
     (ev: PointerEvent<HTMLElement>) => {
+      console.log("MOVE!");
       if (initialLoc.current || ev.type === "mouse") {
         //ev.preventDefault();
         ev.stopPropagation();
@@ -52,6 +53,8 @@ function SelectionBox(props: SelectionProps) {
         boxShadow: "0 0 10px highlight",
       }}
       onPointerDown={(ev) => {
+        console.log("DOWN!");
+
         ev.preventDefault();
         ev.stopPropagation();
 

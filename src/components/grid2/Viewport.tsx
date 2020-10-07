@@ -2,33 +2,25 @@ import React, {
   forwardRef,
   ForwardRefRenderFunction,
   memo,
+  MutableRefObject,
   PropsWithChildren,
   useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
-  useRef,
+  useRef
 } from "react";
 import { Coord, GridSpace } from "../../modules/game/units";
 
-export interface ViewportProps {
-  baseScalar: number;
-  baseUnit: string;
-  height: number;
-  width: number;
-}
+export interface ViewportProps {}
 
-const min_scale = 0.5;
+const min_scale = 0.1;
 const max_scale = 2;
 const scroll_factor = 0.07;
-const scrollbar_px = 15;
+//const scrollbar_px = 15;
 
 export interface ViewportRef {
   clientToGrid(coord: [number, number]): Coord<GridSpace>;
-}
-
-function px(inch: number) {
-  return inch * 96;
 }
 
 function inch(px: number) {
@@ -46,24 +38,30 @@ export const ViewportElem: ForwardRefRenderFunction<
     width: 0,
     height: 0,
   });
+  const c_dim = useRef({
+    width: 0,
+    height: 0,
+  })
   const offset = useRef([0, 0] as [number, number]);
-  const manualRender = useCallback(() => {
+  
+  const manualRender = () => {
     offset.current = [
-      Math.max(0, (v_dim.current.width - px(props.width) * scale.current) / 2),
+      Math.max(0, (v_dim.current.width - c_dim.current.width * scale.current) / 2),
       Math.max(
         0,
-        (v_dim.current.height - px(props.height) * scale.current) / 2
+        (v_dim.current.height - c_dim.current.height * scale.current) / 2
       ),
     ];
+    console.log("offset", offset)
     canvas.current!.style.transform = `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale.current})`;
-  }, [props.width, props.height]);
-
+  }
   const performZoom2 = useCallback(
     (grid_pos: [number, number], proposed_delta: number) => {
       const new_scale = Math.min(
         max_scale,
         Math.max(min_scale, scale.current + proposed_delta)
       );
+      console.log(new_scale);
       const delta = new_scale - scale.current;
       scale.current = new_scale;
       const left = viewport.current!.scrollLeft;
@@ -74,7 +72,7 @@ export const ViewportElem: ForwardRefRenderFunction<
         top + grid_pos[1] * delta
       );
     },
-    [manualRender]
+    []
   );
 
   const client_to_grid = useCallback(
@@ -149,18 +147,26 @@ export const ViewportElem: ForwardRefRenderFunction<
   }, [client_to_grid, performZoom2, scale]);
 
   useLayoutEffect(() => {
-    const viewport_handle = viewport.current!;
-    const observer = new ResizeObserver((entries) => {
+    const size_recorder = (dest: MutableRefObject<any>, name: string) =>
+      new ResizeObserver(entries => {
       const rect = entries.pop()!.contentRect;
-      v_dim.current = {
+      dest.current = {
         width: rect.width,
         height: rect.height,
       };
+        console.log("RESIZE!" + name, dest.current);
       manualRender();
-    });
-    observer.observe(viewport_handle);
-    return () => observer.disconnect();
-  }, [manualRender]);
+      });      
+    const v_observer = size_recorder(v_dim, "viewport");
+    v_observer.observe(viewport.current!);
+    const c_observer = size_recorder(c_dim, "canvas");
+    c_observer.observe(canvas.current!);
+    console.log("Canvas: ", canvas.current!);
+    return () => {
+      v_observer.disconnect();
+      c_observer.disconnect();
+    }
+  }, []);
 
   return (
     <div
@@ -176,13 +182,11 @@ export const ViewportElem: ForwardRefRenderFunction<
         className="gridsvg"
         ref={canvas}
         style={{
-          width: `${props.width}in`,
-          height: `${props.height}in`,
-          fontSize: "1in",
           position: "absolute",
+          fontSize: "1in",
           transform: `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale})`,
           transformOrigin: "0 0",
-          overflow: "hidden",
+          transition: "transform",
         }}
       >
         {props.children}

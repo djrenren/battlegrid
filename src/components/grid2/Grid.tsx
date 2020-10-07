@@ -89,11 +89,12 @@ export function Grid(props: PropsWithChildren<GridProps>) {
     <div className="grid" {...dragHandlers} ref={dropLayer}>
       <Viewport
         ref={viewport}
-        baseScalar={1}
-        baseUnit="in"
-        width={props.dimensions[0]}
-        height={props.dimensions[1]}
       >
+        <div style={{
+          width: props.dimensions[0] + "in",
+          height: props.dimensions[1] + "in",
+          position: "relative",
+        }}>
         {dragging ? (
           <div
             ref={hoverHint}
@@ -165,7 +166,8 @@ export function Grid(props: PropsWithChildren<GridProps>) {
               selection.current = null;
             }}
           />
-        )}
+          )}
+        </div>
       </Viewport>
     </div>
   );
