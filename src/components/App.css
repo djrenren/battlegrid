@@ -17,7 +17,7 @@
 }
 
 .App > .grid {
-  grid-area: viewport-top / viewport-left / viewport-bot / viewport-right;
+  grid-area: toolbar-bot / viewport-left / viewport-bot / viewport-right;
   position: relative;
   z-index: 1;
 }

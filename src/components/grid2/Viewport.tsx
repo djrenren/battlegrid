@@ -8,7 +8,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
-  useRef
+  useRef,
 } from "react";
 import { Coord, GridSpace } from "../../modules/game/units";
 
@@ -33,6 +33,13 @@ export const ViewportElem: ForwardRefRenderFunction<
 > = (props, ref) => {
   const viewport = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
+
+  // v_loc is not updated after creation. Do not move the viewport
+  // and expect it to work
+  const v_loc = useRef({
+    x: 0,
+    y: 0,
+  });
   const scale = useRef(1);
   const v_dim = useRef({
     width: 0,
@@ -41,20 +48,24 @@ export const ViewportElem: ForwardRefRenderFunction<
   const c_dim = useRef({
     width: 0,
     height: 0,
-  })
+  });
+
   const offset = useRef([0, 0] as [number, number]);
-  
+
   const manualRender = () => {
     offset.current = [
-      Math.max(0, (v_dim.current.width - c_dim.current.width * scale.current) / 2),
+      Math.max(
+        0,
+        (v_dim.current.width - c_dim.current.width * scale.current) / 2
+      ),
       Math.max(
         0,
         (v_dim.current.height - c_dim.current.height * scale.current) / 2
       ),
     ];
-    console.log("offset", offset)
+    console.log("offset", offset);
     canvas.current!.style.transform = `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale.current})`;
-  }
+  };
   const performZoom2 = useCallback(
     (grid_pos: [number, number], proposed_delta: number) => {
       const new_scale = Math.min(
@@ -77,8 +88,8 @@ export const ViewportElem: ForwardRefRenderFunction<
 
   const client_to_grid = useCallback(
     ([x, y]: [number, number]): [number, number] => {
-      const vx = x + viewport.current!.scrollLeft;
-      const vy = y + viewport.current!.scrollTop;
+      const vx = x - v_loc.current.x + viewport.current!.scrollLeft;
+      const vy = y - v_loc.current.y + viewport.current!.scrollTop;
       return [
         (vx - offset.current[0]) / scale.current,
         (vy - offset.current[1]) / scale.current,
@@ -147,16 +158,23 @@ export const ViewportElem: ForwardRefRenderFunction<
   }, [client_to_grid, performZoom2, scale]);
 
   useLayoutEffect(() => {
+    const rect = viewport.current!.getBoundingClientRect();
+    v_loc.current = {
+      x: rect.x,
+      y: rect.y,
+    };
     const size_recorder = (dest: MutableRefObject<any>, name: string) =>
-      new ResizeObserver(entries => {
-      const rect = entries.pop()!.contentRect;
-      dest.current = {
-        width: rect.width,
-        height: rect.height,
-      };
+      new ResizeObserver((entries) => {
+        const rect = entries.pop()!.contentRect;
+        dest.current = {
+          width: rect.width,
+          height: rect.height,
+          x: rect.x,
+          y: rect.y,
+        };
         console.log("RESIZE!" + name, dest.current);
-      manualRender();
-      });      
+        manualRender();
+      });
     const v_observer = size_recorder(v_dim, "viewport");
     v_observer.observe(viewport.current!);
     const c_observer = size_recorder(c_dim, "canvas");
@@ -165,7 +183,7 @@ export const ViewportElem: ForwardRefRenderFunction<
     return () => {
       v_observer.disconnect();
       c_observer.disconnect();
-    }
+    };
   }, []);
 
   return (
@@ -173,7 +191,7 @@ export const ViewportElem: ForwardRefRenderFunction<
       className="viewport"
       ref={viewport}
       style={{
-        overflow: "scroll",
+        overflow: "auto",
         position: "relative",
         touchAction: "pan-x pan-y",
       }}

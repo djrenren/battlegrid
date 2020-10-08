@@ -87,85 +87,85 @@ export function Grid(props: PropsWithChildren<GridProps>) {
 
   return (
     <div className="grid" {...dragHandlers} ref={dropLayer}>
-      <Viewport
-        ref={viewport}
-      >
-        <div style={{
-          width: props.dimensions[0] + "in",
-          height: props.dimensions[1] + "in",
-          position: "relative",
-        }}>
-        {dragging ? (
-          <div
-            ref={hoverHint}
-            key="hover"
-            style={{
-              position: "absolute",
-              left: Math.floor(gridDrag![0]) + "em",
-              top: Math.floor(gridDrag![1]) + "em",
-              width: "1em",
-              height: "1em",
-              background: "#aaa",
-            }}
-          ></div>
-        ) : null}
-        {Object.values(items).map((i) => (
-          <GridItem
-            key={i.id}
-            loc={
-              add(
-                i.loc,
-                selection.current?.id === i.id
-                  ? (selectionOffset as any)
-                  : [0, 0]
-              ) as any
-            }
-            dim={i.dim}
-            onPointerDown={(ev) => {
-              ev.preventDefault();
-              selection.current = i;
-              setSelectionOffset([0, 0]);
-            }}
-          >
-            <img
-              onDragStart={(ev) => ev.preventDefault()}
-              alt=""
-              src={i.href}
-              style={{ display: "block", width: "100%", height: "100%" }}
-            />
-          </GridItem>
-        ))}
-        <Overlay width={props.dimensions[0]} height={props.dimensions[1]} />
-        {selection.current && (
-          <SelectionBox
-            key=""
-            loc={add(selectionOffset!, selection.current.loc) as any}
-            dim={selection.current.dim}
-            onSelectionDrag={(coord) =>
-              setSelectionOffset(
-                floor(
-                  sub(
-                    viewport.current!.clientToGrid(coord),
-                    selection.current.loc
+      <Viewport ref={viewport}>
+        <div
+          style={{
+            width: props.dimensions[0] + "in",
+            height: props.dimensions[1] + "in",
+            position: "relative",
+          }}
+        >
+          {dragging ? (
+            <div
+              ref={hoverHint}
+              key="hover"
+              style={{
+                position: "absolute",
+                left: Math.floor(gridDrag![0]) + "em",
+                top: Math.floor(gridDrag![1]) + "em",
+                width: "1em",
+                height: "1em",
+                background: "#aaa",
+              }}
+            ></div>
+          ) : null}
+          {Object.values(items).map((i) => (
+            <GridItem
+              key={i.id}
+              loc={
+                add(
+                  i.loc,
+                  selection.current?.id === i.id
+                    ? (selectionOffset as any)
+                    : [0, 0]
+                ) as any
+              }
+              dim={i.dim}
+              onPointerDown={(ev) => {
+                ev.preventDefault();
+                selection.current = i;
+                setSelectionOffset([0, 0]);
+              }}
+            >
+              <img
+                onDragStart={(ev) => ev.preventDefault()}
+                alt=""
+                src={i.href}
+                style={{ display: "block", width: "100%", height: "100%" }}
+              />
+            </GridItem>
+          ))}
+          <Overlay width={props.dimensions[0]} height={props.dimensions[1]} />
+          {selection.current && (
+            <SelectionBox
+              key=""
+              loc={add(selectionOffset!, selection.current.loc) as any}
+              dim={selection.current.dim}
+              onSelectionDrag={(coord) =>
+                setSelectionOffset(
+                  floor(
+                    sub(
+                      viewport.current!.clientToGrid(coord),
+                      selection.current.loc
+                    )
                   )
                 )
-              )
-            }
-            onSelectionDrop={(coord) => {
-              const loc = floor(viewport.current!.clientToGrid(coord));
-              dispatch(
-                updateImage({
-                  map: 0,
-                  id: selection.current.id,
-                  img: {
-                    loc,
-                  },
-                })
-              );
-              setSelectionOffset(null);
-              selection.current = null;
-            }}
-          />
+              }
+              onSelectionDrop={(coord) => {
+                const loc = floor(viewport.current!.clientToGrid(coord));
+                dispatch(
+                  updateImage({
+                    map: 0,
+                    id: selection.current.id,
+                    img: {
+                      loc,
+                    },
+                  })
+                );
+                setSelectionOffset(null);
+                selection.current = null;
+              }}
+            />
           )}
         </div>
       </Viewport>
