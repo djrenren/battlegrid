@@ -1,6 +1,6 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { shared } from "../comms";
-import { Coord, GridSpace, Offset } from "./units";
+import { add, Coord, GridSpace, Offset } from "./units";
 
 export type Image = {
   id: string;
@@ -54,6 +54,13 @@ export let game = createSlice({
         state.maps[map].images[id] = { ...state.maps[map].images[id], ...img };
       }
     ),
+    moveImage: shared(
+      (state: GameState,
+        action: PayloadAction<{ map: number, id: string, offset: [number, number] }>) => {
+        const { map, id, offset } = action.payload;
+        state.maps[map].images[id].loc = add(state.maps[map].images[id].loc, offset as any) as any;
+      }
+    ),
     reset: shared(
       (state: any, action: { payload: any }) => (state = initialState)
     ),
@@ -68,4 +75,5 @@ export let {
   reset,
   loadGame,
   forkGame,
+  moveImage,
 } = game.actions;
