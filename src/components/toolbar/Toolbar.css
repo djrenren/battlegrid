@@ -26,12 +26,6 @@
   font-weight: bold;
   font-size: inherit;
 }
-.toolbar > button {
-  border-left: 1px solid gray !important;
-}
-.toolbar > button:first-child {
-  border-left: none !important;
-}
 
 .toolbar > * {
   height: 100%;

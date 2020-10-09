@@ -12,14 +12,12 @@ function Toolbar(props: PropsWithChildren<ToolbarProps>) {
   let dispatch = useDispatch();
   return (
     <div className="toolbar">
-      <div style={{}}>
-        {comms.status === "offline" && (
-          <button onClick={() => dispatch(host())}>Host</button>
-        )}
-        {comms.status === "pending" && <Loading />}
+      {comms.status === "offline" && (
+        <button onClick={() => dispatch(host())}>Host</button>
+      )}
+      {comms.status === "pending" && <Loading />}
 
-        {comms.hosting && <Players />}
-      </div>
+      {comms.status === "connected" && <Players />}
     </div>
   );
 }
