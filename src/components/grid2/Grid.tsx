@@ -72,39 +72,41 @@ export function Grid(props: PropsWithChildren<GridProps>) {
       );
       setSelectionOffset([0, 0]);
     },
-    [dispatch, items, selection, selectionOffset] 
+    [dispatch, items, selection, selectionOffset]
   );
 
-  const onKeyPress = useCallback((ev: KeyboardEvent) => {
-    if (selection.length === 0) return;
-    const resource = { map: 0, id: selection[0] };
-    switch (ev.key) {
-      case 'ArrowRight':
-        dispatch(moveImage({ ...resource, offset: [1, 0] }))
-        ev.preventDefault();
-        break;
-      case 'ArrowLeft':
-        dispatch(moveImage({ ...resource, offset: [-1, 0] }))
-        ev.preventDefault();
-        break;
-      case 'ArrowUp':
-        dispatch(moveImage({ ...resource, offset: [0, -1] }))
-        ev.preventDefault();
-        break;
-      case 'ArrowDown':
-        dispatch(moveImage({ ...resource, offset: [0, 1] }))
-        ev.preventDefault();
-        break;
-        
-    }
-  }, [dispatch, selection])
+  const onKeyPress = useCallback(
+    (ev: KeyboardEvent) => {
+      if (selection.length === 0) return;
+      const resource = { map: 0, id: selection[0] };
+      switch (ev.key) {
+        case "ArrowRight":
+          dispatch(moveImage({ ...resource, offset: [1, 0] }));
+          ev.preventDefault();
+          break;
+        case "ArrowLeft":
+          dispatch(moveImage({ ...resource, offset: [-1, 0] }));
+          ev.preventDefault();
+          break;
+        case "ArrowUp":
+          dispatch(moveImage({ ...resource, offset: [0, -1] }));
+          ev.preventDefault();
+          break;
+        case "ArrowDown":
+          dispatch(moveImage({ ...resource, offset: [0, 1] }));
+          ev.preventDefault();
+          break;
+      }
+    },
+    [dispatch, selection]
+  );
 
   useEffect(() => {
-    document.addEventListener('keydown', onKeyPress, {capture: true});
+    document.addEventListener("keydown", onKeyPress, { capture: true });
     return () => {
-      document.removeEventListener('keydown', onKeyPress, {capture: true})
-    }
-  }, [onKeyPress])
+      document.removeEventListener("keydown", onKeyPress, { capture: true });
+    };
+  }, [onKeyPress]);
 
   return (
     <div className="grid">

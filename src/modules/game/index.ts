@@ -55,10 +55,19 @@ export let game = createSlice({
       }
     ),
     moveImage: shared(
-      (state: GameState,
-        action: PayloadAction<{ map: number, id: string, offset: [number, number] }>) => {
+      (
+        state: GameState,
+        action: PayloadAction<{
+          map: number;
+          id: string;
+          offset: [number, number];
+        }>
+      ) => {
         const { map, id, offset } = action.payload;
-        state.maps[map].images[id].loc = add(state.maps[map].images[id].loc, offset as any) as any;
+        state.maps[map].images[id].loc = add(
+          state.maps[map].images[id].loc,
+          offset as any
+        ) as any;
       }
     ),
     reset: shared(

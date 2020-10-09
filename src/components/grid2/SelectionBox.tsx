@@ -1,4 +1,10 @@
-import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { ClientSpace, Coord, coord } from "../../modules/game/units";
 import { GridItem, GridItemProps } from "./GridItem";
 
@@ -57,9 +63,9 @@ function SelectionBox(props: SelectionProps) {
     item.addEventListener("pointermove", onPointerMove, { capture });
     item.addEventListener("pointerup", onPointerUp, { capture });
     return () => {
-      item.removeEventListener("pointerdown", preventDefault, {capture});
-      item.removeEventListener("pointermove", onPointerMove, {capture});
-      item.removeEventListener("pointerup", onPointerUp, {capture});
+      item.removeEventListener("pointerdown", preventDefault, { capture });
+      item.removeEventListener("pointermove", onPointerMove, { capture });
+      item.removeEventListener("pointerup", onPointerUp, { capture });
     };
   }, [onPointerMove, onPointerUp]);
   return (

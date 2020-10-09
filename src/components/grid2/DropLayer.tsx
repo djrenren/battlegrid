@@ -1,5 +1,4 @@
-import React, { PropsWithChildren, useContext } from "react";
-import { useRef } from "react";
+import React, { PropsWithChildren, useContext, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { addImage, Image } from "../../modules/game";
 import useDrop from "../util/useDrop";
@@ -18,7 +17,6 @@ function extractURLFromHTML(html: string): string | null {
   const doc = parser.parseFromString(html, "text/html");
   return doc.querySelector("img")?.src || null;
 }
-
 
 // Implements the drag and drop image functionality!
 export function DropLayer(props: PropsWithChildren<{}>) {
@@ -47,7 +45,7 @@ export function DropLayer(props: PropsWithChildren<{}>) {
           dim: [1, 1],
           href: s,
         };
-        dispatch(addImage({ map: 0, img: (item as unknown) as Image}));
+        dispatch(addImage({ map: 0, img: (item as unknown) as Image }));
       };
       console.log("DataItems", dataItems.length);
       for (let i = 0; i < dataItems.length; i++) {
@@ -87,22 +85,21 @@ export function DropLayer(props: PropsWithChildren<{}>) {
         bottom: 0,
       }}
     >
-          {dragging ? (
-            <div
-              ref={hoverHint}
-              key="hover"
-              style={{
-                position: "absolute",
-                left: Math.floor(gridDrag![0]) + "em",
-                top: Math.floor(gridDrag![1]) + "em",
-                width: "1em",
-                height: "1em",
-                background: "#aaa",
-              }}
-            ></div>
+      {dragging ? (
+        <div
+          ref={hoverHint}
+          key="hover"
+          style={{
+            position: "absolute",
+            left: Math.floor(gridDrag![0]) + "em",
+            top: Math.floor(gridDrag![1]) + "em",
+            width: "1em",
+            height: "1em",
+            background: "#aaa",
+          }}
+        ></div>
       ) : null}
       {props.children}
-    
-    </div>)
-
+    </div>
+  );
 }

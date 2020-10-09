@@ -205,7 +205,7 @@ export const ViewportElem: ForwardRefRenderFunction<
           transform: `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale})`,
           transformOrigin: "0 0",
           transition: "transform",
-          overflow: "visible"
+          overflow: "visible",
         }}
       >
         {props.children}
