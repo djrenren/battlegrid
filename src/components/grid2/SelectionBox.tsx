@@ -29,7 +29,6 @@ function SelectionBox(props: SelectionProps) {
         (ev.target as any).setPointerCapture(ev.pointerId);
       }
       //ev.preventDefault();
-      ev.stopPropagation();
 
       onSelectionDrag(coord(ev));
     },

@@ -11,6 +11,7 @@ import React, {
   useRef,
 } from "react";
 import { Coord, GridSpace } from "../../modules/game/units";
+import { usePinch } from "../util/usePinch";
 
 export interface ViewportProps {}
 
@@ -30,8 +31,8 @@ function inch(px: number) {
 export const ViewportElem: ForwardRefRenderFunction<
   ViewportRef,
   PropsWithChildren<ViewportProps>
-> = (props, ref) => {
-  const viewport = useRef<HTMLDivElement>(null);
+  > = (props, ref) => {
+    const viewport = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
 
   // v_loc is not updated after creation. Do not move the viewport
@@ -131,31 +132,39 @@ export const ViewportElem: ForwardRefRenderFunction<
     };
   }, [onWheel]);
 
-  let prev_scale = useRef(0);
-  useEffect(() => {
-    const v = viewport.current!;
-    const onGestureStart = (ev: any) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      prev_scale.current = ev.scale;
-    };
-    const onGestureChange = (ev: any) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const grid_loc = client_to_grid([ev.clientX, ev.clientY]);
-      const delta = (ev.scale - prev_scale.current) * 2;
-      prev_scale.current = ev.scale;
-      console.log(delta);
-      performZoom2(grid_loc, delta);
-    };
 
-    v.addEventListener("gesturestart", onGestureStart);
-    v.addEventListener("gesturechange", onGestureChange);
-    return () => {
-      v.removeEventListener("gesturestart", onGestureStart);
-      v.removeEventListener("gesturechange", onGestureChange);
-    };
-  }, [client_to_grid, performZoom2, scale]);
+  let prev_scale = useRef(0);
+    usePinch(viewport, {
+      onPinchStart(ev) {
+        prev_scale.current = ev.scale;
+      },
+      onPinch(ev) {
+        const grid_loc = client_to_grid(ev.clientOrigin);
+        const delta = (ev.scale - prev_scale.current) * 2;
+        prev_scale.current = ev.scale;
+        console.log(delta);
+        performZoom2(grid_loc, delta);
+      }
+    });
+  // useEffect(() => {
+  //   const v = viewport.current!;
+  //   const onGestureStart = (ev: any) => {
+  //     ev.preventDefault();
+  //     ev.stopPropagation();
+  //     prev_scale.current = ev.scale;
+  //   };
+  //   const onGestureChange = (ev: any) => {
+  //     ev.preventDefault();
+  //     ev.stopPropagation();
+  //   };
+
+  //   v.addEventListener("gesturestart", onGestureStart);
+  //   v.addEventListener("gesturechange", onGestureChange);
+  //   return () => {
+  //     v.removeEventListener("gesturestart", onGestureStart);
+  //     v.removeEventListener("gesturechange", onGestureChange);
+  //   };
+  // }, [client_to_grid, performZoom2, scale]);
 
   useLayoutEffect(() => {
     const rect = viewport.current!.getBoundingClientRect();
