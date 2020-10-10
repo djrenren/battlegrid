@@ -173,7 +173,7 @@ export const ViewportElem: ForwardRefRenderFunction<
   });
 
   useEffect(() => {
-    let drag_start = [0, 0];
+    let drag_start = null as [number, number] | null;
     const vp = viewport.current!;
     const start = (ev: PointerEvent) => {
       if (ev.ctrlKey) {
@@ -184,7 +184,7 @@ export const ViewportElem: ForwardRefRenderFunction<
       }
     };
     const move = (ev: PointerEvent) => {
-      if (ev.ctrlKey && ev.buttons === 1) {
+      if (ev.ctrlKey && ev.buttons === 1 && drag_start) {
         ev.preventDefault();
         ev.stopPropagation();
         viewport.current!.scrollBy(
