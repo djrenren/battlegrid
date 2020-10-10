@@ -20,7 +20,7 @@ export interface ViewportProps {
 
 const min_scale = 0.1;
 const max_scale = 2;
-const scroll_factor = 0.07;
+const scroll_factor = 0.06;
 //const scrollbar_px = 15;
 
 export interface ViewportRef {
