@@ -73,7 +73,7 @@ function SelectionBox(props: SelectionProps) {
       loc={props.loc}
       dim={props.dim}
       style={{
-        border: "2px solid blue",
+        border: "1px solid blue",
         boxShadow: "0 0 4px blue",
         overflow: "visible",
       }}
@@ -88,6 +88,8 @@ function SelectionBox(props: SelectionProps) {
           height: `${handleSize}px`,
           background: "blue",
           cursor: "nwse-resize",
+          border: "1px solid white",
+          boxSizing: "border-box"
         }}
       ></div>
       <div
@@ -100,6 +102,7 @@ function SelectionBox(props: SelectionProps) {
           height: `${handleSize}px`,
           background: "blue",
           cursor: "nesw-resize",
+          border: "1px solid white"
         }}
       ></div>
       <div
@@ -112,6 +115,7 @@ function SelectionBox(props: SelectionProps) {
           height: `${handleSize}px`,
           background: "blue",
           cursor: "nesw-resize",
+          border: "1px solid white"
         }}
       ></div>
       <div
@@ -124,6 +128,7 @@ function SelectionBox(props: SelectionProps) {
           height: `${handleSize}px`,
           background: "blue",
           cursor: "nwse-resize",
+          border: "1px solid white",
         }}
       ></div>
     </GridItem>

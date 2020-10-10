@@ -4,6 +4,7 @@ import { add, sub } from "../../modules/game/units";
 type PinchEvent = {
   clientOrigin: [number, number];
   scale: number;
+  preventDefault(): void;
 }
 
 type Touch = {
@@ -51,7 +52,8 @@ export function usePinch(target: RefObject<HTMLDivElement>, handlers: {
         originalDist.current = dist;
         handlers.onPinchStart({
           clientOrigin: origin.current,
-          scale: 1
+          scale: 1,
+          preventDefault() {ev.preventDefault()}
         });
       }
     };
@@ -61,7 +63,8 @@ export function usePinch(target: RefObject<HTMLDivElement>, handlers: {
       const { dist } = calcState(ev.touches, touch1.current, touch2.current)!;
       handlers.onPinch({
         clientOrigin: origin.current,
-        scale: dist / originalDist.current
+        scale: dist / originalDist.current,
+        preventDefault() {ev.preventDefault()}
       })
     };
 
@@ -77,13 +80,14 @@ export function usePinch(target: RefObject<HTMLDivElement>, handlers: {
     }
 
     const opts = { passive: false };
-    target.current?.addEventListener('touchstart', onTouchStart, opts);
-    target.current?.addEventListener('touchend', onTouchEnd, opts);
-    target.current?.addEventListener('touchmove', onTouchMove, opts);
+    const target_curr = target.current;
+    target_curr?.addEventListener('touchstart', onTouchStart, opts);
+    target_curr?.addEventListener('touchend', onTouchEnd, opts);
+    target_curr?.addEventListener('touchmove', onTouchMove, opts);
     return () => {
-      target.current?.removeEventListener('touchstart', onTouchStart);
-      target.current?.removeEventListener('touchend', onTouchEnd);
-      target.current?.removeEventListener('touchmove', onTouchMove);
+      target_curr?.removeEventListener('touchstart', onTouchStart);
+      target_curr?.removeEventListener('touchend', onTouchEnd);
+      target_curr?.removeEventListener('touchmove', onTouchMove);
     }
   })
 

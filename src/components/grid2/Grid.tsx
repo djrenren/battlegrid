@@ -110,7 +110,19 @@ export function Grid(props: PropsWithChildren<GridProps>) {
 
   return (
     <div className="grid">
-      <Viewport ref={viewport}>
+      <Viewport ref={viewport}
+        overlay={
+            selection.length > 0 && (
+              <SelectionBox
+                key=""
+                loc={add(selectionOffset!, selection_loc) as any}
+                dim={items[selection[0]].dim}
+                onSelectionDrag={onSelectionDrag}
+                onSelectionDrop={onSelectionDrop}
+              />
+            )
+        } 
+      >
         <GridContext.Provider
           value={{
             get client_to_grid() {
@@ -160,15 +172,6 @@ export function Grid(props: PropsWithChildren<GridProps>) {
                 width={props.dimensions[0]}
                 height={props.dimensions[1]}
               />
-              {selection.length > 0 && (
-                <SelectionBox
-                  key=""
-                  loc={add(selectionOffset!, selection_loc) as any}
-                  dim={items[selection[0]].dim}
-                  onSelectionDrag={onSelectionDrag}
-                  onSelectionDrop={onSelectionDrop}
-                />
-              )}
             </DropLayer>
           </div>
         </GridContext.Provider>

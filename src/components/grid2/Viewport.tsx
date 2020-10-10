@@ -4,6 +4,7 @@ import React, {
   memo,
   MutableRefObject,
   PropsWithChildren,
+  ReactNode,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -13,7 +14,9 @@ import React, {
 import { Coord, GridSpace } from "../../modules/game/units";
 import { usePinch } from "../util/usePinch";
 
-export interface ViewportProps {}
+export interface ViewportProps {
+  overlay?: ReactNode;
+}
 
 const min_scale = 0.1;
 const max_scale = 2;
@@ -33,7 +36,8 @@ export const ViewportElem: ForwardRefRenderFunction<
   PropsWithChildren<ViewportProps>
   > = (props, ref) => {
     const viewport = useRef<HTMLDivElement>(null);
-  const canvas = useRef<HTMLDivElement>(null);
+    const translater = useRef<HTMLDivElement>(null);
+  const scaler = useRef<HTMLDivElement>(null);
 
   // v_loc is not updated after creation. Do not move the viewport
   // and expect it to work
@@ -65,7 +69,9 @@ export const ViewportElem: ForwardRefRenderFunction<
       ),
     ];
     console.log("offset", offset);
-    canvas.current!.style.transform = `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale.current})`;
+    translater.current!.style.transform = `translate(${offset.current[0]}px, ${offset.current[1]}px)`;
+    translater.current!.style.fontSize = scale.current + 'in';
+    scaler.current!.style.transform = `scale(${scale.current})`;
   };
   const performZoom2 = useCallback(
     (grid_pos: [number, number], proposed_delta: number) => {
@@ -136,11 +142,13 @@ export const ViewportElem: ForwardRefRenderFunction<
   let prev_scale = useRef(0);
     usePinch(viewport, {
       onPinchStart(ev) {
+        ev.preventDefault();
         prev_scale.current = ev.scale;
       },
       onPinch(ev) {
+        ev.preventDefault();
         const grid_loc = client_to_grid(ev.clientOrigin);
-        const delta = (ev.scale - prev_scale.current) * 2;
+        const delta = (ev.scale - prev_scale.current) * 1.5;
         prev_scale.current = ev.scale;
         console.log(delta);
         performZoom2(grid_loc, delta);
@@ -187,8 +195,8 @@ export const ViewportElem: ForwardRefRenderFunction<
     const v_observer = size_recorder(v_dim, "viewport");
     v_observer.observe(viewport.current!);
     const c_observer = size_recorder(c_dim, "canvas");
-    c_observer.observe(canvas.current!);
-    console.log("Canvas: ", canvas.current!);
+    c_observer.observe(scaler.current!);
+    console.log("Canvas: ", scaler.current!);
     return () => {
       v_observer.disconnect();
       c_observer.disconnect();
@@ -206,19 +214,28 @@ export const ViewportElem: ForwardRefRenderFunction<
       }}
     >
       <div
+        ref={translater} 
+        style={{
+          position: "absolute",
+          transform: `translate(${offset.current[0]}px, ${offset.current[1]}px)`,
+        fontSize: scale.current + "in",
+      }}>
+      <div
         className="gridsvg"
-        ref={canvas}
+        ref={scaler}
         style={{
           position: "absolute",
           fontSize: "1in",
-          transform: `translate(${offset.current[0]}px, ${offset.current[1]}px) scale(${scale})`,
+          transform: `scale(${scale})`,
           transformOrigin: "0 0",
           transition: "transform",
           overflow: "visible",
         }}
       >
         {props.children}
-      </div>
+        </div>
+        {props.overlay}
+        </div>
     </div>
   );
 };
