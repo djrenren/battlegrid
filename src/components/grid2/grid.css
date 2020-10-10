@@ -24,6 +24,8 @@
   max-height: 100%;
   height: 100%;
   background: rgb(248, 249, 250);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: smooth;
 }
 
 .viewport .gridsvg {

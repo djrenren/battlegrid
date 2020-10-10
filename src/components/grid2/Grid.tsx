@@ -164,7 +164,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
                     onDragStart={(ev) => ev.preventDefault()}
                     alt=""
                     src={item.href}
-                    style={{ display: "block", width: "100%", height: "100%" }}
+                    style={{ display: "block", width: "100%", height: "100%", imageRendering: "crisp-edges" }}
                   />
                 </GridItem>
               ))}

@@ -7,7 +7,7 @@ export interface OverlayProps {
   onDrop?: (coord: Coord<GridSpace>) => void;
 }
 
-const thickness = 0.025;
+const thickness = 0.02;
 function Overlay(props: OverlayProps) {
   return (
     <svg

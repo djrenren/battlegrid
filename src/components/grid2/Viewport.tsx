@@ -226,7 +226,7 @@ export const ViewportElem: ForwardRefRenderFunction<
         style={{
           position: "absolute",
           fontSize: "1in",
-          transform: `scale(${scale})`,
+          transform: `scale(${scale}) translateZ(0)`,
           transformOrigin: "0 0",
           transition: "transform",
           overflow: "visible",
