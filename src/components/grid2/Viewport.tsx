@@ -199,7 +199,7 @@ export const ViewportElem: ForwardRefRenderFunction<
       vp.removeEventListener("pointerdown", start);
       vp.removeEventListener("pointermove", move);
     };
-  });
+  }, []);
 
   useLayoutEffect(() => {
     const rect = viewport.current!.getBoundingClientRect();
