@@ -12,9 +12,6 @@
   padding: 0;
   overflow: hidden;
 }
-.viewport:active {
-  cursor: move;
-}
 .dragover {
   background: rgba(255, 0, 255, 0.9);
 }
@@ -26,6 +23,10 @@
   background: rgb(248, 249, 250);
   image-rendering: -webkit-optimize-contrast;
   image-rendering: smooth;
+}
+
+.viewport.control {
+  cursor: move;
 }
 
 .viewport .gridsvg {

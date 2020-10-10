@@ -11,7 +11,7 @@ import React, {
   useLayoutEffect,
   useRef,
 } from "react";
-import { Coord, GridSpace } from "../../modules/game/units";
+import { Coord, GridSpace, sub } from "../../modules/game/units";
 import { usePinch } from "../util/usePinch";
 
 export interface ViewportProps {
@@ -34,9 +34,9 @@ function inch(px: number) {
 export const ViewportElem: ForwardRefRenderFunction<
   ViewportRef,
   PropsWithChildren<ViewportProps>
-  > = (props, ref) => {
-    const viewport = useRef<HTMLDivElement>(null);
-    const translater = useRef<HTMLDivElement>(null);
+> = (props, ref) => {
+  const viewport = useRef<HTMLDivElement>(null);
+  const translater = useRef<HTMLDivElement>(null);
   const scaler = useRef<HTMLDivElement>(null);
 
   // v_loc is not updated after creation. Do not move the viewport
@@ -70,7 +70,7 @@ export const ViewportElem: ForwardRefRenderFunction<
     ];
     console.log("offset", offset);
     translater.current!.style.transform = `translate(${offset.current[0]}px, ${offset.current[1]}px)`;
-    translater.current!.style.fontSize = scale.current + 'in';
+    translater.current!.style.fontSize = scale.current + "in";
     scaler.current!.style.transform = `scale(${scale.current})`;
   };
   const performZoom2 = useCallback(
@@ -138,41 +138,68 @@ export const ViewportElem: ForwardRefRenderFunction<
     };
   }, [onWheel]);
 
+  useLayoutEffect(() => {
+    const vp = viewport.current!;
+    const down = (ev: KeyboardEvent) => {
+      console.log("huh....");
+      if (ev.ctrlKey) {
+        vp.classList.add("control");
+      } else {
+        vp.classList.remove("control");
+      }
+    };
+    document.addEventListener("keydown", down);
+    document.addEventListener("keyup", down);
+    return () => {
+      document.removeEventListener("keydown", down);
+      document.removeEventListener("keyup", down);
+    };
+  });
 
   let prev_scale = useRef(0);
-    usePinch(viewport, {
-      onPinchStart(ev) {
-        ev.preventDefault();
-        prev_scale.current = ev.scale;
-      },
-      onPinch(ev) {
-        ev.preventDefault();
-        const grid_loc = client_to_grid(ev.clientOrigin);
-        const delta = (ev.scale - prev_scale.current) * 1.5;
-        prev_scale.current = ev.scale;
-        console.log(delta);
-        performZoom2(grid_loc, delta);
-      }
-    });
-  // useEffect(() => {
-  //   const v = viewport.current!;
-  //   const onGestureStart = (ev: any) => {
-  //     ev.preventDefault();
-  //     ev.stopPropagation();
-  //     prev_scale.current = ev.scale;
-  //   };
-  //   const onGestureChange = (ev: any) => {
-  //     ev.preventDefault();
-  //     ev.stopPropagation();
-  //   };
+  usePinch(viewport, {
+    onPinchStart(ev) {
+      ev.preventDefault();
+      prev_scale.current = ev.scale;
+    },
+    onPinch(ev) {
+      ev.preventDefault();
+      const grid_loc = client_to_grid(ev.clientOrigin);
+      const delta = (ev.scale - prev_scale.current) * 1.25;
+      prev_scale.current = ev.scale;
+      console.log(delta);
+      performZoom2(grid_loc, delta);
+    },
+  });
 
-  //   v.addEventListener("gesturestart", onGestureStart);
-  //   v.addEventListener("gesturechange", onGestureChange);
-  //   return () => {
-  //     v.removeEventListener("gesturestart", onGestureStart);
-  //     v.removeEventListener("gesturechange", onGestureChange);
-  //   };
-  // }, [client_to_grid, performZoom2, scale]);
+  useEffect(() => {
+    let drag_start = [0, 0];
+    const vp = viewport.current!;
+    const start = (ev: PointerEvent) => {
+      if (ev.ctrlKey) {
+        vp.setPointerCapture(ev.pointerId);
+        ev.preventDefault();
+        ev.stopPropagation();
+        drag_start = [ev.clientX, ev.clientY];
+      }
+    };
+    const move = (ev: PointerEvent) => {
+      if (ev.ctrlKey && ev.buttons === 1) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        viewport.current!.scrollBy(
+          ...(sub(drag_start as any, [ev.clientX, ev.clientY] as any) as any)
+        );
+        drag_start = [ev.clientX, ev.clientY];
+      }
+    };
+    vp.addEventListener("pointerdown", start, { passive: false });
+    vp.addEventListener("pointermove", move, { passive: false });
+    return () => {
+      vp.removeEventListener("pointerdown", start);
+      vp.removeEventListener("pointermove", move);
+    };
+  });
 
   useLayoutEffect(() => {
     const rect = viewport.current!.getBoundingClientRect();
@@ -212,30 +239,32 @@ export const ViewportElem: ForwardRefRenderFunction<
         position: "relative",
         touchAction: "pan-x pan-y",
       }}
+      onContextMenu={(ev) => ev.preventDefault()}
     >
       <div
-        ref={translater} 
+        ref={translater}
         style={{
           position: "absolute",
           transform: `translate(${offset.current[0]}px, ${offset.current[1]}px)`,
-        fontSize: scale.current + "in",
-      }}>
-      <div
-        className="gridsvg"
-        ref={scaler}
-        style={{
-          position: "absolute",
-          fontSize: "1in",
-          transform: `scale(${scale}) translateZ(0)`,
-          transformOrigin: "0 0",
-          transition: "transform",
-          overflow: "visible",
+          fontSize: scale.current + "in",
         }}
       >
-        {props.children}
+        <div
+          className="gridsvg"
+          ref={scaler}
+          style={{
+            position: "absolute",
+            fontSize: "1in",
+            transform: `scale(${scale}) translateZ(0)`,
+            transformOrigin: "0 0",
+            transition: "transform",
+            overflow: "visible",
+          }}
+        >
+          {props.children}
         </div>
         {props.overlay}
-        </div>
+      </div>
     </div>
   );
 };

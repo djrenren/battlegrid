@@ -89,7 +89,7 @@ function SelectionBox(props: SelectionProps) {
           background: "blue",
           cursor: "nwse-resize",
           border: "1px solid white",
-          boxSizing: "border-box"
+          boxSizing: "border-box",
         }}
       ></div>
       <div
@@ -102,7 +102,7 @@ function SelectionBox(props: SelectionProps) {
           height: `${handleSize}px`,
           background: "blue",
           cursor: "nesw-resize",
-          border: "1px solid white"
+          border: "1px solid white",
         }}
       ></div>
       <div
@@ -115,7 +115,7 @@ function SelectionBox(props: SelectionProps) {
           height: `${handleSize}px`,
           background: "blue",
           cursor: "nesw-resize",
-          border: "1px solid white"
+          border: "1px solid white",
         }}
       ></div>
       <div

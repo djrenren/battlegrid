@@ -110,18 +110,19 @@ export function Grid(props: PropsWithChildren<GridProps>) {
 
   return (
     <div className="grid">
-      <Viewport ref={viewport}
+      <Viewport
+        ref={viewport}
         overlay={
-            selection.length > 0 && (
-              <SelectionBox
-                key=""
-                loc={add(selectionOffset!, selection_loc) as any}
-                dim={items[selection[0]].dim}
-                onSelectionDrag={onSelectionDrag}
-                onSelectionDrop={onSelectionDrop}
-              />
-            )
-        } 
+          selection.length > 0 && (
+            <SelectionBox
+              key=""
+              loc={add(selectionOffset!, selection_loc) as any}
+              dim={items[selection[0]].dim}
+              onSelectionDrag={onSelectionDrag}
+              onSelectionDrop={onSelectionDrop}
+            />
+          )
+        }
       >
         <GridContext.Provider
           value={{
@@ -164,7 +165,12 @@ export function Grid(props: PropsWithChildren<GridProps>) {
                     onDragStart={(ev) => ev.preventDefault()}
                     alt=""
                     src={item.href}
-                    style={{ display: "block", width: "100%", height: "100%", imageRendering: "crisp-edges" }}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      height: "100%",
+                      imageRendering: "crisp-edges",
+                    }}
                   />
                 </GridItem>
               ))}
