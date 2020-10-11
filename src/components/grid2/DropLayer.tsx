@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, useContext, useRef } from "react";
+import React, { memo, PropsWithChildren, useContext, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { addImage, Image } from "../../modules/game";
 import useDrop from "../util/useDrop";
@@ -103,3 +103,4 @@ export function DropLayer(props: PropsWithChildren<{}>) {
     </div>
   );
 }
+export default memo(DropLayer);

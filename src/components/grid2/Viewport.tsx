@@ -138,10 +138,12 @@ export const ViewportElem: ForwardRefRenderFunction<
     };
   }, [onWheel]);
 
+  const ctrl = useRef(false)
   useLayoutEffect(() => {
     const vp = viewport.current!;
     const down = (ev: KeyboardEvent) => {
       console.log("huh....");
+      ctrl.current = ev.ctrlKey
       if (ev.ctrlKey) {
         vp.classList.add("control");
       } else {
@@ -184,20 +186,28 @@ export const ViewportElem: ForwardRefRenderFunction<
       }
     };
     const move = (ev: PointerEvent) => {
-      if (ev.ctrlKey && ev.buttons === 1 && drag_start) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        viewport.current!.scrollBy(
-          ...(sub(drag_start as any, [ev.clientX, ev.clientY] as any) as any)
-        );
+      console.log(ev.ctrlKey, ev.buttons, drag_start)
+      if (ev.ctrlKey && ev.buttons === 1) {
+        if (drag_start) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          viewport.current!.scrollBy(
+            ...(sub(drag_start as any, [ev.clientX, ev.clientY] as any) as any)
+          );
+        }
         drag_start = [ev.clientX, ev.clientY];
       }
     };
+    const up = (ev: PointerEvent) => {
+      drag_start = null;
+    }
     vp.addEventListener("pointerdown", start, { passive: false });
     vp.addEventListener("pointermove", move, { passive: false });
+    vp.addEventListener("pointerup", up, { passive: false });
     return () => {
       vp.removeEventListener("pointerdown", start);
       vp.removeEventListener("pointermove", move);
+      vp.removeEventListener("pointerup", up);
     };
   }, []);
 

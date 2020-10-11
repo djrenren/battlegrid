@@ -9,6 +9,7 @@ export interface GridItemProps
   > {
   loc: Coord<GridSpace>;
   dim: Offset<GridSpace>;
+  animate?: any;
   style?: Omit<
     React.CSSProperties,
     "position" | "left" | "top" | "width" | "height"
@@ -28,10 +29,11 @@ export const GridItem = memo(
         initial={false}
         transition={{ type: "tween", ease: "easeOut", duration: 0.2 }}
         animate={{
-          left: props.loc[0] + "em",
-          top: props.loc[1] + "em",
+          x: props.loc[0] + "em",
+          y: props.loc[1] + "em",
           width: props.dim[0] + "em",
           height: props.dim[1] + "em",
+          ...props.animate
         }}
       >
         {props.children}
