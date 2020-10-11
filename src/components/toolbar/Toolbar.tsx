@@ -15,7 +15,11 @@ function Toolbar(props: PropsWithChildren<ToolbarProps>) {
       {comms.status === "offline" && (
         <button onClick={() => dispatch(host())}>Host</button>
       )}
-      {comms.status === "pending" && <Loading />}
+      {comms.status === "pending" && (
+        <button disabled>
+          <Loading />
+        </button>
+      )}
 
       {comms.status === "connected" && <Players />}
     </div>

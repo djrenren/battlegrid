@@ -28,8 +28,6 @@ function SelectionBox(props: SelectionProps) {
         initialLoc.current = coord(ev);
         (ev.target as any).setPointerCapture(ev.pointerId);
       }
-      //ev.preventDefault();
-
       onSelectionDrag(coord(ev));
     },
     [onSelectionDrag]

@@ -33,7 +33,7 @@ export const GridItem = memo(
           y: props.loc[1] + "em",
           width: props.dim[0] + "em",
           height: props.dim[1] + "em",
-          ...props.animate
+          ...props.animate,
         }}
       >
         {props.children}

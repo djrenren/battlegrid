@@ -109,7 +109,10 @@ export function Grid(props: PropsWithChildren<GridProps>) {
   }, [onKeyPress]);
 
   return (
-    <div className="grid">
+    <div
+      className="grid"
+      onKeyDown={(ev) => ev.key === "Escape" && setSelection([])}
+    >
       <Viewport
         ref={viewport}
         overlay={
@@ -141,6 +144,7 @@ export function Grid(props: PropsWithChildren<GridProps>) {
             <DropLayer>
               {Object.values(items).map((item, i) => (
                 <GridItem
+                  className="grid-item"
                   id={item.id}
                   key={item.id}
                   loc={
