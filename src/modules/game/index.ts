@@ -13,8 +13,8 @@ let initialState = {
   id: "local",
   maps: [
     {
-      width: 15,
-      height: 10,
+      width: 150,
+      height: 100,
       images: {} as { [id: string]: Image },
     },
   ],
