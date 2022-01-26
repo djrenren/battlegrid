@@ -1,184 +1,153 @@
-import { DurableSignaler } from "./signaling";
-/// @ts-ignore
-import { RTCPeerConnection, RTCSessionDescription } from "wrtc";
+type Signal = any;
 
-export class PeerConnection{}
+//@ts-ignore
 
-export class Peer extends EventTarget {
-    signaler: DurableSignaler;
-    peers: Map<string, {timeout: number, resolve: any, reject: any, conn: RTCPeerConnection}> = new Map();
 
-    private constructor(signaler: DurableSignaler)  {
-        super();
-        this.signaler = signaler;
+const PEER_CONFIG = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
+type Message = string | Blob | ArrayBuffer | ArrayBufferView;
+
+
+export class Peer {
+    on_data: (channel: string, data: Blob) => void = () => {};
+
+    /** Allows the Peer to communicate signals outwards */
+    #on_signal: (signal: Signal) => void = () => {};
+
+    /** The underlying peer connection, this may be close and replaced at any time */
+    #rtc_peer: RTCPeerConnection = new RTCPeerConnection(PEER_CONFIG);
+
+    /** The map of channels */
+    #channels: Map<string, RTCDataChannel> = new Map();
+
+    /** Tracks whether this peer was the initiator. Used during reconnect. */
+    #initiator = false;
+
+    /** Buffers messages for later delivery */
+    #msg_buffer: Map<string, Message[]> = new Map();
+
+    constructor(on_signal: (signal: Signal) => void) {
+        this.#on_signal = on_signal;
+        this.#cleanup_peer();
     }
 
-    static async establish(): Promise<Peer> {
-        let peer = new Peer(await DurableSignaler.establish(new URL("ws://localhost:8080")));
-        peer.signaler.addEventListener('message', ({detail: msg}) => peer.#handle_message(msg));
-        peer.signaler.addEventListener('error', ({detail: err}) => console.log("DSFLKJSDF:LJSD:LFJDS:F", err))
-        return peer;
+    /** Initiates a connection with the remote peer. Used for both initial connects and reconnects after hard drops */
+    async initiate() {
+        this.#initiator = true;
+
+        let offer = await this.#rtc_peer.createOffer();
+        await this.#rtc_peer.setLocalDescription(offer);
+
+        this.#on_signal({
+            type: "offer",
+            offer: offer,
+        });
     }
 
-    get configuration() {
-        return {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
-    }
+    /** Ensures the underlying peer is in a clean state. This is a no-op if it already is */
+    #cleanup_peer() {
+        if (this.#rtc_peer.localDescription !== null) {
+            this.#rtc_peer.onicecandidate = null;
+            this.#rtc_peer.onconnectionstatechange = null;
+            this.#rtc_peer.close();
 
-    #createPeer(remote_peer: string, timeout?: number): Promise<RTCPeerConnection> {
-        if (this.peers.has(remote_peer)) {
-            this.peers.get(remote_peer)?.reject();
+            for (const [label, channel] of this.#channels.entries()) {
+                if (channel) {
+                    channel.onopen = null;
+                    channel.onmessage = null;
+                    channel.onclose = null;
+                }
+                this.#channels.delete(label);
+            }
+        }
+        this.#rtc_peer = new RTCPeerConnection(PEER_CONFIG);
+
+        for (let [id, label] of ['control', 'data'].entries() ) {
+            let channel = this.#rtc_peer.createDataChannel(label, {
+                ordered: true,
+                negotiated: true,
+                id
+            }) as RTCDataChannel;
+
+            channel.onmessage = ({data}) => this.on_data(label, data);
+            channel.onopen = () => {
+                this.#msg_buffer.get(label)?.forEach(msg => this.send(label, msg));
+                this.#msg_buffer.set(label, []);
+            };
+            // We never expect a channel to close independently of the peer
+            channel.onclose = (ev) => console.error(ev);
+
+            this.#msg_buffer.set(label, []);
+            this.#channels.set(label, channel);
         }
 
-        let conn = new RTCPeerConnection(this.configuration)
-        conn.onicecandidate = ({candidate}: {candidate: any}) => {
-
-            if (conn.signalingState !== 'closed' && candidate) {
-                this.signaler.send(remote_peer, {
+        this.#rtc_peer.onicecandidate = ({candidate}) => {
+            if (candidate !== null) {
+                this.#on_signal({
                     type: "icecandidate",
                     candidate
                 })
             }
         };
 
-        conn.onsignalingstatechange =  () => {
-            if (conn.signalingState === 'closed') {
-                conn.onconnectionstatechange = null;
-                conn.onicecandidate = null;
-                conn.signalingstatechange = null;
-                this.peers.delete(remote_peer);
-            }
-        };
+        this.#rtc_peer.onconnectionstatechange = () => {
+            if (this.#rtc_peer.connectionState === "closed") {
+                this.#cleanup_peer();
 
-        conn.onconnectionstatechange = () => {
-            if(conn.connectionState === 'connected') {
-                this.peers.get(remote_peer)?.resolve();
-            }
-        };
-
-        return new Promise((resolve: (_: RTCPeerConnection) => void, reject) => {
-            let t_id = setTimeout(() => {
-                this.signaler.send(remote_peer, {
-                    "type": "abort",
-                    "reason": "timeout"
-                });
-                console.log("TIMEDOUT!");
-                this.#close_peer(remote_peer);
-                reject("timed out");
-            }, timeout ?? 5000);
-
-            const wrapped_resolve = () => {
-                clearTimeout(t_id);
-                this.peers.delete(remote_peer);
-                resolve(conn)
-            };
-
-            const wrapped_reject = (...args: any) => {
-                clearTimeout(t_id);
-                this.#close_peer(remote_peer);
-                reject(...args);
-            }
-
-            this.peers.set(remote_peer, {timeout: t_id, resolve: wrapped_resolve, reject: wrapped_reject, conn});
-        })
+                if (this.#initiator) {
+                    this.initiate();
+                }
+            } 
+        }
     }
 
-    async connect_to(remote_peer: string, timeout?: number): Promise<RTCPeerConnection> {
-        let peer = this.#createPeer(remote_peer, timeout);
-
-        let conn = this.peers.get(remote_peer)!.conn;
-        conn.createDataChannel("coord");
-        const offer = await this.peers.get(remote_peer)!.conn.createOffer();
-        await conn.setLocalDescription(offer);
-        this.signaler.send(remote_peer, {type: 'offer', offer});
-
-        return peer;
+    send(label: string, msg: Message) {
+        console.log("sending", msg);
+        let channel = this.#channels.get(label)!;
+        if (channel.readyState !== 'open') {
+            this.#msg_buffer.get(label)?.push(msg);
+        } else {
+            // Typescript won't unify our union with the overloads but the
+            // Message type is correct so we just tell ts ot shut up.
+            channel.send(msg as any);
+        }
     }
 
-    async #handle_message(data: any) {
-        let from: string = data.from;
+    /** Handles incoming signals */
+    async signal(s: Signal) {
+        console.log("received", s);
+        let ss = this.#rtc_peer.signalingState;
 
-        switch (data.type) {
+        switch (s.type) {
             case "offer":
-
-                this.#createPeer(from).then((peer) => {
-                    this.dispatchEvent(new CustomEvent('peer', {detail: peer}));
-                }).catch(() => {
-                    // we ignore these errors because no one is observing them
-                });
-                let conn = this.peers.get(from)!.conn;
-                try {
-                conn.setRemoteDescription(new RTCSessionDescription(data.offer));
-                } catch (e) {
-                    console.error(e);
+                if (ss !== "stable") {
+                    console.error(`Received offer at incorrect state: ${ss}. Ignoring.`);
+                    return;
                 }
 
-                const answer = await conn.createAnswer();
-                if (conn.signalingState === 'closed') {
-                    break;
-                }
-                await conn.setLocalDescription(answer);
-                if (conn.signalingState === 'closed') {
-                    break;
-                }
+                this.#rtc_peer.setRemoteDescription(new RTCSessionDescription(s.offer));
+                const answer = await this.#rtc_peer.createAnswer();
+                await this.#rtc_peer.setLocalDescription(answer);
 
-                this.signaler.send(from, {
+                this.#on_signal({
                     type: 'answer',
                     answer
                 });
+
                 break;
 
             case "answer":
-
-                if (!this.peers.has(from)) {
-                    break;
+                if (ss !== "have-local-offer") {
+                    console.error(`Received answer at incorrect state: ${ss}. Ignoring.`);
+                    return;
                 }
-
-                let peer = this.peers.get(from)!;
-                try {
-                    peer.conn.setRemoteDescription(new RTCSessionDescription(data.answer));
-
-                } catch(e) {
-                    console.log(e);
-                }
-
-
+                this.#rtc_peer.setRemoteDescription(new RTCSessionDescription(s.answer));
                 break;
 
             case "icecandidate":
-                if (!this.peers.has(from)) {
-                    // console.error("icecandidate from non-existent peer. Maybe negotiation timed out?")
-                    break;
-                }
-
-                try {
-                    await this.peers.get(from)!.conn.addIceCandidate(data.candidate);
-                } catch (e) {
-                    //console.error('Error adding received ice candidate', e);
-                }
+                await this.#rtc_peer.addIceCandidate(s.candidate);
                 break;
-
-            case "abort":
-                console.debug("Aborting negotiation with ", from);
-                this.peers.get(from)?.reject("Remotely aborted");
-                this.peers.delete(from);
         }
     }
 
-    #close_peer(remote_peer: string) {
-        this.peers.get(remote_peer)?.conn.close();
-        this.peers.delete(remote_peer);
-    }
 
-    close() {
-        for (let peer of this.peers.values()) {
-            peer.conn.close();
-            peer.reject("Manual shutdown");
-        }
-        this.signaler.close();
-    }
-}
-
-export interface Peer {
-    addEventListener(type: 'peer', callback: (msg: CustomEvent<RTCPeerConnection>) => void, options?: boolean | AddEventListenerOptions): void;
-    addEventListener(type: string, listener: EventListener | EventListenerObject, useCapture?: boolean): void;
 }

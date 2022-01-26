@@ -44,19 +44,23 @@ const wss = new WebSocketServer({
 server.on('upgrade', (req, socket, head) => {
     let suggested_id = get_suggested_id(req);
 
-    // if (suggested_id && peers.has(suggested_id)) {
-    //     return socket.end('HTTP/1.1 409 Conflict\r\n\r\n');
-    // }
+    console.log(suggested_id)
+
+    if (suggested_id && peers.has(suggested_id)) {
+        return socket.end('HTTP/1.1 409 Conflict\r\n\r\n');
+    }
 
     let id = suggested_id ?? uuid.v4() as PeerId;
 
 
     wss.handleUpgrade(req, socket, head, (socket) => {
         peers.set(id, socket);
+        console.log(id, "connected");
         socket.send(JSON.stringify({type: "assignment", id}));
         socket.on('message', (data, isBinary) => {
             on_message.bind(socket)(id, data, isBinary);
         });
+        socket.on('close', () => peers.delete(id));
     });
 })
 
@@ -73,6 +77,7 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
     } catch (e) {
         return this.close(400, "All messages must be valid utf8 JSON");
     }
+    console.log(msg);
 
     let target = msg.target as PeerId | undefined;
     if (target === undefined) {
@@ -81,10 +86,8 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
 
     let target_socket = peers.get(target);
     if (!target_socket) {
-        return this.send({error: "target-not-exists", target});
+        return this.send(JSON.stringify({error: "target-not-exists", target}));
     }
-
-    console.log("sending socket data: ", msg);
     target_socket.send(JSON.stringify({...msg, from}));
 }
 

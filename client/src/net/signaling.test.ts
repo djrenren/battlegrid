@@ -1,29 +1,16 @@
+/// @ts-ignore
+import * as WebRTC from "wrtc";
+for (var member in WebRTC) {
+    /// @ts-ignore
+    globalThis[member] = WebRTC[member];
+}
+
 import { DurableSignaler } from "./signaling";
 /**
  * @jest-environment jsdom
  */
 
 describe(DurableSignaler, () => {
-    it('can relay a message', async () => {
-        let [x, y] = await Promise.all([
-            DurableSignaler.establish(new URL("ws://localhost:8080/")),
-            DurableSignaler.establish(new URL("ws://localhost:8080/")),
-        ]);
-
-        const msg = "Hello"
-        x.send(y.ident, {msg});
-        await new Promise((resolve, reject) => {
-            y.addEventListener('message', ev => {
-                try {
-                    expect(ev.detail.msg).toBe(msg);
-                } catch(e) {
-                    return reject(e);
-                }
-                resolve(null);
-            });
-        });
-    });
-
     it('notifies when disconnected', async () => {
         let x = await DurableSignaler.establish(new URL("ws://localhost:8080"));
         
@@ -79,12 +66,49 @@ describe(DurableSignaler, () => {
     });
 
     it('does not allow duplicate ids', async () => {
+        expect.assertions(1);
+
         let ident = "duping";
         let x = await DurableSignaler.establish(new URL("ws://localhost:8080"), ident);
 
-        expect(async () => {
-            await DurableSignaler.establish(new URL("ws://localhost:8080"), ident);
-        }).rejects.toThrow();
+        await expect(DurableSignaler.establish(new URL("ws://localhost:8080"), ident)).rejects.toBeInstanceOf(CloseEvent);
     });
+
+    it('can facilitate a connection', done => {
+        (async () => {
+            let [local, remote] = await Promise.all([
+                DurableSignaler.establish(new URL("ws://localhost:8080"), "local"),
+                DurableSignaler.establish(new URL("ws://localhost:8080"), "remote")
+            ]);
+
+            remote.addEventListener('peer', ({detail: peer}) => {
+                peer.on_data = (c, m) => {
+                    try {
+                        expect(c).toBe('control');
+                        expect(m).toBe('5');
+                    } catch (e) {
+                        return done(e)
+                    }
+                    peer.send(c, "6")
+                };
+            });
+
+            let peer = await local.connect_to(remote.ident);
+
+
+            peer.on_data = (c, m) => {
+                try {
+                    expect(c).toBe('control');
+                    expect(m).toBe('6');
+                } catch (e) {
+                    return done(e)
+                }
+
+                done();
+            }
+
+            peer.send('control', '5');
+        })().catch(done);
+    })
 
 });
