@@ -1,6 +1,6 @@
 import typescript from "@rollup/plugin-typescript";
-import {terser} from 'rollup-plugin-terser';
-import summary from 'rollup-plugin-summary';
+import { terser } from "rollup-plugin-terser";
+import summary from "rollup-plugin-summary";
 
 export default {
   plugins: [
