@@ -1,14 +1,16 @@
+import { css, html, LitElement } from "lit";
 import {
-  css,
-  html,
-  LitElement,
-} from "lit";
-import {customElement, eventOptions, state, property, query} from 'lit/decorators.js';
+  customElement,
+  eventOptions,
+  state,
+  property,
+  query,
+} from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 
 const min_scale = 0.1;
 const max_scale = 5;
-const scroll_factor = 0.01;
+const scroll_factor = 0.005;
 
 @customElement("bg-viewport")
 export class Viewport extends LitElement {
@@ -101,6 +103,12 @@ export class Viewport extends LitElement {
   render() {
     const offset = this.offset;
     const scrollPos = this.scrollPos;
+    let needs_v_bar = false;
+    let needs_h_bar = false;
+    if (this.v_dim && this.c_dim) {
+      needs_v_bar = this.v_dim.height < this.c_dim.height * this.scale;
+      needs_h_bar = this.v_dim.width < this.c_dim.width * this.scale;
+    }
     return html`
       <div
         id="touch-surface"
@@ -108,15 +116,15 @@ export class Viewport extends LitElement {
         @gesturestart=${this._gesturestart}
         @gesturechange=${this._gesturechange}
       >
-        <div part="background"
+        <div
+          part="background"
           style=${styleMap({
             position: "absolute",
             zIndex: "-1",
             height: "100%",
             width: "100%",
           })}
-        >
-        </div>
+        ></div>
         <div
           id="content"
           part="background"
@@ -129,7 +137,7 @@ export class Viewport extends LitElement {
           <slot></slot>
         </div>
         <div
-          part="bottombar bar"
+          part="bar"
           class="bottombar"
           style=${styleMap({
             width:
@@ -138,15 +146,16 @@ export class Viewport extends LitElement {
               "px",
             transform: `translate(${
               (scrollPos[0] / (this.c_dim!.width * this.scale)) *
-                this.v_dim!.width
-            }px, 0)`
+              this.v_dim!.width
+            }px, 0)`,
+            display: needs_h_bar ? "block" : "none",
           })}
           @pointerdown=${this._scrollbar_down}
           @pointermove=${this._scrollbar_change_horiz}
           @pointerup=${this._scrollbar_up}
         ></div>
         <div
-          part="rightbar bar"
+          part="bar"
           class="rightbar"
           style=${styleMap({
             height:
@@ -154,8 +163,9 @@ export class Viewport extends LitElement {
               "px",
             transform: `translate(0, ${
               (scrollPos[1] / (this.c_dim!.height * this.scale)) *
-                this.v_dim!.height
-            }px)`
+              this.v_dim!.height
+            }px)`,
+            display: needs_v_bar ? "block" : "none",
           })}
           @pointerdown=${this._scrollbar_down}
           @pointermove=${this._scrollbar_change_vert}
@@ -276,7 +286,6 @@ export class Viewport extends LitElement {
       Math.max(min_scale, this.scale + scale_delta)
     );
 
-
     let new_scale_delta = new_scale - this.scale;
 
     //Step 2: Set scroll position
@@ -293,8 +302,6 @@ export class Viewport extends LitElement {
   // so that we can properly position the content within
   // the viewport when it is smaller than the container
   firstUpdated() {
-    console.log('content', this.shadowRoot?.getElementById('content'), this.content);
-    console.log('touch-surface', this.shadowRoot?.getElementById('touch-surface'), this.surface);
     const ro = new ResizeObserver((entries) => {
       for (let e of entries) {
         switch (e.target) {
@@ -350,10 +357,12 @@ export class Viewport extends LitElement {
       .bottombar {
         position: fixed;
         bottom: 0;
+        height: var(--thickness);
       }
       .rightbar {
         position: fixed;
         right: 0;
+        width: var(--thickness);
       }
     `;
   }

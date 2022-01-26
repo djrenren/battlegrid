@@ -1,7 +1,6 @@
 import { DurableSignaler } from "./net/signaling";
 import "./ui/viewport";
 
-
 document.body.addEventListener(
   "wheel",
   (ev) => {
