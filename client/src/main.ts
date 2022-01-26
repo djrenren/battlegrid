@@ -1,4 +1,14 @@
 import { DurableSignaler } from "./net/signaling";
+import "./ui/viewport";
+
+
+document.body.addEventListener(
+  "wheel",
+  (ev) => {
+    if (ev.ctrlKey) ev.preventDefault();
+  },
+  { passive: false }
+);
 
 (async function () {
   let signaler = await DurableSignaler.establish(

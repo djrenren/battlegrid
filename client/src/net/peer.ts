@@ -35,7 +35,7 @@ export class Peer {
 
     this.#on_signal({
       type: "offer",
-      offer: offer,
+      offer,
     });
   }
 
