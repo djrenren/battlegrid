@@ -38,6 +38,7 @@ function svg_grid(thickness: number): string {
               fill="none"
               stroke="grey"
               stroke-width="${thickness * 2}"
+              shape-rendering="optimizeQuality"
             ></path>
   </svg>`)
   );

@@ -2,14 +2,17 @@ import { DurableSignaler } from "./net/signaling";
 import "./ui/viewport";
 import "./ui/safari-fix";
 import "./ui/grid/gridlines";
+import "./ui/token";
 
-// document.body.addEventListener(
-//   "wheel",
-//   (ev) => {
-//     if (ev.ctrlKey) ev.preventDefault();
-//   },
-//   { passive: false }
-// );
+
+document.body.addEventListener(
+  "wheel",
+  (ev) => {
+    if (ev.ctrlKey) ev.preventDefault();
+  },
+  { passive: false }
+);
+
 
 // (async function () {
 //   let signaler = await DurableSignaler.establish(

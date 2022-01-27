@@ -5,8 +5,7 @@ import summary from "rollup-plugin-summary";
 import visualizer from "rollup-plugin-visualizer";
 import minifyHTML from "rollup-plugin-minify-html-literals";
 
-export default {
-  plugins: [
+let plugins = [
     typescript(),
     resolve(),
     minifyHTML(),
@@ -23,11 +22,24 @@ export default {
     visualizer(),
     // Print bundle summary
     summary({}),
-  ],
+  ];
+
+export default [{
+  plugins,
   input: "src/main.ts",
   output: {
     sourcemap: true,
     file: "build/bundle.js",
     format: "es",
-  },
-};
+  }
+}, {
+  plugins,
+  input: "src/fs/worker.ts",
+  output: {
+    sourcemap: true,
+    file: "worker.js",
+    format: "es"
+  }
+}
+];
+

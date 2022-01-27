@@ -122,6 +122,12 @@ export class Viewport extends LitElement {
     ];
   }
 
+  @state()
+  smooth?: boolean
+
+  _transitionend = () => {
+    this.smooth = false;
+  }
   // The internal structure of viewport consists of 3 layers:
   //
   // Surface - where scrollbars are drawn and handlers are attached
@@ -157,21 +163,23 @@ export class Viewport extends LitElement {
       >
           <div
             part="background"
+            @transitionend=${this._transitionend}
             style=${styleMap({
               position: "absolute",
               zIndex: "-1",
               height: "100%",
               width: "100%",
-              backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`
+              backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`,
+              transition: this.smooth ? "all 250ms" : "none"
             })}
           ></div>
         <div
           id="content"
-          part="background"
           style=${styleMap({
             transform: `translate(${offset[0] - scrollPos[0]}px, ${
               offset[1] - scrollPos[1]
             }px) scale(${this.scale}) `,
+            transition: this.smooth ? "transform 250ms" : "none",
           })}
         >
           <slot></slot>
@@ -264,6 +272,7 @@ export class Viewport extends LitElement {
   #wheel = (ev: WheelEvent) => {
     ev.preventDefault();
     ev.stopPropagation();
+    this.smooth=true;
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
     if (ev.ctrlKey) {
       //zoom

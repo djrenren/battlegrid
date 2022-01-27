@@ -9,22 +9,22 @@
     <title>Document</title>
   </head>
   <body>
-    <script src="./build/bundle.js"></script>
+    <script type="module" src="./build/bundle.js"></script>
     <bg-viewport style="width: 100%; height: 100%">
-      <div
+      <bg-lines
+        res="test"
         style="
           display: inline-block;
           width: 10in;
           height: 8in;
           overflow: hidden;
           position: relative;
-          background: #fff;
           font-size: 1in;
+          background-color: white;
         "
         class="shadow"
+        src="/fs/test"
       >
-        <bg-lines />
-      </div>
     </bg-viewport>
   </body>
 </html>
