@@ -25,25 +25,61 @@ export class Viewport extends LitElement {
   @state()
   v_dim? = new DOMRectReadOnly();
 
-  _content?: HTMLDivElement;
-  get content(): HTMLDivElement {
-    return (
-      this._content ||
-      (this._content = this.renderRoot.querySelector("#content") as any)
-    );
-  }
+  @query("#content", true)
+  content?: HTMLDivElement;
 
-  _scroller?: HTMLDivElement;
-  get scroller(): HTMLDivElement {
-    return (
-      this._scroller ||
-      (this._scroller = this.renderRoot.querySelector("#scroller") as any)
-    );
-  }
+  @query("#scroller", true)
+  scroller?: HTMLDivElement;
 
   @state()
   _scrollPos = [0, 0] as [number, number];
-  get scrollPos() {
+
+  #dragOrigin = [0, 0];
+  #do_drag_start = (ev: PointerEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
+    this.#dragOrigin = [ev.clientX, ev.clientY];
+  };
+
+  _touchdragstart = (ev: PointerEvent) => {
+    if (ev.isPrimary && ev.pointerType === "touch") {
+      this.#do_drag_start(ev);
+    }
+  };
+
+  _touchdragmove = (ev: PointerEvent) => {
+    if (ev.isPrimary && ev.pointerType === "touch") {
+      this.#do_drag_move(ev, true, true, -1);
+    }
+  };
+
+  _touchdragend = (ev: PointerEvent) => {
+    if (ev.isPrimary && ev.pointerType === "touch") {
+      this.#do_drag_end(ev);
+    }
+  };
+
+  #do_drag_move = (
+    ev: PointerEvent,
+    allow_x: boolean,
+    allow_y: boolean,
+    scalar: number
+  ) => {
+    let sp = this.#scrollPos;
+    let old = this.#dragOrigin;
+    this.#dragOrigin = [ev.clientX, ev.clientY];
+    this.#scrollPos = [
+      allow_x ? sp[0] + scalar * (this.#dragOrigin[0] - old[0]) : sp[0],
+      allow_y ? sp[1] + scalar * (this.#dragOrigin[1] - old[1]) : sp[1],
+    ];
+  };
+
+  #do_drag_end = (ev: PointerEvent) => {
+    (ev.target as HTMLDivElement).releasePointerCapture(ev.pointerId);
+  };
+
+  get #scrollPos() {
     return [
       Math.max(
         0,
@@ -61,15 +97,15 @@ export class Viewport extends LitElement {
       ),
     ];
   }
-  set scrollPos(value: [number, number]) {
+  set #scrollPos(value: [number, number]) {
     const old = this._scrollPos;
     this._scrollPos = value;
-    this.requestUpdate("scrollPos", old);
+    this.requestUpdate("#scrollPos", old);
   }
 
   // Surface represents the client rectangle for the viewport.
   // It's "bigger on the inside" so that content can be scrolled through
-  @query("#touch-surface")
+  @query("#touch-surface", true)
   surface?: HTMLDivElement;
 
   // When content is smaller than the viewport, it needs to be centered
@@ -102,7 +138,7 @@ export class Viewport extends LitElement {
   // for browsers to deal with. This is untested
   render() {
     const offset = this.offset;
-    const scrollPos = this.scrollPos;
+    const scrollPos = this.#scrollPos;
     let needs_v_bar = false;
     let needs_h_bar = false;
     if (this.v_dim && this.c_dim) {
@@ -112,7 +148,10 @@ export class Viewport extends LitElement {
     return html`
       <div
         id="touch-surface"
-        @wheel=${this._wheel}
+        @wheel=${this.#wheel}
+        @pointerdown=${this._touchdragstart}
+        @pointermove=${this._touchdragmove}
+        @pointerup=${this._touchdragend}
         @gesturestart=${this._gesturestart}
         @gesturechange=${this._gesturechange}
       >
@@ -150,9 +189,9 @@ export class Viewport extends LitElement {
             }px, 0)`,
             display: needs_h_bar ? "block" : "none",
           })}
-          @pointerdown=${this._scrollbar_down}
-          @pointermove=${this._scrollbar_change_horiz}
-          @pointerup=${this._scrollbar_up}
+          @pointerdown=${this.#scrollbar_down}
+          @pointermove=${this.#scrollbar_change_horiz}
+          @pointerup=${this.#scrollbar_up}
         ></div>
         <div
           part="bar"
@@ -167,61 +206,61 @@ export class Viewport extends LitElement {
             }px)`,
             display: needs_v_bar ? "block" : "none",
           })}
-          @pointerdown=${this._scrollbar_down}
-          @pointermove=${this._scrollbar_change_vert}
-          @pointerup=${this._scrollbar_up}
+          @pointerdown=${this.#scrollbar_down}
+          @pointermove=${this.#scrollbar_change_vert}
+          @pointerup=${this.#scrollbar_up}
         ></div>
       </div>
     `;
   }
 
-  _init_scroll = [0, 0];
-  _scrollbar_start = [0, 0];
-  _scrollbar_down(ev: PointerEvent) {
+  #scrollbar_down(ev: PointerEvent) {
     if (
-      (ev.pointerType === "touch" && !ev.isPrimary) ||
+      ev.pointerType === "touch" ||
+      !ev.isPrimary ||
       (ev.pressure === 0 && ev.buttons !== 1)
     )
       return;
-    (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
-    this._init_scroll = this.scrollPos;
-    this._scrollbar_start = [ev.clientX, ev.clientY];
+    this.#do_drag_start(ev);
   }
-  _scrollbar_change_horiz(ev: PointerEvent) {
+
+  #scrollbar_change_horiz(ev: PointerEvent) {
     if (
-      (ev.pointerType === "touch" && !ev.isPrimary) ||
-      (ev.pressure === 0 && ev.buttons !== 1)
+      ev.pointerType === "touch" ||
+      !ev.isPrimary ||
+      ev.pressure === 0 ||
+      ev.buttons !== 1
     )
       return;
-    this.scrollPos = [
-      this._init_scroll[0] +
-        ((ev.clientX - this._scrollbar_start[0]) / this.v_dim!.width) *
-          this.c_dim!.width *
-          this.scale,
-      this.scrollPos[1],
-    ];
+    this.#do_drag_move(
+      ev,
+      true,
+      false,
+      (this.c_dim!.width * this.scale) / this.v_dim!.width
+    );
   }
-  _scrollbar_change_vert(ev: PointerEvent) {
+  #scrollbar_change_vert(ev: PointerEvent) {
     if (
-      (ev.pointerType === "touch" && !ev.isPrimary) ||
-      (ev.pressure === 0 && ev.buttons !== 1)
+      ev.pointerType === "touch" ||
+      !ev.isPrimary ||
+      ev.pressure === 0 ||
+      ev.buttons !== 1
     )
       return;
-    this.scrollPos = [
-      this.scrollPos[0],
-      this._init_scroll[1] +
-        ((ev.clientY - this._scrollbar_start[1]) / this.v_dim!.height) *
-          this.c_dim!.height *
-          this.scale,
-    ];
+    this.#do_drag_move(
+      ev,
+      false,
+      true,
+      (this.c_dim!.height * this.scale) / this.v_dim!.height
+    );
   }
-  _scrollbar_up(ev: PointerEvent, idx: number) {
-    (ev.target as HTMLDivElement).releasePointerCapture(ev.pointerId);
+  #scrollbar_up(ev: PointerEvent, idx: number) {
+    this.#do_drag_end(ev);
   }
 
   // Chrome and Firefox model pinches as ctrl + scroll (to match the classic
   // desktop idiom). This handler turns that into a _performZoom call.
-  _wheel = (ev: WheelEvent) => {
+  #wheel = (ev: WheelEvent) => {
     ev.preventDefault();
     ev.stopPropagation();
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
@@ -235,29 +274,29 @@ export class Viewport extends LitElement {
       // Firefox scrolls by lines so we need to multiply that by a line size
       // to get actual pixels. Page scrolling is unsupported currently.
       // scroll
-      this.scrollPos = [
-        this.scrollPos[0] + ev.deltaX * multiplier,
-        this.scrollPos[1] + ev.deltaY * multiplier,
+      this.#scrollPos = [
+        this.#scrollPos[0] + ev.deltaX * multiplier,
+        this.#scrollPos[1] + ev.deltaY * multiplier,
       ];
     }
   };
 
-  _scroll(ev: any) {
-    this.scrollPos = [
-      this.scrollPos[0] + ev.scrollX,
-      this.scrollPos[1] + ev.scrollY,
+  #scroll(ev: any) {
+    this.#scrollPos = [
+      this.#scrollPos[0] + ev.scrollX,
+      this.#scrollPos[1] + ev.scrollY,
     ];
   }
 
   // Gesture-based scrolling
   // Safari records pinches as gesture events rather than wheel events
   // so we have to listen for these as well
-  prev_scale = 0;
-  _origin = [0, 0] as [number, number];
+  #prev_scale = 0;
+  #origin = [0, 0] as [number, number];
   @eventOptions({ capture: true })
   _gesturestart(ev: any) {
-    this._origin = this.coordToLocal([ev.clientX, ev.clientY]);
-    this.prev_scale = 1;
+    this.#origin = this.coordToLocal([ev.clientX, ev.clientY]);
+    this.#prev_scale = 1;
     ev.preventDefault();
   }
 
@@ -265,17 +304,15 @@ export class Viewport extends LitElement {
   _gesturechange(ev: any) {
     ev.preventDefault();
     ev.stopPropagation();
-    this._gesturechange_db(ev);
-  }
 
-  _gesturechange_db = (ev: any) => {
     this._performZoom(
-      this._origin,
+      this.#origin,
       // I'll be real I'm not entirely sure why this is the magic number
-      this.scale * (ev.scale - this.prev_scale) * 1.5
+      this.scale * (ev.scale - this.#prev_scale) * 1.5
     );
-    this.prev_scale = ev.scale;
-  };
+
+    this.#prev_scale = ev.scale;
+  }
 
   // _performZoom is separated out so it can be initiated by different event handlers
   // such as scroll wheels, touches, button clicks, etc.
@@ -289,9 +326,9 @@ export class Viewport extends LitElement {
     let new_scale_delta = new_scale - this.scale;
 
     //Step 2: Set scroll position
-    this.scrollPos = [
-      this.scrollPos[0] + origin[0] * new_scale_delta,
-      this.scrollPos[1] + origin[1] * new_scale_delta,
+    this.#scrollPos = [
+      this.#scrollPos[0] + origin[0] * new_scale_delta,
+      this.#scrollPos[1] + origin[1] * new_scale_delta,
     ];
 
     //Step 3: Perform zoom then scroll
@@ -302,6 +339,7 @@ export class Viewport extends LitElement {
   // so that we can properly position the content within
   // the viewport when it is smaller than the container
   firstUpdated() {
+    console.log(Object.getOwnPropertyDescriptor(this, "surface"));
     const ro = new ResizeObserver((entries) => {
       for (let e of entries) {
         switch (e.target) {
@@ -325,8 +363,8 @@ export class Viewport extends LitElement {
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
   coordToLocal([x, y]: [number, number]): [number, number] {
-    const vx = x - this.v_dim!.x + this.scrollPos[0];
-    const vy = y - this.v_dim!.y + this.scrollPos[1];
+    const vx = x - this.v_dim!.x + this.#scrollPos[0];
+    const vy = y - this.v_dim!.y + this.#scrollPos[1];
     const offset = this.offset;
     const res = [(vx - offset[0]) / this.scale, (vy - offset[1]) / this.scale];
     return res as any;

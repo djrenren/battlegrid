@@ -12,11 +12,15 @@ bg-viewport::part(background) {
 }
 
 bg-viewport::part(bar) {
-  background: rgb(50, 50, 50);
-  opacity: 0.5;
+  background: rgb(75, 75, 75);
+  opacity: 0.75;
   --thickness: 10px;
 }
 
 bg-viewport::part(bar):hover {
   opacity: 1;
+}
+
+body > bg-viewport {
+  flex: 1;
 }

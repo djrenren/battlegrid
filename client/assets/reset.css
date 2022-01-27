@@ -105,12 +105,6 @@ nav,
 section {
   display: block;
 }
-body {
-  line-height: 1;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
 ol,
 ul {
   list-style: none;
@@ -133,4 +127,18 @@ table {
 
 * {
   box-sizing: border-box;
+}
+
+:root {
+  --app-height: 100%;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  height: var(--app-height);
 }
