@@ -155,15 +155,16 @@ export class Viewport extends LitElement {
         @gesturestart=${this._gesturestart}
         @gesturechange=${this._gesturechange}
       >
-        <div
-          part="background"
-          style=${styleMap({
-            position: "absolute",
-            zIndex: "-1",
-            height: "100%",
-            width: "100%",
-          })}
-        ></div>
+          <div
+            part="background"
+            style=${styleMap({
+              position: "absolute",
+              zIndex: "-1",
+              height: "100%",
+              width: "100%",
+              backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`
+            })}
+          ></div>
         <div
           id="content"
           part="background"

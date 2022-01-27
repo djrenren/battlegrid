@@ -8,7 +8,10 @@
 }
 
 bg-viewport::part(background) {
-  background: rgb(#fefefe);
+  background-color: #dbdbdb;
+  background-image: url("https://www.transparenttextures.com/patterns/45-degree-fabric-dark.png");
+  background-size: calc(var(--scale) * 315px)
+  /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
 }
 
 bg-viewport::part(bar) {
