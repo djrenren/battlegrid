@@ -6,31 +6,33 @@ import visualizer from "rollup-plugin-visualizer";
 import minifyHTML from "rollup-plugin-minify-html-literals";
 
 let plugins = [
-    typescript(),
-    resolve(),
-    minifyHTML(),
-    terser({
-      ecma: 2020,
-      module: true,
-      mangle: {
-        properties: {
-          regex: /^(#|__)/,
-        },
-        toplevel: true,
+  typescript(),
+  resolve(),
+  minifyHTML(),
+  terser({
+    ecma: 2020,
+    module: true,
+    compress: true,
+    mangle: {
+      properties: {
+        regex: /^(#|__)/,
       },
-    }),
-    visualizer(),
-    // Print bundle summary
-    summary({}),
-  ];
+      toplevel: true,
+    },
+  }),
+  visualizer(),
+  // Print bundle summary
+  summary({}),
+];
 
-export default [{
-  plugins,
-  input: "src/main.ts",
-  output: {
-    sourcemap: true,
-    file: "build/bundle.js",
-    format: "es",
-  }
-}];
-
+export default [
+  {
+    plugins,
+    input: "src/main.ts",
+    output: {
+      sourcemap: true,
+      file: "build/bundle.js",
+      format: "es",
+    },
+  },
+];

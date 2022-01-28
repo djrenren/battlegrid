@@ -54,6 +54,8 @@ export class Canvas extends LitElement {
           />
         `
       )}
+
+      <bg-lines />
     `;
   }
 

@@ -7,6 +7,18 @@ import {
   query,
 } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
+import { is_non_touch_drag, stop_ev } from "../util/events";
+import {
+  add_p,
+  div_c,
+  div_p,
+  max_p,
+  min_p,
+  mul_c,
+  mul_p,
+  Point,
+  sub_p,
+} from "../util/math";
 
 const min_scale = 0.1;
 const max_scale = 5;
@@ -20,10 +32,13 @@ export class Viewport extends LitElement {
   // we need to track dimensions of content
   // and viewport so we can do centering properly
   @state()
-  c_dim? = new DOMRectReadOnly();
+  c_dim: Point = [0, 0];
 
   @state()
-  v_dim? = new DOMRectReadOnly();
+  v_dim: Point = [0, 0];
+
+  @state()
+  v_loc: Point = [0, 0];
 
   @query("#content", true)
   content?: HTMLDivElement;
@@ -36,8 +51,7 @@ export class Viewport extends LitElement {
 
   #dragOrigin = [0, 0];
   #do_drag_start = (ev: PointerEvent) => {
-    ev.preventDefault();
-    ev.stopPropagation();
+    stop_ev(ev);
     (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
     this.#dragOrigin = [ev.clientX, ev.clientY];
   };
@@ -80,22 +94,10 @@ export class Viewport extends LitElement {
   };
 
   get #scrollPos() {
-    return [
-      Math.max(
-        0,
-        Math.min(
-          this.c_dim!.width * this.scale - this.v_dim!.width,
-          this._scrollPos[0]
-        )
-      ),
-      Math.max(
-        0,
-        Math.min(
-          this.c_dim!.height * this.scale - this.v_dim!.height,
-          this._scrollPos[1]
-        )
-      ),
-    ];
+    return max_p(
+      [0, 0],
+      min_p(this._scrollPos, sub_p(mul_c(this.c_dim, this.scale), this.v_dim))
+    );
   }
   set #scrollPos(value: [number, number]) {
     const old = this._scrollPos;
@@ -115,19 +117,19 @@ export class Viewport extends LitElement {
   //
   // offset represents the position of content within the viewport.
   // When content is larger than the viewport, the offset is 0,0
-  get offset() {
-    return [
-      Math.max(0, (this.v_dim!.width - this.c_dim!.width * this.scale) / 2),
-      Math.max(0, (this.v_dim!.height - this.c_dim!.height * this.scale) / 2),
-    ];
+  get offset(): [number, number] {
+    return max_p(
+      [0, 0],
+      mul_c(sub_p(this.v_dim, mul_c(this.c_dim, this.scale)), 0.5)
+    );
   }
 
   @state()
-  smooth?: boolean
+  smooth?: boolean;
 
   _transitionend = () => {
     this.smooth = false;
-  }
+  };
   // The internal structure of viewport consists of 3 layers:
   //
   // Surface - where scrollbars are drawn and handlers are attached
@@ -148,12 +150,23 @@ export class Viewport extends LitElement {
     let needs_v_bar = false;
     let needs_h_bar = false;
     if (this.v_dim && this.c_dim) {
-      needs_v_bar = this.v_dim.height < this.c_dim.height * this.scale;
-      needs_h_bar = this.v_dim.width < this.c_dim.width * this.scale;
+      needs_v_bar = this.v_dim[1] < this.c_dim[1] * this.scale;
+      needs_h_bar = this.v_dim[0] < this.c_dim[0] * this.scale;
     }
+
+    const scroll_size = div_p(
+      mul_p(this.v_dim, this.v_dim),
+      mul_c(this.c_dim, this.scale)
+    );
+    const scroll_loc = div_p(
+      mul_p(scrollPos, this.v_dim),
+      mul_c(this.c_dim, this.scale)
+    );
+
     return html`
       <div
         id="touch-surface"
+        class=${this.smooth ? "smooth" : ""}
         @wheel=${this.#wheel}
         @pointerdown=${this._touchdragstart}
         @pointermove=${this._touchdragmove}
@@ -161,25 +174,25 @@ export class Viewport extends LitElement {
         @gesturestart=${this._gesturestart}
         @gesturechange=${this._gesturechange}
       >
-          <div
-            part="background"
-            @transitionend=${this._transitionend}
-            style=${styleMap({
-              position: "absolute",
-              zIndex: "-1",
-              height: "100%",
-              width: "100%",
-              backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`,
-              transition: this.smooth ? "all 250ms" : "none"
-            })}
-          ></div>
+        <div
+          part="background"
+          @transitionend=${this._transitionend}
+          style=${styleMap({
+            position: "absolute",
+            zIndex: "-1",
+            height: "100%",
+            width: "100%",
+            backgroundPosition: `${offset[0] - scrollPos[0]}px ${
+              offset[1] - scrollPos[1]
+            }px`,
+          })}
+        ></div>
         <div
           id="content"
           style=${styleMap({
             transform: `translate(${offset[0] - scrollPos[0]}px, ${
               offset[1] - scrollPos[1]
             }px) scale(${this.scale}) `,
-            transition: this.smooth ? "transform 250ms" : "none",
           })}
         >
           <slot></slot>
@@ -188,14 +201,8 @@ export class Viewport extends LitElement {
           part="bar"
           class="bottombar"
           style=${styleMap({
-            width:
-              (this.v_dim!.width / (this.c_dim!.width * this.scale)) *
-                this.v_dim!.width +
-              "px",
-            transform: `translate(${
-              (scrollPos[0] / (this.c_dim!.width * this.scale)) *
-              this.v_dim!.width
-            }px, 0)`,
+            width: scroll_size[0] + "px",
+            transform: `translate(${scroll_loc[0]}px, 0)`,
             display: needs_h_bar ? "block" : "none",
           })}
           @pointerdown=${this.#scrollbar_down}
@@ -206,13 +213,8 @@ export class Viewport extends LitElement {
           part="bar"
           class="rightbar"
           style=${styleMap({
-            height:
-              this.v_dim!.height ** 2 / (this.c_dim!.height * this.scale) +
-              "px",
-            transform: `translate(0, ${
-              (scrollPos[1] / (this.c_dim!.height * this.scale)) *
-              this.v_dim!.height
-            }px)`,
+            height: scroll_size[1] + "px",
+            transform: `translate(0, ${scroll_loc[1]}px)`,
             display: needs_v_bar ? "block" : "none",
           })}
           @pointerdown=${this.#scrollbar_down}
@@ -224,44 +226,26 @@ export class Viewport extends LitElement {
   }
 
   #scrollbar_down(ev: PointerEvent) {
-    if (
-      ev.pointerType === "touch" ||
-      !ev.isPrimary ||
-      (ev.pressure === 0 && ev.buttons !== 1)
-    )
-      return;
-    this.#do_drag_start(ev);
+    if (is_non_touch_drag(ev)) this.#do_drag_start(ev);
   }
 
   #scrollbar_change_horiz(ev: PointerEvent) {
-    if (
-      ev.pointerType === "touch" ||
-      !ev.isPrimary ||
-      ev.pressure === 0 ||
-      ev.buttons !== 1
-    )
-      return;
-    this.#do_drag_move(
-      ev,
-      true,
-      false,
-      (this.c_dim!.width * this.scale) / this.v_dim!.width
-    );
+    if (is_non_touch_drag(ev))
+      this.#do_drag_move(
+        ev,
+        true,
+        false,
+        (this.c_dim[0] * this.scale) / this.v_dim[0]
+      );
   }
   #scrollbar_change_vert(ev: PointerEvent) {
-    if (
-      ev.pointerType === "touch" ||
-      !ev.isPrimary ||
-      ev.pressure === 0 ||
-      ev.buttons !== 1
-    )
-      return;
-    this.#do_drag_move(
-      ev,
-      false,
-      true,
-      (this.c_dim!.height * this.scale) / this.v_dim!.height
-    );
+    if (is_non_touch_drag(ev))
+      this.#do_drag_move(
+        ev,
+        false,
+        true,
+        (this.c_dim[1] * this.scale) / this.v_dim[1]
+      );
   }
   #scrollbar_up(ev: PointerEvent, idx: number) {
     this.#do_drag_end(ev);
@@ -270,9 +254,8 @@ export class Viewport extends LitElement {
   // Chrome and Firefox model pinches as ctrl + scroll (to match the classic
   // desktop idiom). This handler turns that into a _performZoom call.
   #wheel = (ev: WheelEvent) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    this.smooth=true;
+    stop_ev(ev);
+    this.smooth = true;
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
     if (ev.ctrlKey) {
       //zoom
@@ -284,19 +267,12 @@ export class Viewport extends LitElement {
       // Firefox scrolls by lines so we need to multiply that by a line size
       // to get actual pixels. Page scrolling is unsupported currently.
       // scroll
-      this.#scrollPos = [
-        this.#scrollPos[0] + ev.deltaX * multiplier,
-        this.#scrollPos[1] + ev.deltaY * multiplier,
-      ];
+      this.#scrollPos = add_p(
+        mul_c([ev.deltaX, ev.deltaY], multiplier),
+        this.#scrollPos
+      );
     }
   };
-
-  #scroll(ev: any) {
-    this.#scrollPos = [
-      this.#scrollPos[0] + ev.scrollX,
-      this.#scrollPos[1] + ev.scrollY,
-    ];
-  }
 
   // Gesture-based scrolling
   // Safari records pinches as gesture events rather than wheel events
@@ -307,13 +283,12 @@ export class Viewport extends LitElement {
   _gesturestart(ev: any) {
     this.#origin = this.coordToLocal([ev.clientX, ev.clientY]);
     this.#prev_scale = 1;
-    ev.preventDefault();
+    stop_ev(ev);
   }
 
   @eventOptions({ passive: false })
   _gesturechange(ev: any) {
-    ev.preventDefault();
-    ev.stopPropagation();
+    stop_ev(ev);
 
     this._performZoom(
       this.#origin,
@@ -336,10 +311,7 @@ export class Viewport extends LitElement {
     let new_scale_delta = new_scale - this.scale;
 
     //Step 2: Set scroll position
-    this.#scrollPos = [
-      this.#scrollPos[0] + origin[0] * new_scale_delta,
-      this.#scrollPos[1] + origin[1] * new_scale_delta,
-    ];
+    this.#scrollPos = add_p(mul_c(origin, new_scale_delta), this.#scrollPos);
 
     //Step 3: Perform zoom then scroll
     this.scale = new_scale;
@@ -354,10 +326,11 @@ export class Viewport extends LitElement {
       for (let e of entries) {
         switch (e.target) {
           case this.surface:
-            this.v_dim = e.contentRect;
+            this.v_dim = [e.contentRect.width, e.contentRect.height];
+            this.v_loc = [e.contentRect.x, e.contentRect.y];
             break;
           case this.content:
-            this.c_dim = e.contentRect;
+            this.c_dim = [e.contentRect.width, e.contentRect.height];
             break;
         }
       }
@@ -372,12 +345,11 @@ export class Viewport extends LitElement {
 
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
-  coordToLocal([x, y]: [number, number]): [number, number] {
-    const vx = x - this.v_dim!.x + this.#scrollPos[0];
-    const vy = y - this.v_dim!.y + this.#scrollPos[1];
-    const offset = this.offset;
-    const res = [(vx - offset[0]) / this.scale, (vy - offset[1]) / this.scale];
-    return res as any;
+  coordToLocal(coord: [number, number]): [number, number] {
+    const v = add_p(sub_p(coord, this.v_loc), this.#scrollPos);
+    const res = div_c(sub_p(v, this.offset), this.scale);
+
+    return res;
   }
 
   updated() {
@@ -411,6 +383,10 @@ export class Viewport extends LitElement {
         position: fixed;
         right: 0;
         width: var(--thickness);
+      }
+
+      .smooth > * {
+        transition: all 250ms;
       }
     `;
   }

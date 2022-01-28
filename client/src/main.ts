@@ -13,7 +13,6 @@ document.body.addEventListener(
   { passive: false }
 );
 
-
 // (async function () {
 //   let signaler = await DurableSignaler.establish(
 //     new URL("ws://localhost:8080")
