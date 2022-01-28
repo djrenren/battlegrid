@@ -32,14 +32,5 @@ export default [{
     file: "build/bundle.js",
     format: "es",
   }
-}, {
-  plugins,
-  input: "src/fs/worker.ts",
-  output: {
-    sourcemap: true,
-    file: "worker.js",
-    format: "es"
-  }
-}
-];
+}];
 

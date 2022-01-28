@@ -3,7 +3,7 @@ import "./ui/viewport";
 import "./ui/safari-fix";
 import "./ui/grid/gridlines";
 import "./ui/token";
-
+import "./ui/canvas";
 
 document.body.addEventListener(
   "wheel",

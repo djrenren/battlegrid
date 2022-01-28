@@ -31,7 +31,12 @@ export class Token extends LitElement {
     }
 
     render() {
-        return html`<img src=${this._url!} />`;
+        return html`
+        <style>
+            :host {
+                background: url('${this._url}')
+            }
+        </style>
+        `;
     }
-
 }
