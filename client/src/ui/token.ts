@@ -35,6 +35,7 @@ export class Token extends LitElement {
       <style>
         :host {
           background: url("${this._url}");
+          overflow: hidden;
         }
       </style>
     `;

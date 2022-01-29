@@ -121,7 +121,7 @@ export class Viewport extends LitElement {
     return max_p(
       [0, 0],
       mul_c(sub_p(this.v_dim, mul_c(this.c_dim, this.scale)), 0.5)
-    );
+    ).map((n) => n) as any; //Math.round((n + Number.EPSILON) * 100) / 100) as any;
   }
 
   @state()
@@ -314,7 +314,7 @@ export class Viewport extends LitElement {
     this.#scrollPos = add_p(mul_c(origin, new_scale_delta), this.#scrollPos);
 
     //Step 3: Perform zoom then scroll
-    this.scale = new_scale;
+    this.scale = new_scale; //Math.round((new_scale + Number.EPSILON) * 10) / 10
   }
 
   // After connection, we set up resize observers
@@ -372,6 +372,10 @@ export class Viewport extends LitElement {
         position: absolute;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
       }
 
       .bottombar {
