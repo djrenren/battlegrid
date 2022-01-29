@@ -4,6 +4,8 @@ import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { Token } from "./token";
 
+const GRID_SIZE = 48;
+
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -32,8 +34,8 @@ export class Canvas extends LitElement {
     return html`
       <style>
         :host {
-          width: ${this.width / 4}in;
-          height: ${this.height / 4}in;
+          width: ${em(this.width)};
+          height: ${em(this.height)};
         }
       </style>
       ${repeat(
@@ -45,7 +47,7 @@ export class Canvas extends LitElement {
             @click=${this.#focus}
             id=${t.id}
             style=${styleMap({
-              //   transform: `translate(${em(t.x)}, ${em(t.y)})`,
+                // transform: `translate(${em(t.x)}, ${em(t.y)})`,
               position: "absolute",
               top: em(t.x),
               left: em(t.y),
@@ -60,13 +62,17 @@ export class Canvas extends LitElement {
       <div
         style=${styleMap({
           position: "absolute",
-          "--thickness": "calc(3px / var(--scale))",
-          transform: `translate(${em(0.25)}, ${em(0.25)})`,
-
+          "--thickness": "calc(1px / var(--scale))",
+        //   transform: `translate(${em(0.25)}, ${em(0.25)})`,
+          transition: "transform 1ms",
+          left: em(0.25),
+          top: em(0.25)
           width: em(0.5),
           height: em(0.5),
           background: "transparent",
           overflow: "visible",
+          zIndex: "10000",
+            // border: "var(--thickness) solid black",
         })}
       >
         <div
@@ -76,7 +82,7 @@ export class Canvas extends LitElement {
             right: "calc(-1 * var(--thickness))",
             top: "calc(-1 * var(--thickness))",
             bottom: "calc(-1 * var(--thickness))",
-            border: "var(--thickness) solid black",
+            boxShadow: "0 0 var(--thickness) blue"
           })}
         ></div>
       </div>
@@ -89,9 +95,9 @@ export class Canvas extends LitElement {
         <defs>
           <pattern
             id="pat"
-            x="-0.25"
-            y="-0.25"
-            width="24"
+            x="-0.5"
+            y="-0.5"
+            width=${GRID_SIZE}
             height="100%"
             patternUnits="userSpaceOnUse"
           >
@@ -99,7 +105,7 @@ export class Canvas extends LitElement {
               class="gridline"
               x="0"
               y="0"
-              width="0.5"
+              width="1"
               height="100%"
               fill="grey"
               opacity="1"
@@ -107,10 +113,10 @@ export class Canvas extends LitElement {
           </pattern>
           <pattern
             id="pat2"
-            x="-0.25"
-            y="-0.25"
+            x="-0.5"
+            y="-0.5"
             width="100%"
-            height="24"
+            height=${GRID_SIZE}
             patternUnits="userSpaceOnUse"
           >
             <rect
@@ -118,7 +124,7 @@ export class Canvas extends LitElement {
               x="0"
               y="0"
               width="100%"
-              height="0.5"
+              height="1"
               fill="grey"
               opacity="1"
             ></rect>
@@ -157,6 +163,10 @@ export class Canvas extends LitElement {
       box-sizing: content-box !important;
     }
 
+    :host, svg {
+      border-radius: 3px;
+    }
+
     .token {
       position: absolute;
     }
@@ -167,7 +177,7 @@ export class Canvas extends LitElement {
   `;
 }
 
-const em = (n: number) => n * 0.25 + "in";
+const em = (n: number) => n * GRID_SIZE + "px";
 type TokenData = {
   x: number;
   y: number;
