@@ -64,7 +64,7 @@ export class Canvas extends LitElement {
         }
       </style>
       <bg-viewport style="width: 100%; height: 100%">
-        <svg id="root" width=${width} height=${height} @click=${this.#unfocus}>
+        <svg id="root" width=${width} height=${height} @click=${this.#unfocus} @dragstart=${stop_ev}>
           <defs>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
@@ -161,7 +161,9 @@ export class Canvas extends LitElement {
   #selection_drag = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
-    const offset = sub_p(max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], screen_to_svg(ev))), this.#drag_origin);
+    let offset = sub_p(max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], screen_to_svg(ev))), this.#drag_origin);
+
+    offset = [offset[0] - (offset[0] % GRID_SIZE), offset[1] - (offset[1] % GRID_SIZE)];
     const id = (ev.target as SVGGraphicsElement).id!;
     let move = [0, 0] as Point;
     let resize = [0, 0] as Point;
@@ -188,12 +190,22 @@ export class Canvas extends LitElement {
       move = offset;
     }
 
+    // move = [move[0] - (move[0] % GRID_SIZE), move[1] - (move[1] % GRID_SIZE)]
+    // move = [move[0] - (move[0] % GRID_SIZE), move[1] - (move[1] % GRID_SIZE)]
+
     this._selection_transform = { move, resize };
   };
 
   #selection_drag_end = (ev: PointerEvent) => {
     stop_ev(ev);
     (ev.target as SVGElement).releasePointerCapture(ev.pointerId);
+    const el = this.tokens.get(this.selection!);
+    if (el) {
+      el.x += this._selection_transform.move[0];
+      el.y += this._selection_transform.move[1];
+      el.width += this._selection_transform.resize[0];
+      el.height += this._selection_transform.resize[1];
+    }
     this._selection_transform = { move: [0, 0], resize: [0, 0] };
   };
 
@@ -205,7 +217,9 @@ export class Canvas extends LitElement {
       box-sizing: content-box !important;
       --selection-color: cornflowerblue;
     }
-
+    svg * {
+      transition: all 100ms;
+    }
     :host,
     svg {
       border-radius: 3px;
