@@ -1,9 +1,9 @@
 import { css, html, LitElement, svg } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { mul_c } from "../util/math";
-import { stop_ev } from "../util/events";
+import { add_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
+import { is_primary_down, screen_to_svg, stop_ev } from "../util/events";
 
 const GRID_SIZE = 24; // scale-dependent px
 const LINE_WIDTH = 0.5; // scale-dependent px
@@ -15,6 +15,9 @@ export class Canvas extends LitElement {
 
   @property({ type: Number })
   height = 10;
+
+  @query("root", true)
+  root?: SVGElement;
 
   tokens: Map<string, TokenData> = new Map([
     [
@@ -42,6 +45,17 @@ export class Canvas extends LitElement {
     let width = this.width * GRID_SIZE;
     let height = this.height * GRID_SIZE;
     let selected = this.tokens.get(this.selection!);
+    let left: number, right: number, top: number, bot: number;
+    let new_dim: Point, new_origin: Point;
+    if (selected) {
+      new_origin = add_p([selected.x, selected.y], this._selection_transform.move);
+      new_dim = add_p([selected.width, selected.height] as Point, this._selection_transform.resize);
+
+      left = new_origin[0];
+      right = new_origin[0] + new_dim[0];
+      top = new_origin[1];
+      bot = new_origin[1] + new_dim[1];
+    }
     return html`
       <style>
         :host {
@@ -50,7 +64,7 @@ export class Canvas extends LitElement {
         }
       </style>
       <bg-viewport style="width: 100%; height: 100%">
-        <svg width=${width} height=${height} @click=${this.#unfocus}>
+        <svg id="root" width=${width} height=${height} @click=${this.#unfocus}>
           <defs>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
@@ -70,49 +84,46 @@ export class Canvas extends LitElement {
             (t, index) => svg`
                 <image
                     id=${t.id}
-                    x=${t.x + LINE_WIDTH / 2}
-                    y=${t.y + LINE_WIDTH / 2}
+                    x=${(this.selection === t.id ? new_origin[0] : t.x) + LINE_WIDTH / 2}
+                    y=${(this.selection === t.id ? new_origin[1] : t.y) + LINE_WIDTH / 2}
                     @click=${this.#focus}
-                    width=${t.width - LINE_WIDTH}
-                    height=${t.height - LINE_WIDTH}
+                    width=${(this.selection === t.id ? new_dim[0] : t.width) - LINE_WIDTH}
+                    height=${(this.selection === t.id ? new_dim[1] : t.height) - LINE_WIDTH}
                     href=${"https://www.researchgate.net/profile/Donald-Bailey-5/publication/224624453/figure/fig1/AS:393833717223438@1470908683517/Original-colour-bar-static-test-image-used-in-analogue-television-II-METHODOLOGY.png"}
                     preserveAspectRatio="none"
                 />
                 `
           )}
-          ${selected
-            ? svg`
+          <svg @pointerdown=${this.#selection_drag_start} @pointermove=${this.#selection_drag} @pointerup=${this.#selection_drag_end}>
+            ${selected
+              ? svg`
             <rect
+                id="mover"
                 class="selection"
-                x=${selected.x}
-                y=${selected.y}
-                width=${selected.width}
-                height=${selected.height}
+                x=${left!}
+                y=${top!}
+                width=${new_dim![0]}
+                height=${new_dim![1]}
                 fill="transparent"
                 @click=${stop_ev}
             ></rect>
-            <line id="r-n" x1=${selected.x} y1=${selected.y} x2=${selected.x + selected.width} y2=${selected.height}></line>
-            <line id="r-w" x1=${selected.x} y1=${selected.y} x2=${selected.x} y2=${selected.y + selected.height}></line>
-            <line id="r-e" x1=${selected.x + selected.width} y1=${selected.y} x2=${selected.x + selected.width} y2=${
-                selected.y + selected.height
-              }></line>
-            <line id="r-s" x1=${selected.x} y1=${selected.y + selected.height} x2=${selected.x + selected.width} y2=${
-                selected.height + selected.height
-              }></line>
-            <rect id="r-nw" class="handle" x=${selected.x - HANDLE_SIZE / 2} y=${selected.y - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
-                HANDLE_SIZE + "px"
-              }></rect>
-            <rect id="r-ne" class="handle" x=${selected.x + selected.width - HANDLE_SIZE / 2} y=${
-                selected.y - HANDLE_SIZE / 2
-              } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect id="r-sw" class="handle" x=${selected.x - HANDLE_SIZE / 2} y=${
-                selected.y + selected.height - HANDLE_SIZE / 2
-              } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect id="r-se" class="handle" x=${selected.x + selected.width - HANDLE_SIZE / 2} y=${
-                selected.y + selected.height - HANDLE_SIZE / 2
-              } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
+            <line id="r-n" x1=${left!} y1=${top!} x2=${right!} y2=${top!}></line>
+            <line id="r-w" x1=${left!} y1=${top!} x2=${left!} y2=${bot!}></line>
+            <line id="r-e" x1=${right!} y1=${top!} x2=${right!} y2=${bot!}></line>
+            <line id="r-s" x1=${left!} y1=${bot!} x2=${right!} y2=${bot!}></line>
+            <rect id="r-nw" class="handle" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
+                  HANDLE_SIZE + "px"
+                }></rect>
+            <rect id="r-ne" class="handle" x=${right! - HANDLE_SIZE / 2} y=${
+                  top! - HANDLE_SIZE / 2
+                } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
+            <rect id="r-sw" class="handle" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
+            <rect id="r-se" class="handle" x=${right! - HANDLE_SIZE / 2} y=${
+                  bot! - HANDLE_SIZE / 2
+                } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
           `
-            : null}
+              : null}
+          </svg>
         </svg>
       </bg-viewport>
     `;
@@ -123,6 +134,7 @@ export class Canvas extends LitElement {
     return root;
   }
 
+  /** Selection handling */
   @state()
   selection?: string;
 
@@ -132,8 +144,57 @@ export class Canvas extends LitElement {
     console.log("focus");
     this.selection = (ev.target! as SVGElement).id;
   };
+
   #unfocus = () => {
     this.selection = undefined;
+  };
+
+  #drag_origin: Point = [0, 0];
+  #selection_drag_start = (ev: PointerEvent) => {
+    if (!is_primary_down(ev)) return;
+    (ev.target as SVGElement).setPointerCapture(ev.pointerId);
+    this.#drag_origin = screen_to_svg(ev);
+  };
+
+  @state()
+  _selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point };
+  #selection_drag = (ev: PointerEvent) => {
+    if (!is_primary_down(ev)) return;
+    stop_ev(ev);
+    const offset = sub_p(max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], screen_to_svg(ev))), this.#drag_origin);
+    const id = (ev.target as SVGGraphicsElement).id!;
+    let move = [0, 0] as Point;
+    let resize = [0, 0] as Point;
+
+    if (new Set(["r-n", "r-ne", "r-nw"]).has(id)) {
+      resize[1] = -offset[1];
+      move[1] = offset[1];
+    }
+
+    if (new Set(["r-w", "r-nw", "r-sw"]).has(id)) {
+      resize[0] = -offset[0];
+      move[0] = offset[0];
+    }
+
+    if (new Set(["r-s", "r-se", "r-sw"]).has(id)) {
+      resize[1] = offset[1];
+    }
+
+    if (new Set(["r-e", "r-se", "r-ne"]).has(id)) {
+      resize[0] = offset[0];
+    }
+
+    if (id === "mover") {
+      move = offset;
+    }
+
+    this._selection_transform = { move, resize };
+  };
+
+  #selection_drag_end = (ev: PointerEvent) => {
+    stop_ev(ev);
+    (ev.target as SVGElement).releasePointerCapture(ev.pointerId);
+    this._selection_transform = { move: [0, 0], resize: [0, 0] };
   };
 
   static styles = css`
