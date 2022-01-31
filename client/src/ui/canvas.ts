@@ -1,11 +1,11 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, svg } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { Token } from "./token";
+import { mul_c } from "../util/math";
 
-const GRID_SIZE = 48;
-
+const GRID_SIZE = 24;
+const LINE_WIDTH = 0.5;
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -16,11 +16,11 @@ export class Canvas extends LitElement {
 
   tokens: TokenData[] = [
     {
-      x: 2,
-      y: 4,
-      height: 1,
-      width: 1,
-      res: "test",
+      x: 48,
+      y: 48,
+      height: 48,
+      width: 48,
+      res: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",
       id: "1",
     },
   ];
@@ -30,109 +30,53 @@ export class Canvas extends LitElement {
     this.addEventListener("click", this.#unfocus);
   }
 
+  get #dim() {
+    return mul_c([this.width, this.height], GRID_SIZE);
+  }
+
   render() {
+    let width = this.width * GRID_SIZE;
+    let height = this.height * GRID_SIZE;
     return html`
       <style>
         :host {
-          width: ${em(this.width)};
-          height: ${em(this.height)};
+          width: 100%;
+          height: 100%;
         }
       </style>
-      ${repeat(
-        this.tokens,
-        (t) => t.id,
-        (t, index) => html`
-          <bg-token
-            class=${"token" + (this.selection === t.id ? " selected" : "")}
-            @click=${this.#focus}
-            id=${t.id}
-            style=${styleMap({
-                // transform: `translate(${em(t.x)}, ${em(t.y)})`,
-              position: "absolute",
-              top: em(t.x),
-              left: em(t.y),
-              width: em(t.width),
-              height: em(t.height),
-            })}
-            res=${t.res}
-          />
-        `
-      )}
+      <bg-viewport style="width: 100%; height: 100%">
+        <svg width=${width} height=${height}>
+          <defs>
+            <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
+              <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
+            </pattern>
+            <pattern id="pat2" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height=${GRID_SIZE} patternUnits="userSpaceOnUse">
+              <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
+            </pattern>
+          </defs>
+          <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" rx="5"></rect>
 
-      <div
-        style=${styleMap({
-          position: "absolute",
-          "--thickness": "calc(1px / var(--scale))",
-        //   transform: `translate(${em(0.25)}, ${em(0.25)})`,
-          transition: "transform 1ms",
-          left: em(0.25),
-          top: em(0.25)
-          width: em(0.5),
-          height: em(0.5),
-          background: "transparent",
-          overflow: "visible",
-          zIndex: "10000",
-            // border: "var(--thickness) solid black",
-        })}
-      >
-        <div
-          style=${styleMap({
-            position: "absolute",
-            left: "calc(-1 * var(--thickness))",
-            right: "calc(-1 * var(--thickness))",
-            top: "calc(-1 * var(--thickness))",
-            bottom: "calc(-1 * var(--thickness))",
-            boxShadow: "0 0 var(--thickness) blue"
-          })}
-        ></div>
-      </div>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="100%"
-        height="100%"
-        style="position: absolute; vector-effect: non-scaling-stroke; pointer-events: none"
-      >
-        <defs>
-          <pattern
-            id="pat"
-            x="-0.5"
-            y="-0.5"
-            width=${GRID_SIZE}
-            height="100%"
-            patternUnits="userSpaceOnUse"
-          >
-            <rect
-              class="gridline"
-              x="0"
-              y="0"
-              width="1"
-              height="100%"
-              fill="grey"
-              opacity="1"
-            ></rect>
-          </pattern>
-          <pattern
-            id="pat2"
-            x="-0.5"
-            y="-0.5"
-            width="100%"
-            height=${GRID_SIZE}
-            patternUnits="userSpaceOnUse"
-          >
-            <rect
-              class="gridline"
-              x="0"
-              y="0"
-              width="100%"
-              height="1"
-              fill="grey"
-              opacity="1"
-            ></rect>
-          </pattern>
-        </defs>
-        <rect x="0" y="0" width="100%" height="100%" fill="url(#pat)"></rect>
-        <rect x="0" y="0" width="100%" height="100%" fill="url(#pat2)"></rect>
-      </svg>
+          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" rx="5" pointer-events="none"></rect>
+          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)" rx="5" pointer-events="none"></rect>
+
+          ${repeat(
+            this.tokens,
+            (t) => t.id,
+            (t, index) => svg`
+                <image
+                    id=${t.id}
+                    x=${t.x + LINE_WIDTH / 2}
+                    y=${t.y + LINE_WIDTH / 2}
+                    @click=${this.#focus}
+                    width=${t.width - LINE_WIDTH}
+                    height=${t.height - LINE_WIDTH}
+                    href=${"https://www.researchgate.net/profile/Donald-Bailey-5/publication/224624453/figure/fig1/AS:393833717223438@1470908683517/Original-colour-bar-static-test-image-used-in-analogue-television-II-METHODOLOGY.png"}
+                    preserveAspectRatio="none"
+                />
+                `
+          )}
+        </svg>
+      </bg-viewport>
     `;
   }
 
@@ -148,7 +92,7 @@ export class Canvas extends LitElement {
     ev.preventDefault();
     ev.stopPropagation();
     console.log("focus");
-    this.selection = (ev.target! as Token).id;
+    this.selection = (ev.target! as SVGElement).id;
   };
   #unfocus = () => {
     this.selection = undefined;
@@ -158,12 +102,12 @@ export class Canvas extends LitElement {
     :host {
       font-size: 0.25in;
       position: relative;
-      background: white;
       display: inline-block;
       box-sizing: content-box !important;
     }
 
-    :host, svg {
+    :host,
+    svg {
       border-radius: 3px;
     }
 
@@ -173,6 +117,23 @@ export class Canvas extends LitElement {
 
     .selected {
       border: 3px solid blue;
+    }
+
+    bg-viewport::part(background) {
+      background-color: #dbdbdb;
+      background-image: url("https://www.transparenttextures.com/patterns/45-degree-fabric-dark.png");
+      background-size: calc(var(--scale) * 315px);
+      /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
+    }
+
+    bg-viewport::part(bar) {
+      background: rgb(75, 75, 75);
+      opacity: 0.75;
+      --thickness: 10px;
+    }
+
+    bg-viewport::part(bar):hover {
+      opacity: 1;
     }
   `;
 }

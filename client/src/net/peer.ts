@@ -136,9 +136,7 @@ export class Peer {
           console.error(`Received answer at incorrect state: ${ss}. Ignoring.`);
           return;
         }
-        this.#rtc_peer.setRemoteDescription(
-          new RTCSessionDescription(s.answer)
-        );
+        this.#rtc_peer.setRemoteDescription(new RTCSessionDescription(s.answer));
         break;
 
       case "icecandidate":

@@ -15,10 +15,7 @@ export const subscribe = (resource_id: string, cb: (url: string) => void) => {
   }
 };
 
-export const unsubscribe = (
-  resource_id: string,
-  cb: (url: string) => void
-) => {};
+export const unsubscribe = (resource_id: string, cb: (url: string) => void) => {};
 
 export const register = async (name: string, data: Blob) => {
   let url = URL.createObjectURL(data);

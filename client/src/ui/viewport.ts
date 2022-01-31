@@ -1,24 +1,8 @@
 import { css, html, LitElement } from "lit";
-import {
-  customElement,
-  eventOptions,
-  state,
-  property,
-  query,
-} from "lit/decorators.js";
+import { customElement, eventOptions, state, property, query, queryAssignedElements } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { is_non_touch_drag, stop_ev } from "../util/events";
-import {
-  add_p,
-  div_c,
-  div_p,
-  max_p,
-  min_p,
-  mul_c,
-  mul_p,
-  Point,
-  sub_p,
-} from "../util/math";
+import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 
 const min_scale = 0.1;
 const max_scale = 5;
@@ -40,64 +24,13 @@ export class Viewport extends LitElement {
   @state()
   v_loc: Point = [0, 0];
 
-  @query("#content", true)
-  content?: HTMLDivElement;
-
-  @query("#scroller", true)
-  scroller?: HTMLDivElement;
+  #content?: Element;
 
   @state()
   _scrollPos = [0, 0] as [number, number];
 
-  #dragOrigin = [0, 0];
-  #do_drag_start = (ev: PointerEvent) => {
-    stop_ev(ev);
-    (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
-    this.#dragOrigin = [ev.clientX, ev.clientY];
-  };
-
-  _touchdragstart = (ev: PointerEvent) => {
-    if (ev.isPrimary && ev.pointerType === "touch") {
-      this.#do_drag_start(ev);
-    }
-  };
-
-  _touchdragmove = (ev: PointerEvent) => {
-    if (ev.isPrimary && ev.pointerType === "touch") {
-      this.#do_drag_move(ev, true, true, -1);
-    }
-  };
-
-  _touchdragend = (ev: PointerEvent) => {
-    if (ev.isPrimary && ev.pointerType === "touch") {
-      this.#do_drag_end(ev);
-    }
-  };
-
-  #do_drag_move = (
-    ev: PointerEvent,
-    allow_x: boolean,
-    allow_y: boolean,
-    scalar: number
-  ) => {
-    let sp = this.#scrollPos;
-    let old = this.#dragOrigin;
-    this.#dragOrigin = [ev.clientX, ev.clientY];
-    this.#scrollPos = [
-      allow_x ? sp[0] + scalar * (this.#dragOrigin[0] - old[0]) : sp[0],
-      allow_y ? sp[1] + scalar * (this.#dragOrigin[1] - old[1]) : sp[1],
-    ];
-  };
-
-  #do_drag_end = (ev: PointerEvent) => {
-    (ev.target as HTMLDivElement).releasePointerCapture(ev.pointerId);
-  };
-
   get #scrollPos() {
-    return max_p(
-      [0, 0],
-      min_p(this._scrollPos, sub_p(mul_c(this.c_dim, this.scale), this.v_dim))
-    );
+    return max_p([0, 0], min_p(this._scrollPos, sub_p(mul_c(this.c_dim, this.scale), this.v_dim)));
   }
   set #scrollPos(value: [number, number]) {
     const old = this._scrollPos;
@@ -118,18 +51,19 @@ export class Viewport extends LitElement {
   // offset represents the position of content within the viewport.
   // When content is larger than the viewport, the offset is 0,0
   get offset(): [number, number] {
-    return max_p(
-      [0, 0],
-      mul_c(sub_p(this.v_dim, mul_c(this.c_dim, this.scale)), 0.5)
-    ).map((n) => n) as any; //Math.round((n + Number.EPSILON) * 100) / 100) as any;
+    return max_p([0, 0], mul_c(sub_p(this.v_dim, mul_c(this.c_dim, this.scale)), 0.5)).map((n) => n) as any; //Math.round((n + Number.EPSILON) * 100) / 100) as any;
   }
 
+  // Indicates whether to animate content placement.  This is used to when input
+  // is big and chunky like ctrl+scroll wheel scrolling.  In the future it could
+  // be used for pg-up/down
   @state()
   smooth?: boolean;
 
   _transitionend = () => {
     this.smooth = false;
   };
+
   // The internal structure of viewport consists of 3 layers:
   //
   // Surface - where scrollbars are drawn and handlers are attached
@@ -154,20 +88,23 @@ export class Viewport extends LitElement {
       needs_h_bar = this.v_dim[0] < this.c_dim[0] * this.scale;
     }
 
-    const scroll_size = div_p(
-      mul_p(this.v_dim, this.v_dim),
-      mul_c(this.c_dim, this.scale)
-    );
-    const scroll_loc = div_p(
-      mul_p(scrollPos, this.v_dim),
-      mul_c(this.c_dim, this.scale)
-    );
+    const scroll_size = div_p(mul_p(this.v_dim, this.v_dim), mul_c(this.c_dim, this.scale));
+    const scroll_loc = div_p(mul_p(scrollPos, this.v_dim), mul_c(this.c_dim, this.scale));
 
     return html`
+      <style>
+        :host,
+        :root {
+          --scale: ${this.scale};
+        }
+        ::slotted(svg) {
+          transform: translate(${offset[0] - scrollPos[0]}px, ${offset[1] - scrollPos[1]}px) scale(var(--scale));
+        }
+      </style>
       <div
         id="touch-surface"
         class=${this.smooth ? "smooth" : ""}
-        @wheel=${this.#wheel}
+        @wheel=${this._wheel}
         @pointerdown=${this._touchdragstart}
         @pointermove=${this._touchdragmove}
         @pointerup=${this._touchdragend}
@@ -182,21 +119,10 @@ export class Viewport extends LitElement {
             zIndex: "-1",
             height: "100%",
             width: "100%",
-            backgroundPosition: `${offset[0] - scrollPos[0]}px ${
-              offset[1] - scrollPos[1]
-            }px`,
+            backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`,
           })}
         ></div>
-        <div
-          id="content"
-          style=${styleMap({
-            transform: `translate(${offset[0] - scrollPos[0]}px, ${
-              offset[1] - scrollPos[1]
-            }px) scale(${this.scale}) `,
-          })}
-        >
-          <slot></slot>
-        </div>
+        <slot @slotchange=${this.handleSlotchange}></slot>
         <div
           part="bar"
           class="bottombar"
@@ -230,22 +156,10 @@ export class Viewport extends LitElement {
   }
 
   #scrollbar_change_horiz(ev: PointerEvent) {
-    if (is_non_touch_drag(ev))
-      this.#do_drag_move(
-        ev,
-        true,
-        false,
-        (this.c_dim[0] * this.scale) / this.v_dim[0]
-      );
+    if (is_non_touch_drag(ev)) this.#do_drag_move(ev, true, false, (this.c_dim[0] * this.scale) / this.v_dim[0]);
   }
   #scrollbar_change_vert(ev: PointerEvent) {
-    if (is_non_touch_drag(ev))
-      this.#do_drag_move(
-        ev,
-        false,
-        true,
-        (this.c_dim[1] * this.scale) / this.v_dim[1]
-      );
+    if (is_non_touch_drag(ev)) this.#do_drag_move(ev, false, true, (this.c_dim[1] * this.scale) / this.v_dim[1]);
   }
   #scrollbar_up(ev: PointerEvent, idx: number) {
     this.#do_drag_end(ev);
@@ -253,26 +167,21 @@ export class Viewport extends LitElement {
 
   // Chrome and Firefox model pinches as ctrl + scroll (to match the classic
   // desktop idiom). This handler turns that into a _performZoom call.
-  #wheel = (ev: WheelEvent) => {
+  @eventOptions({ passive: false })
+  _wheel(ev: WheelEvent) {
     stop_ev(ev);
-    this.smooth = true;
-    const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
+    const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? ((this.smooth = true), 5) : 1;
     if (ev.ctrlKey) {
+      this.smooth = true;
       //zoom
-      this._performZoom(
-        this.coordToLocal([ev.clientX, ev.clientY]),
-        -ev.deltaY * multiplier * scroll_factor * this.scale
-      );
+      this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), -ev.deltaY * multiplier * scroll_factor * this.scale);
     } else {
+      this.smooth = multiplier === 1;
       // Firefox scrolls by lines so we need to multiply that by a line size
       // to get actual pixels. Page scrolling is unsupported currently.
-      // scroll
-      this.#scrollPos = add_p(
-        mul_c([ev.deltaX, ev.deltaY], multiplier),
-        this.#scrollPos
-      );
+      this.#scrollPos = add_p(mul_c([ev.deltaX, ev.deltaY], multiplier), this.#scrollPos);
     }
-  };
+  }
 
   // Gesture-based scrolling
   // Safari records pinches as gesture events rather than wheel events
@@ -303,10 +212,7 @@ export class Viewport extends LitElement {
   // such as scroll wheels, touches, button clicks, etc.
   _performZoom(origin: [number, number], scale_delta: number) {
     // Step 1: Bound the proposed delta by the min and max scale
-    let new_scale = Math.min(
-      max_scale,
-      Math.max(min_scale, this.scale + scale_delta)
-    );
+    let new_scale = Math.min(max_scale, Math.max(min_scale, this.scale + scale_delta));
 
     let new_scale_delta = new_scale - this.scale;
 
@@ -317,30 +223,30 @@ export class Viewport extends LitElement {
     this.scale = new_scale; //Math.round((new_scale + Number.EPSILON) * 10) / 10
   }
 
+  #resize_observer = new ResizeObserver((entries) => {
+    for (let e of entries) {
+      switch (e.target) {
+        case this.surface:
+          this.v_dim = [e.contentRect.width, e.contentRect.height];
+          this.v_loc = [e.contentRect.x, e.contentRect.y];
+          break;
+        case this.#content:
+          this.c_dim = [e.contentRect.width, e.contentRect.height];
+          break;
+      }
+    }
+  });
+
   // After connection, we set up resize observers
   // so that we can properly position the content within
   // the viewport when it is smaller than the container
   firstUpdated() {
-    console.log(Object.getOwnPropertyDescriptor(this, "surface"));
-    const ro = new ResizeObserver((entries) => {
-      for (let e of entries) {
-        switch (e.target) {
-          case this.surface:
-            this.v_dim = [e.contentRect.width, e.contentRect.height];
-            this.v_loc = [e.contentRect.x, e.contentRect.y];
-            break;
-          case this.content:
-            this.c_dim = [e.contentRect.width, e.contentRect.height];
-            break;
-        }
-      }
-    });
-    ro.observe(this.surface!);
-    ro.observe(this.content!);
-    this.disconnectedCallback = () => {
-      super.disconnectedCallback();
-      ro.disconnect();
-    };
+    this.#resize_observer.observe(this.surface!);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.#resize_observer.disconnect();
   }
 
   // Converts screen coordinates into content coordinates, accounting for
@@ -352,9 +258,51 @@ export class Viewport extends LitElement {
     return res;
   }
 
-  updated() {
-    this.style.setProperty("--scale", "" + this.scale);
+  handleSlotchange({ target }: { target: HTMLSlotElement }) {
+    this.#content ? this.#resize_observer.unobserve(this.#content) : 0;
+    this.#content = target.assignedElements().find((el) => el.matches("svg"));
+    this.#content ? this.#resize_observer.observe(this.#content) : 0;
   }
+
+  // Drag Logic (reused by touch panning, and scrollbar dragging)
+  #dragOrigin = [0, 0];
+  #do_drag_start = (ev: PointerEvent) => {
+    stop_ev(ev);
+    (ev.target as HTMLDivElement).setPointerCapture(ev.pointerId);
+    this.#dragOrigin = [ev.clientX, ev.clientY];
+  };
+
+  #do_drag_move = (ev: PointerEvent, allow_x: boolean, allow_y: boolean, scalar: number) => {
+    let sp = this.#scrollPos;
+    let old = this.#dragOrigin;
+    this.#dragOrigin = [ev.clientX, ev.clientY];
+    this.#scrollPos = [
+      allow_x ? sp[0] + scalar * (this.#dragOrigin[0] - old[0]) : sp[0],
+      allow_y ? sp[1] + scalar * (this.#dragOrigin[1] - old[1]) : sp[1],
+    ];
+  };
+
+  #do_drag_end = (ev: PointerEvent) => {
+    (ev.target as HTMLDivElement).releasePointerCapture(ev.pointerId);
+  };
+
+  _touchdragstart = (ev: PointerEvent) => {
+    if (ev.isPrimary && ev.pointerType === "touch") {
+      this.#do_drag_start(ev);
+    }
+  };
+
+  _touchdragmove = (ev: PointerEvent) => {
+    if (ev.isPrimary && ev.pointerType === "touch") {
+      this.#do_drag_move(ev, true, true, -1);
+    }
+  };
+
+  _touchdragend = (ev: PointerEvent) => {
+    if (ev.isPrimary && ev.pointerType === "touch") {
+      this.#do_drag_end(ev);
+    }
+  };
 
   static get styles() {
     return css`
@@ -362,20 +310,12 @@ export class Viewport extends LitElement {
         position: relative;
         width: 100%;
         height: 100%;
-        padding: 0;
-        margin: 0;
         overflow: hidden;
       }
 
-      #content {
+      ::slotted(svg) {
         transform-origin: 0 0;
         position: absolute;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-        display: inline-block;
-        margin: 0;
-        padding: 0;
-        overflow: visible;
       }
 
       .bottombar {
@@ -389,7 +329,8 @@ export class Viewport extends LitElement {
         width: var(--thickness);
       }
 
-      .smooth > * {
+      .smooth > *,
+      .smooth ::slotted(svg) {
         transition: all 250ms;
       }
     `;

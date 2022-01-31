@@ -58,10 +58,7 @@ describe(DurableSignaler, () => {
 
   it("supports suggested ids", async () => {
     let ident = "h4x0rz";
-    let x = await DurableSignaler.establish(
-      new URL("ws://localhost:8080"),
-      ident
-    );
+    let x = await DurableSignaler.establish(new URL("ws://localhost:8080"), ident);
 
     expect(x.ident).toBe(ident);
   });
@@ -70,14 +67,9 @@ describe(DurableSignaler, () => {
     expect.assertions(1);
 
     let ident = "duping";
-    let x = await DurableSignaler.establish(
-      new URL("ws://localhost:8080"),
-      ident
-    );
+    let x = await DurableSignaler.establish(new URL("ws://localhost:8080"), ident);
 
-    await expect(
-      DurableSignaler.establish(new URL("ws://localhost:8080"), ident)
-    ).rejects.toBeInstanceOf(CloseEvent);
+    await expect(DurableSignaler.establish(new URL("ws://localhost:8080"), ident)).rejects.toBeInstanceOf(CloseEvent);
   });
 
   it("can facilitate a connection", (done) => {

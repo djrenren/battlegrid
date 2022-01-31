@@ -21,10 +21,7 @@ export class DurableSignaler extends EventTarget {
     this.#socket = socket;
   }
 
-  static async establish(
-    signaling_server: URL,
-    suggested_id?: string
-  ): Promise<DurableSignaler> {
+  static async establish(signaling_server: URL, suggested_id?: string): Promise<DurableSignaler> {
     if (suggested_id) {
       signaling_server.pathname = "/" + suggested_id;
     }
@@ -179,29 +176,9 @@ export class DurableSignaler extends EventTarget {
 export type Status = "connected" | "disconnected" | "closed";
 export type StatusEvent = CustomEvent<Status>;
 export interface DurableSignaler {
-  addEventListener(
-    type: "message",
-    callback: (msg: CustomEvent) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  addEventListener(
-    type: "status",
-    callback: (msg: StatusEvent) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  addEventListener(
-    type: "peer",
-    callback: (msg: CustomEvent<Peer>) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  addEventListener(
-    type: "error",
-    callback: (msg: CustomEvent) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  addEventListener(
-    type: string,
-    listener: EventListener | EventListenerObject,
-    useCapture?: boolean
-  ): void;
+  addEventListener(type: "message", callback: (msg: CustomEvent) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: "status", callback: (msg: StatusEvent) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: "peer", callback: (msg: CustomEvent<Peer>) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: "error", callback: (msg: CustomEvent) => void, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: string, listener: EventListener | EventListenerObject, useCapture?: boolean): void;
 }
