@@ -13,13 +13,14 @@ let plugins = [
   terser({
     ecma: 2020,
     module: true,
-    compress: true,
     mangle: {
       properties: {
         regex: /^(#|__)/,
       },
       toplevel: true,
     },
+    keep_classnames: false,
+    safari10: false,
   }),
   copy({
     targets: [{ src: "static/**/*", dest: "build" }],

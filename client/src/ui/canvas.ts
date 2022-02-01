@@ -44,6 +44,14 @@ export class Canvas extends LitElement {
     return mul_c([this.width, this.height], GRID_SIZE);
   }
 
+  connectedCallback(): void {
+      super.connectedCallback();
+      document.addEventListener('keydown', this.keydown)
+  }
+  disconnectedCallback(): void {
+      super.disconnectedCallback();
+      document.removeEventListener('keydown', this.keydown)
+  }
   render() {
     let width = this.width * GRID_SIZE;
     let height = this.height * GRID_SIZE;
@@ -268,6 +276,15 @@ export class Canvas extends LitElement {
   screen_to_svg = (ev: { clientX: number; clientY: number }): Point => {
     return this.viewport!.coordToLocal([ev.clientX, ev.clientY]);
   };
+
+  keydown = (ev: KeyboardEvent) => {
+      // Backspace
+      if (ev.keyCode === 8) {
+        this.tokens.delete(this.selection!);
+        this.requestUpdate();
+        stop_ev(ev);
+      }
+  }
 
   static styles = css`
     :host {
