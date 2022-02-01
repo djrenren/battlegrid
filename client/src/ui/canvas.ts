@@ -2,7 +2,7 @@ import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { add_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
+import { add_c, add_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
 import { is_primary_down, screen_to_svg, stop_ev } from "../util/events";
 
 const GRID_SIZE = 24; // scale-dependent px
@@ -66,6 +66,9 @@ export class Canvas extends LitElement {
       <bg-viewport style="width: 100%; height: 100%">
         <svg id="root" width=${width} height=${height} @click=${this.#unfocus} @dragstart=${stop_ev}>
           <defs>
+            <clipPath id="canvasClip">
+                <rect x="0" y="0" width=${width} height=${height} rx="5" />
+            </clipPath>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
             </pattern>
@@ -73,10 +76,11 @@ export class Canvas extends LitElement {
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
           </defs>
-          <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" rx="5"></rect>
+          <g style="clip-path: url(#canvasClip)">
+          <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
 
-          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" rx="5" pointer-events="none"></rect>
-          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)" rx="5" pointer-events="none"></rect>
+          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
+          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)"pointer-events="none"></rect>
 
           ${repeat(
             this.tokens.values(),
@@ -94,6 +98,7 @@ export class Canvas extends LitElement {
                 />
                 `
           )}
+          </g>
           <svg @pointerdown=${this.#selection_drag_start} @pointermove=${this.#selection_drag} @pointerup=${this.#selection_drag_end}>
             ${selected
               ? svg`
@@ -141,7 +146,6 @@ export class Canvas extends LitElement {
   #focus = (ev: MouseEvent) => {
     ev.preventDefault();
     ev.stopPropagation();
-    console.log("focus");
     this.selection = (ev.target! as SVGElement).id;
   };
 
@@ -188,10 +192,14 @@ export class Canvas extends LitElement {
 
     if (id === "mover") {
       move = offset;
+    } else {
+        const selection = this.tokens.get(this.selection!)!;
+        const dim = [selection.width, selection.height] as Point;
+        // Don't let top-left drags cause movement pas the dimensions
+        move = min_p(add_c(dim, -GRID_SIZE), move);
+        // Constrain the transform from making anything smaller than a grid
+        resize = max_p(add_c(mul_c(dim, -1), GRID_SIZE), resize);
     }
-
-    // move = [move[0] - (move[0] % GRID_SIZE), move[1] - (move[1] % GRID_SIZE)]
-    // move = [move[0] - (move[0] % GRID_SIZE), move[1] - (move[1] % GRID_SIZE)]
 
     this._selection_transform = { move, resize };
   };
@@ -218,13 +226,12 @@ export class Canvas extends LitElement {
       --selection-color: cornflowerblue;
     }
     svg * {
-      transition: all 100ms;
-    }
-    :host,
-    svg {
-      border-radius: 3px;
+      transition: all 200ms;
     }
 
+    svg {
+        overflow: visible;
+    }
     .token {
       position: absolute;
     }
