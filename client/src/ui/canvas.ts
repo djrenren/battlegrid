@@ -363,7 +363,7 @@ export class Canvas extends LitElement {
 
     bg-viewport::part(bar) {
       background: rgb(75, 75, 75);
-      opacity: 0.75;
+      /* opacity: 0.75; */
       --thickness: 10px;
     }
 

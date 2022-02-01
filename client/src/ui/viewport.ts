@@ -129,7 +129,8 @@ export class Viewport extends LitElement {
           style=${styleMap({
             width: scroll_size[0] + "px",
             transform: `translate(${scroll_loc[0]}px, 0)`,
-            display: needs_h_bar ? "block" : "none",
+            opacity: needs_h_bar ? "0.75" : "0",
+            pointerEvents: needs_h_bar ? "auto" : "none",
           })}
           @pointerdown=${this.#scrollbar_down}
           @pointermove=${this.#scrollbar_change_horiz}
@@ -141,7 +142,8 @@ export class Viewport extends LitElement {
           style=${styleMap({
             height: scroll_size[1] + "px",
             transform: `translate(0, ${scroll_loc[1]}px)`,
-            display: needs_v_bar ? "block" : "none",
+            opacity: needs_v_bar ? "0.75" : "0",
+            pointerEvents: needs_v_bar ? "auto" : "none",
           })}
           @pointerdown=${this.#scrollbar_down}
           @pointermove=${this.#scrollbar_change_vert}
@@ -172,11 +174,11 @@ export class Viewport extends LitElement {
     stop_ev(ev);
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? ((this.smooth = true), 5) : 1;
     if (ev.ctrlKey) {
-      this.smooth = true;
+      this.smooth = ev.deltaMode === WheelEvent.DOM_DELTA_LINE;
       //zoom
       this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), -ev.deltaY * multiplier * scroll_factor * this.scale);
     } else {
-      this.smooth = multiplier === 1;
+      this.smooth = ev.deltaMode === WheelEvent.DOM_DELTA_LINE && (ev.deltaY * multiplier > 15 || ev.deltaX * multiplier > 15);
       // Firefox scrolls by lines so we need to multiply that by a line size
       // to get actual pixels. Page scrolling is unsupported currently.
       this.#scrollPos = add_p(mul_c([ev.deltaX, ev.deltaY], multiplier), this.#scrollPos);
@@ -252,7 +254,7 @@ export class Viewport extends LitElement {
 
   getCTM(): DOMMatrix {
     let mtx = new DOMMatrix();
-    console.log("WHAT");
+    console.log("WHAT")
     console.log("ISIDENTITY", mtx.isIdentity);
     mtx.translate(...sub_p(this.offset, this.#scrollPos));
     mtx.scale(this.scale);
@@ -329,19 +331,19 @@ export class Viewport extends LitElement {
       }
 
       .bottombar {
-        position: fixed;
+        position: absolute;
         bottom: 0;
         height: var(--thickness);
       }
       .rightbar {
-        position: fixed;
+        position: absolute;
         right: 0;
         width: var(--thickness);
       }
 
       .smooth > *,
       .smooth ::slotted(svg) {
-        transition: all 250ms;
+        transition: transform 150ms, width 150ms, height 150ms, background-position 150ms, background-size 150ms;
       }
     `;
   }
