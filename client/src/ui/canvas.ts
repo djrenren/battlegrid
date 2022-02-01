@@ -226,7 +226,7 @@ export class Canvas extends LitElement {
       --selection-color: cornflowerblue;
     }
     svg * {
-      transition: all 200ms;
+      transition: all 200ms ease-out;
     }
 
     svg {
