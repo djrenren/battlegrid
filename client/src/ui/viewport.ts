@@ -24,7 +24,7 @@ export class Viewport extends LitElement {
   @state()
   v_loc: Point = [0, 0];
 
-  #content?: Element;
+  #content?: SVGSVGElement;
 
   @state()
   _scrollPos = [0, 0] as [number, number];
@@ -231,7 +231,8 @@ export class Viewport extends LitElement {
           this.v_loc = [e.contentRect.x, e.contentRect.y];
           break;
         case this.#content:
-          this.c_dim = [e.contentRect.width, e.contentRect.height];
+          // this.c_dim = [e.contentRect.width, e.contentRect.height];
+          this.c_dim = [this.#content!.width.baseVal.value, this.#content!.height.baseVal.value];
           break;
       }
     }
@@ -260,7 +261,7 @@ export class Viewport extends LitElement {
 
   handleSlotchange({ target }: { target: HTMLSlotElement }) {
     this.#content ? this.#resize_observer.unobserve(this.#content) : 0;
-    this.#content = target.assignedElements().find((el) => el.matches("svg"));
+    this.#content = target.assignedElements().find((el) => el.matches("svg")) as SVGSVGElement;
     this.#content ? this.#resize_observer.observe(this.#content) : 0;
   }
 

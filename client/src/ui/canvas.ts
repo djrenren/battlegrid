@@ -64,10 +64,10 @@ export class Canvas extends LitElement {
         }
       </style>
       <bg-viewport style="width: 100%; height: 100%">
-        <svg id="root" width=${width} height=${height} @click=${this.#unfocus} @dragstart=${stop_ev}>
+        <svg id="root" width=${width} height=${height} @dragstart=${stop_ev}>
           <defs>
             <clipPath id="canvasClip">
-                <rect x="0" y="0" width=${width} height=${height} rx="5" />
+              <rect x="0" y="0" width=${width} height=${height} rx="5" />
             </clipPath>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
@@ -77,15 +77,15 @@ export class Canvas extends LitElement {
             </pattern>
           </defs>
           <g style="clip-path: url(#canvasClip)">
-          <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
+            <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" @click=${this.#unfocus}></rect>
 
-          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
-          <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)"pointer-events="none"></rect>
+            <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
+            <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)" pointer-events="none"></rect>
 
-          ${repeat(
-            this.tokens.values(),
-            (t) => t.id,
-            (t, index) => svg`
+            ${repeat(
+              this.tokens.values(),
+              (t) => t.id,
+              (t, index) => svg`
                 <image
                     id=${t.id}
                     x=${(this.selection === t.id ? new_origin[0] : t.x) + LINE_WIDTH / 2}
@@ -97,7 +97,7 @@ export class Canvas extends LitElement {
                     preserveAspectRatio="none"
                 />
                 `
-          )}
+            )}
           </g>
           <svg @pointerdown=${this.#selection_drag_start} @pointermove=${this.#selection_drag} @pointerup=${this.#selection_drag_end}>
             ${selected
@@ -150,14 +150,16 @@ export class Canvas extends LitElement {
   };
 
   #unfocus = () => {
+    console.log("UNFOCUS");
     this.selection = undefined;
   };
 
-  #drag_origin: Point = [0, 0];
+  #drag_offset: Point = [0, 0];
   #selection_drag_start = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
+    stop_ev(ev);
     (ev.target as SVGElement).setPointerCapture(ev.pointerId);
-    this.#drag_origin = screen_to_svg(ev);
+    this.#drag_offset = screen_to_svg(ev) as Point;
   };
 
   @state()
@@ -165,40 +167,41 @@ export class Canvas extends LitElement {
   #selection_drag = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
-    let offset = sub_p(max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], screen_to_svg(ev))), this.#drag_origin);
-
-    offset = [offset[0] - (offset[0] % GRID_SIZE), offset[1] - (offset[1] % GRID_SIZE)];
+    const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], screen_to_svg(ev)));
+    const selection = this.tokens.get(this.selection!)!;
+    const dim = [selection.width, selection.height] as Point;
+    const loc = [selection.x, selection.y] as Point;
     const id = (ev.target as SVGGraphicsElement).id!;
     let move = [0, 0] as Point;
     let resize = [0, 0] as Point;
 
     if (new Set(["r-n", "r-ne", "r-nw"]).has(id)) {
-      resize[1] = -offset[1];
-      move[1] = offset[1];
+      resize[1] = loc[1] - grid_loc[1];
+      move[1] = nearest(grid_loc[1]) - loc[1];
     }
 
     if (new Set(["r-w", "r-nw", "r-sw"]).has(id)) {
-      resize[0] = -offset[0];
-      move[0] = offset[0];
+      resize[0] = loc[0] - grid_loc[0];
+      move[0] = nearest(grid_loc[0]) - loc[0];
     }
 
     if (new Set(["r-s", "r-se", "r-sw"]).has(id)) {
-      resize[1] = offset[1];
+      resize[1] = nearest(grid_loc[1]) - dim[1] - loc[1];
     }
 
     if (new Set(["r-e", "r-se", "r-ne"]).has(id)) {
-      resize[0] = offset[0];
+      resize[0] = nearest(grid_loc[0]) - dim[0] - loc[0];
     }
 
     if (id === "mover") {
-      move = offset;
+      move = sub_p(grid_loc, this.#drag_offset).map(nearest) as Point;
     } else {
-        const selection = this.tokens.get(this.selection!)!;
-        const dim = [selection.width, selection.height] as Point;
-        // Don't let top-left drags cause movement pas the dimensions
-        move = min_p(add_c(dim, -GRID_SIZE), move);
-        // Constrain the transform from making anything smaller than a grid
-        resize = max_p(add_c(mul_c(dim, -1), GRID_SIZE), resize);
+      const selection = this.tokens.get(this.selection!)!;
+      const dim = [selection.width, selection.height] as Point;
+      // Don't let top-left drags cause movement pas the dimensions
+      move = min_p(add_c(dim, -GRID_SIZE), move);
+      // Constrain the transform from making anything smaller than a grid
+      resize = max_p(add_c(mul_c(dim, -1), GRID_SIZE), resize.map(nearest) as Point);
     }
 
     this._selection_transform = { move, resize };
@@ -226,11 +229,11 @@ export class Canvas extends LitElement {
       --selection-color: cornflowerblue;
     }
     svg * {
-      transition: all 200ms ease-out;
+      transition: all 100ms ease-out;
     }
 
     svg {
-        overflow: visible;
+      overflow: visible;
     }
     .token {
       position: absolute;
@@ -309,3 +312,5 @@ type TokenData = {
   res: string;
   id: string;
 };
+
+const nearest = (n: number) => Math.round(n / GRID_SIZE) * GRID_SIZE;

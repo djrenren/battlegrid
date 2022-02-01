@@ -4,7 +4,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import summary from "rollup-plugin-summary";
 import visualizer from "rollup-plugin-visualizer";
 import minifyHTML from "rollup-plugin-minify-html-literals";
-import copy from 'rollup-plugin-copy'
+import copy from "rollup-plugin-copy";
 
 let plugins = [
   typescript(),
@@ -22,9 +22,7 @@ let plugins = [
     },
   }),
   copy({
-    targets: [
-      {src: "static/**/*", dest: "build"}
-    ]
+    targets: [{ src: "static/**/*", dest: "build" }],
   }),
   visualizer(),
   // Print bundle summary
