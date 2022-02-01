@@ -250,6 +250,15 @@ export class Viewport extends LitElement {
     this.#resize_observer.disconnect();
   }
 
+  getCTM(): DOMMatrix {
+    let mtx = new DOMMatrix();
+    console.log("WHAT");
+    console.log("ISIDENTITY", mtx.isIdentity);
+    mtx.translate(...sub_p(this.offset, this.#scrollPos));
+    mtx.scale(this.scale);
+    return mtx;
+  }
+
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
   coordToLocal(coord: [number, number]): [number, number] {

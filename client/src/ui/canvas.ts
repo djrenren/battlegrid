@@ -3,7 +3,8 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { add_c, add_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
-import { is_primary_down, screen_to_svg, stop_ev } from "../util/events";
+import { is_primary_down, stop_ev } from "../util/events";
+import { Viewport } from "./viewport";
 
 const GRID_SIZE = 24; // scale-dependent px
 const LINE_WIDTH = 0.5; // scale-dependent px
@@ -18,6 +19,9 @@ export class Canvas extends LitElement {
 
   @query("root", true)
   root?: SVGElement;
+
+  @query("bg-viewport", true)
+  viewport?: Viewport;
 
   tokens: Map<string, TokenData> = new Map([
     [
@@ -64,7 +68,7 @@ export class Canvas extends LitElement {
         }
       </style>
       <bg-viewport style="width: 100%; height: 100%">
-        <svg id="root" width=${width} height=${height} @dragstart=${stop_ev}>
+        <svg id="root" width=${width} height=${height} @dragstart=${stop_ev} @pointerdown=${() => console.log("HEY")}>
           <defs>
             <clipPath id="canvasClip">
               <rect x="0" y="0" width=${width} height=${height} rx="5" />
@@ -159,7 +163,7 @@ export class Canvas extends LitElement {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
     (ev.target as SVGElement).setPointerCapture(ev.pointerId);
-    this.#drag_offset = screen_to_svg(ev) as Point;
+    this.#drag_offset = this.screen_to_svg(ev) as Point;
   };
 
   @state()
@@ -167,7 +171,8 @@ export class Canvas extends LitElement {
   #selection_drag = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
-    const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], screen_to_svg(ev)));
+    const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], this.screen_to_svg(ev)));
+    console.log(grid_loc, this.#drag_offset);
     const selection = this.tokens.get(this.selection!)!;
     const dim = [selection.width, selection.height] as Point;
     const loc = [selection.x, selection.y] as Point;
@@ -220,6 +225,13 @@ export class Canvas extends LitElement {
     this._selection_transform = { move: [0, 0], resize: [0, 0] };
   };
 
+  // Normally we'd use SVG machinery but it's broken in one browser...
+  // ... I'll let you guess who...
+  // ... it's safari
+  screen_to_svg = (ev: PointerEvent): Point => {
+    return this.viewport!.coordToLocal([ev.clientX, ev.clientY]);
+  };
+
   static styles = css`
     :host {
       font-size: 0.25in;
@@ -228,15 +240,13 @@ export class Canvas extends LitElement {
       box-sizing: content-box !important;
       --selection-color: cornflowerblue;
     }
-    svg * {
+    svg *,
+    .token {
       transition: all 100ms ease-out;
     }
 
     svg {
       overflow: visible;
-    }
-    .token {
-      position: absolute;
     }
 
     .selection {
