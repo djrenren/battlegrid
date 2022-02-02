@@ -215,7 +215,8 @@ export class Viewport extends LitElement {
       switch (e.target) {
         case this.surface:
           this.v_dim = [e.contentRect.width, e.contentRect.height];
-          this.v_loc = [e.contentRect.x, e.contentRect.y];
+          const rect = this.getBoundingClientRect();
+          this.v_loc = [rect.x, rect.y];
           break;
         case this.#content:
           // this.c_dim = [e.contentRect.width, e.contentRect.height];
@@ -240,9 +241,10 @@ export class Viewport extends LitElement {
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
   coordToLocal(coord: [number, number]): [number, number] {
+    console.log(this.v_loc);
     const v = add_p(sub_p(coord, this.v_loc), this.#scrollPos);
     const res = div_c(sub_p(v, this.offset), this.scale);
-
+    console.log(res);
     return res;
   }
 
