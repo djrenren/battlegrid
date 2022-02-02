@@ -74,7 +74,7 @@ export class Canvas extends LitElement {
           height: 100%;
         }
       </style>
-      <bg-viewport style="width: 100%; height: 100%">
+      <bg-viewport style="width: 100%; height: 100%" @click=${this.#unfocus}>
         <svg
           id="root"
           width=${width}
@@ -96,7 +96,7 @@ export class Canvas extends LitElement {
             </pattern>
           </defs>
           <g style="clip-path: url(#canvasClip)">
-            <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" @click=${this.#unfocus}></rect>
+            <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
 
             <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
             <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)" pointer-events="none"></rect>
