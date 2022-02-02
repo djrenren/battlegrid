@@ -99,12 +99,9 @@ export class Viewport extends LitElement {
         @gesturechange=${this._gesturechange}
       >
         <div
+          id="bg"
           part="background"
           style=${styleMap({
-            position: "absolute",
-            zIndex: "-1",
-            height: "100%",
-            width: "100%",
             backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`,
           })}
         ></div>
@@ -329,6 +326,13 @@ export class Viewport extends LitElement {
       .smooth > *,
       .smooth ::slotted(svg) {
         transition-property: transform, width, height, background-position, background-size;
+      }
+
+      #bg {
+        position: absolute;
+        z-index: -1;
+        height: 100%;
+        width: 100%;
       }
     `;
   }
