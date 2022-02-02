@@ -130,7 +130,7 @@ export class Canvas extends LitElement {
           
           `
             : null}
-          <svg @pointerdown=${this.#selection_drag_start} @pointermove=${this.#selection_drag} @pointerup=${this.#selection_drag_end}>
+          <svg @pointerdown=${this.#selection_drag_start} @pointermove=${this.#selection_drag} @pointerup=${this.#selection_drag_end} @click=${stop_ev}>
             ${selected
               ? svg`
             <rect

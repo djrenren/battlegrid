@@ -110,8 +110,7 @@ export class Viewport extends LitElement {
           part="bar"
           class="bottombar"
           style=${styleMap({
-            width: scroll_size[0] + "px",
-            transform: `translate(${scroll_loc[0]}px, 0)`,
+            transform: `translate(${scroll_loc[0]}px, 0) scale(${scroll_size[0]}, 1)`,
             opacity: needs_h_bar ? "0.75" : "0",
             pointerEvents: needs_h_bar ? "auto" : "none",
           })}
@@ -123,8 +122,7 @@ export class Viewport extends LitElement {
           part="bar"
           class="rightbar"
           style=${styleMap({
-            height: scroll_size[1] + "px",
-            transform: `translate(0, ${scroll_loc[1]}px)`,
+            transform: `translate(0, ${scroll_loc[1]}px) scale(1, ${scroll_size[1]})`,
             opacity: needs_v_bar ? "0.75" : "0",
             pointerEvents: needs_v_bar ? "auto" : "none",
           })}
@@ -241,10 +239,8 @@ export class Viewport extends LitElement {
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
   coordToLocal(coord: [number, number]): [number, number] {
-    console.log(this.v_loc);
     const v = add_p(sub_p(coord, this.v_loc), this.#scrollPos);
     const res = div_c(sub_p(v, this.offset), this.scale);
-    console.log(res);
     return res;
   }
 
@@ -269,6 +265,7 @@ export class Viewport extends LitElement {
   };
 
   #do_drag_move = (ev: PointerEvent, allow_x: boolean, allow_y: boolean, scalar: number) => {
+    this.smooth = 0;
     let sp = this.#scrollPos;
     let old = this.#dragOrigin;
     this.#dragOrigin = [ev.clientX, ev.clientY];
@@ -318,16 +315,23 @@ export class Viewport extends LitElement {
         position: absolute;
         bottom: 0;
         height: var(--thickness);
-      }
-      .rightbar {
-        position: absolute;
-        right: 0;
-        width: var(--thickness);
+        width: 1px;
+        transform-origin: 0 0;
+        backface-visibility: hidden
       }
 
-      .smooth > *,
-      .smooth ::slotted(svg) {
-        transition-property: transform, width, height, background-position, background-size;
+      .rightbar {
+        position: absolute;
+        width: var(--thickness);
+        height: 1px;
+        transform-origin: 0 0;
+        backface-visibility: hidden;
+        right: 0;
+      }
+
+      *,
+      ::slotted(svg) {
+        transition-property: transform;
       }
 
       #bg {
