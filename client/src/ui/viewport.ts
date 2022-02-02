@@ -4,9 +4,10 @@ import { styleMap } from "lit/directives/style-map.js";
 import { is_non_touch_drag, stop_ev } from "../util/events";
 import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 
-const min_scale = 0.1;
+const min_scale = 0.5;
 const max_scale = 5;
 const scroll_factor = 0.005;
+const AUTO_ZOOM_FILL = 0.8; // Percentage of the viewport to fill on first load
 
 @customElement("bg-viewport")
 export class Viewport extends LitElement {
@@ -252,15 +253,6 @@ export class Viewport extends LitElement {
     this.#resize_observer.disconnect();
   }
 
-  getCTM(): DOMMatrix {
-    let mtx = new DOMMatrix();
-    console.log("WHAT")
-    console.log("ISIDENTITY", mtx.isIdentity);
-    mtx.translate(...sub_p(this.offset, this.#scrollPos));
-    mtx.scale(this.scale);
-    return mtx;
-  }
-
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
   coordToLocal(coord: [number, number]): [number, number] {
@@ -273,6 +265,12 @@ export class Viewport extends LitElement {
   handleSlotchange({ target }: { target: HTMLSlotElement }) {
     this.#content ? this.#resize_observer.unobserve(this.#content) : 0;
     this.#content = target.assignedElements().find((el) => el.matches("svg")) as SVGSVGElement;
+
+    // Whenever #content changes, let's auto-zoom to a comfortable level
+    const dim = [this.#content!.width.baseVal.value, this.#content!.height.baseVal.value] as Point;
+    const rect = this.surface!.getBoundingClientRect();
+    this.scale = Math.max(min_scale, Math.min(max_scale, ...mul_c(div_p([rect.width, rect.height], dim), AUTO_ZOOM_FILL)));
+
     this.#content ? this.#resize_observer.observe(this.#content) : 0;
   }
 

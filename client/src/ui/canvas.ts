@@ -13,7 +13,7 @@ const HANDLE_SIZE = 5; // scale-independent px
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
-  width = 20;
+  width = 40;
 
   @property({ type: Number })
   height = 10;
@@ -45,12 +45,12 @@ export class Canvas extends LitElement {
   }
 
   connectedCallback(): void {
-      super.connectedCallback();
-      document.addEventListener('keydown', this.keydown)
+    super.connectedCallback();
+    document.addEventListener("keydown", this.keydown);
   }
   disconnectedCallback(): void {
-      super.disconnectedCallback();
-      document.removeEventListener('keydown', this.keydown)
+    super.disconnectedCallback();
+    document.removeEventListener("keydown", this.keydown);
   }
   render() {
     let width = this.width * GRID_SIZE;
@@ -278,13 +278,13 @@ export class Canvas extends LitElement {
   };
 
   keydown = (ev: KeyboardEvent) => {
-      // Backspace
-      if (ev.keyCode === 8) {
-        this.tokens.delete(this.selection!);
-        this.requestUpdate();
-        stop_ev(ev);
-      }
-  }
+    // Backspace
+    if (ev.keyCode === 8) {
+      this.tokens.delete(this.selection!);
+      this.requestUpdate();
+      stop_ev(ev);
+    }
+  };
 
   static styles = css`
     :host {
