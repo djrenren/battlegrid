@@ -7,7 +7,7 @@ import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from ".
 const min_scale = 0.5;
 const max_scale = 5;
 const scroll_factor = 0.005;
-const AUTO_ZOOM_FILL = 0.8; // Percentage of the viewport to fill on first load
+const AUTO_ZOOM_FILL = 0.9; // Percentage of the viewport to fill on first load
 
 @customElement("bg-viewport")
 export class Viewport extends LitElement {
@@ -59,10 +59,10 @@ export class Viewport extends LitElement {
   // is big and chunky like ctrl+scroll wheel scrolling.  In the future it could
   // be used for pg-up/down
   @state()
-  smooth?: boolean;
+  smooth: number = 0;
 
   _transitionend = () => {
-    this.smooth = false;
+    this.smooth = 0;
   };
 
   // The internal structure of viewport consists of 3 layers:
@@ -101,10 +101,16 @@ export class Viewport extends LitElement {
         ::slotted(svg) {
           transform: translate(${offset[0] - scrollPos[0]}px, ${offset[1] - scrollPos[1]}px) scale(var(--scale));
         }
+
+      *,
+      ::slotted(svg) {
+        transition-duration: ${this.smooth + 'ms'};
+      }
+
+
       </style>
       <div
         id="touch-surface"
-        class=${this.smooth ? "smooth" : ""}
         @wheel=${this._wheel}
         @pointerdown=${this._touchdragstart}
         @pointermove=${this._touchdragmove}
@@ -173,16 +179,18 @@ export class Viewport extends LitElement {
   @eventOptions({ passive: false })
   _wheel(ev: WheelEvent) {
     stop_ev(ev);
-    const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? ((this.smooth = true), 5) : 1;
+    const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
     if (ev.ctrlKey) {
-      this.smooth = ev.deltaMode === WheelEvent.DOM_DELTA_LINE;
+      const delta =  -ev.deltaY * multiplier;
+      this.smooth = Math.abs(delta) * 5;
       //zoom
-      this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), -ev.deltaY * multiplier * scroll_factor * this.scale);
+      this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), delta * scroll_factor * this.scale);
     } else {
-      this.smooth = ev.deltaMode === WheelEvent.DOM_DELTA_LINE && (ev.deltaY * multiplier > 15 || ev.deltaX * multiplier > 15);
+      const delta = mul_c([ev.deltaX, ev.deltaY], multiplier);
+      this.smooth = (Math.abs(delta[0]) + Math.abs(delta[1])) * 2;
       // Firefox scrolls by lines so we need to multiply that by a line size
       // to get actual pixels. Page scrolling is unsupported currently.
-      this.#scrollPos = add_p(mul_c([ev.deltaX, ev.deltaY], multiplier), this.#scrollPos);
+      this.#scrollPos = add_p(delta, this.#scrollPos);
     }
   }
 
@@ -341,11 +349,12 @@ export class Viewport extends LitElement {
 
       .smooth > *,
       .smooth ::slotted(svg) {
-        transition: transform 150ms, width 150ms, height 150ms, background-position 150ms, background-size 150ms;
+        transition-property: transform, width, height, background-position, background-size;
       }
     `;
   }
 }
+
 
 // Keep typescript happy
 declare global {

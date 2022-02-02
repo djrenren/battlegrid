@@ -2,10 +2,11 @@ import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { add_c, add_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
+import { add_c, add_p, eq_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
 import { is_primary_down, stop_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage } from "../util/files";
+import { GameEvent, game_event, uuidv4 } from "../game/game-events";
 
 const GRID_SIZE = 24; // scale-dependent px
 const LINE_WIDTH = 0.5; // scale-dependent px
@@ -53,8 +54,7 @@ export class Canvas extends LitElement {
     document.removeEventListener("keydown", this.keydown);
   }
   render() {
-    let width = this.width * GRID_SIZE;
-    let height = this.height * GRID_SIZE;
+    let [width, height] = this.#dim;
     let selected = this.tokens.get(this.selection!);
     let left: number, right: number, top: number, bot: number;
     let new_dim: Point, new_origin: Point;
@@ -183,15 +183,26 @@ export class Canvas extends LitElement {
 
   #drop = async (ev: DragEvent) => {
     stop_ev(ev);
-    const res = await getImage(ev);
-    this.tokens.set("2", {
-      loc: this._drop_hint!,
-      dim: [GRID_SIZE, GRID_SIZE],
-      id: "2",
-      res: res,
-    });
+    console.log(ev);
+    try {
+      const res = await getImage(ev);
+      const id = uuidv4();
+      this.tokens.set(id, {
+        loc: this._drop_hint!,
+        dim: [GRID_SIZE, GRID_SIZE],
+        id,
+        res: res,
+      });
+      this.dispatchEvent(game_event({
+        type: 'token-added',
+        loc: this._drop_hint!,
+        id,
+        res
+      }));
+    } catch(e) {
+
+    }
     this._drop_hint = undefined;
-    this.requestUpdate();
   };
 
   /** Selection handling */
@@ -250,14 +261,24 @@ export class Canvas extends LitElement {
     if (id === "mover") {
       move = sub_p(grid_loc, this.#drag_offset).map(nearest_corner) as Point;
     } else {
-      const selection = this.tokens.get(this.selection!)!;
       // Don't let top-left drags cause movement pas the dimensions
       move = min_p(add_c(dim, -GRID_SIZE), move);
       // Constrain the transform from making anything smaller than a grid
       resize = max_p(add_c(mul_c(dim, -1), GRID_SIZE), resize.map(nearest_corner) as Point);
     }
 
-    this._selection_transform = { move, resize };
+    if (!eq_p(move, this._selection_transform.move) || !eq_p(resize, this._selection_transform.resize)) {
+      this._selection_transform = { move, resize };
+      this.dispatchEvent(game_event({
+        type: 'token-manipulated',
+        id: selection.id,
+        loc: add_p(selection.loc, move),
+        dim: add_p(selection.dim, resize),
+      }));
+    }
+
+
+
   };
 
   #selection_drag_end = (ev: PointerEvent) => {
@@ -281,7 +302,12 @@ export class Canvas extends LitElement {
     // Backspace
     if (ev.keyCode === 8) {
       this.tokens.delete(this.selection!);
-      this.requestUpdate();
+      this.dispatchEvent(game_event({
+        type: 'token-removed',
+        id: this.selection!
+      }));
+
+      this.selection = undefined;
       stop_ev(ev);
     }
   };
@@ -293,10 +319,6 @@ export class Canvas extends LitElement {
       display: inline-block;
       box-sizing: content-box !important;
       --selection-color: cornflowerblue;
-    }
-    svg *,
-    .token {
-      transition: all 100ms ease-out;
     }
 
     svg {
@@ -373,7 +395,6 @@ export class Canvas extends LitElement {
   `;
 }
 
-const em = (n: number) => n * GRID_SIZE + "px";
 type TokenData = {
   loc: Point;
   dim: Point;

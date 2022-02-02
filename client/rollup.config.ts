@@ -35,6 +35,7 @@ export default [
     plugins,
     input: "src/main.ts",
     output: {
+      sourcemap: true,
       file: "build/bundle.js",
       format: "es",
     },
