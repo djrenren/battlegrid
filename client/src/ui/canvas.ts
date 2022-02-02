@@ -193,15 +193,15 @@ export class Canvas extends LitElement {
         id,
         res: res,
       });
-      this.dispatchEvent(game_event({
-        type: 'token-added',
-        loc: this._drop_hint!,
-        id,
-        res
-      }));
-    } catch(e) {
-
-    }
+      this.dispatchEvent(
+        game_event({
+          type: "token-added",
+          loc: this._drop_hint!,
+          id,
+          res,
+        })
+      );
+    } catch (e) {}
     this._drop_hint = undefined;
   };
 
@@ -269,16 +269,15 @@ export class Canvas extends LitElement {
 
     if (!eq_p(move, this._selection_transform.move) || !eq_p(resize, this._selection_transform.resize)) {
       this._selection_transform = { move, resize };
-      this.dispatchEvent(game_event({
-        type: 'token-manipulated',
-        id: selection.id,
-        loc: add_p(selection.loc, move),
-        dim: add_p(selection.dim, resize),
-      }));
+      this.dispatchEvent(
+        game_event({
+          type: "token-manipulated",
+          id: selection.id,
+          loc: add_p(selection.loc, move),
+          dim: add_p(selection.dim, resize),
+        })
+      );
     }
-
-
-
   };
 
   #selection_drag_end = (ev: PointerEvent) => {
@@ -302,10 +301,12 @@ export class Canvas extends LitElement {
     // Backspace
     if (ev.keyCode === 8) {
       this.tokens.delete(this.selection!);
-      this.dispatchEvent(game_event({
-        type: 'token-removed',
-        id: this.selection!
-      }));
+      this.dispatchEvent(
+        game_event({
+          type: "token-removed",
+          id: this.selection!,
+        })
+      );
 
       this.selection = undefined;
       stop_ev(ev);

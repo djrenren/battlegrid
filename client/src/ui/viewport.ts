@@ -55,30 +55,12 @@ export class Viewport extends LitElement {
     return max_p([0, 0], mul_c(sub_p(this.v_dim, mul_c(this.c_dim, this.scale)), 0.5)).map((n) => n) as any; //Math.round((n + Number.EPSILON) * 100) / 100) as any;
   }
 
-  // Indicates whether to animate content placement.  This is used to when input
-  // is big and chunky like ctrl+scroll wheel scrolling.  In the future it could
-  // be used for pg-up/down
+  // Indicates the animation time for manipulations. This allows us to very the
+  // duration of transitions based on their size. Big chunky scrolls get slower
+  // animations than tiny touchpad scrolls.
   @state()
   smooth: number = 0;
 
-  _transitionend = () => {
-    this.smooth = 0;
-  };
-
-  // The internal structure of viewport consists of 3 layers:
-  //
-  // Surface - where scrollbars are drawn and handlers are attached
-  // Translater - which handles the offset
-  // Content - which is scaled
-  //
-  // Translater and content are separated to allow overlays which
-  // are not scaled, but are positioned correctly. If we used em-scaling
-  // for grid elements we wouldn't need this separation but em-scaling
-  // causes a lot of math, so we use transform scaling for that GPU-accelerated
-  // goodness.
-  //
-  // We update offset and scale using CSS variables in the hopes that it's faster
-  // for browsers to deal with. This is untested
   render() {
     const offset = this.offset;
     const scrollPos = this.#scrollPos;
@@ -102,12 +84,10 @@ export class Viewport extends LitElement {
           transform: translate(${offset[0] - scrollPos[0]}px, ${offset[1] - scrollPos[1]}px) scale(var(--scale));
         }
 
-      *,
-      ::slotted(svg) {
-        transition-duration: ${this.smooth + 'ms'};
-      }
-
-
+        *,
+        ::slotted(svg) {
+          transition-duration: ${this.smooth + "ms"};
+        }
       </style>
       <div
         id="touch-surface"
@@ -120,7 +100,6 @@ export class Viewport extends LitElement {
       >
         <div
           part="background"
-          @transitionend=${this._transitionend}
           style=${styleMap({
             position: "absolute",
             zIndex: "-1",
@@ -181,7 +160,7 @@ export class Viewport extends LitElement {
     stop_ev(ev);
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
     if (ev.ctrlKey) {
-      const delta =  -ev.deltaY * multiplier;
+      const delta = -ev.deltaY * multiplier;
       this.smooth = Math.abs(delta) * 5;
       //zoom
       this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), delta * scroll_factor * this.scale);
@@ -354,7 +333,6 @@ export class Viewport extends LitElement {
     `;
   }
 }
-
 
 // Keep typescript happy
 declare global {
