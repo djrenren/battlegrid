@@ -331,7 +331,7 @@ export class Viewport extends LitElement {
 
       *,
       ::slotted(svg) {
-        transition-property: transform;
+        transition-property: all;
       }
 
       #bg {
