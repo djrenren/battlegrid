@@ -88,10 +88,8 @@ export class Canvas extends LitElement {
             <clipPath id="canvasClip">
               <rect x="0" y="0" width=${width} height=${height} rx="5" />
             </clipPath>
-            <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
+            <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height=${GRID_SIZE} patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
-            </pattern>
-            <pattern id="pat2" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height=${GRID_SIZE} patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
           </defs>
@@ -99,7 +97,6 @@ export class Canvas extends LitElement {
             <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
 
             <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
-            <rect x="0" y="0" width=${width} height=${height} fill="url(#pat2)" pointer-events="none"></rect>
 
             ${repeat(
               this.tokens.values(),
