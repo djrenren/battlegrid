@@ -277,6 +277,30 @@ export class Canvas extends LitElement {
     }
   };
 
+  apply(ev: GameEvent) {
+    switch (ev.type) {
+      case 'token-manipulated':
+        let ex_token = this.tokens.get(ev.id);
+        if (!ex_token) {
+          console.error("Update received for nonexistant token", ev.id);
+          return;
+        }
+        Object.assign(ex_token, {dim: ev.dim, loc: ev.loc});
+        break;
+
+      case 'token-added':
+        this.tokens.set(ev.id, {id: ev.id, dim: [GRID_SIZE, GRID_SIZE], loc: ev.loc, res: ev.res});
+        break;
+      case 'token-removed':
+        if (!this.tokens.delete(ev.id)) {
+          console.error("Tried to remove nonexistant token", ev.id);
+          return;
+        }
+    }
+
+    this.requestUpdate();
+  }
+
   #selection_drag_end = (ev: PointerEvent) => {
     stop_ev(ev);
     const el = this.tokens.get(this.selection!);

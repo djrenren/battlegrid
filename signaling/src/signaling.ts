@@ -92,4 +92,4 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
 }
 
 console.log("Server listening on port 8080");
-server.listen(8080);
+server.listen(process.argv[2]);

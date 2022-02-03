@@ -2,6 +2,11 @@ import { css, html, LitElement } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { Point } from "../util/math";
 import {DurableSignaler} from "../net/signaling";
+import { Server } from "../net/server";
+import { GameClient } from "../game/game-client";
+import { GameEvent } from "../game/game-events";
+import { Client } from "../net/client";
+import { Canvas } from "./canvas";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -14,6 +19,8 @@ class App extends LitElement {
   @query("#height", true)
   height?: HTMLInputElement;
 
+  @query("bg-canvas", true)
+  canvas?: Canvas;
 
   render() {
     return html`
@@ -23,7 +30,7 @@ class App extends LitElement {
           <input id="width" type="number" @input=${this.updateDim} value=${this.dim[0]} /> x
           <input id="height" type="number" @input=${this.updateDim} value=${this.dim[1]} />
         </div>
-        ${this._signaler ? 
+        ${this.client ? 
             html`<div>hosting</div>`:
             html`
                 <button @click=${this.#host}>Host</button>
@@ -31,7 +38,7 @@ class App extends LitElement {
 
         }
       </section>
-      <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]}></bg-canvas>
+      <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
     `;
   }
 
@@ -72,15 +79,31 @@ class App extends LitElement {
   };
 
   @state()
-  _signaler?: DurableSignaler;
+  client?: GameClient;
+
+  async connectedCallback() {
+    super.connectedCallback();
+    let target = window.location.hash;
+    if (target.length > 0 && (target = target.substring(1))) {
+      this.client = await Client.establish(target);
+      this.client.on_event = (ev) => this.canvas?.apply(ev);
+    }
+  }
 
   #host = async () => {
     try {
-        this._signaler = await DurableSignaler.establish(new URL("ws://192.168.1.77:8080"));
-        window.location.hash = this._signaler.ident;
+        let srv = await Server.establish();
+        this.client = srv;
+        this.client.on_event = (ev) => this.canvas?.apply(ev);
+
+        window.location.hash = srv.signaler.ident;
         navigator.clipboard.writeText(window.location.toString());
     } catch(e) {
         console.error(e);
     }
+  }
+
+  #on_event = (ev: CustomEvent<GameEvent>) => {
+    this.client?.send(ev.detail);
   }
 }
