@@ -328,9 +328,11 @@ export class Canvas extends LitElement {
   };
 
   #keydown = (ev: KeyboardEvent) => {
+    if (!this.selection) return;
+
     // Backspace
     if (ev.keyCode === 8) {
-      this.tokens.delete(this.selection!);
+      this.tokens.delete(this.selection);
       this.dispatchEvent(
         game_event({
           type: "token-removed",
@@ -340,8 +342,31 @@ export class Canvas extends LitElement {
 
       this.selection = undefined;
       stop_ev(ev);
+      return;
+    }
+
+    let s = this.tokens.get(this.selection)!;
+    const movements: {[key: string]: Point} = {
+      "ArrowUp": [0,-GRID_SIZE],
+      "ArrowDown": [0,GRID_SIZE],
+      "ArrowLeft": [-GRID_SIZE, 0],
+      "ArrowRight": [GRID_SIZE, 0],
+    }
+
+    let move: Point | undefined = movements[ev.key];
+    if (move) {
+      s.loc = min_p(sub_p(this.#dim, s.dim), max_p([0,0], add_p(s.loc, move)));
+      this.dispatchEvent(game_event({
+        type: "token-manipulated",
+        id: s.id,
+        loc: s.loc,
+        dim: s.dim,
+      }))
+      this.requestUpdate();
+      stop_ev(ev);
     }
   };
+
 
   get_state = (): StateSync => {
     return {
