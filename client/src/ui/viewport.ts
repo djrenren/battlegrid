@@ -153,9 +153,10 @@ export class Viewport extends LitElement {
   @eventOptions({ passive: false })
   _wheel(ev: WheelEvent) {
     stop_ev(ev);
-    const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 5 : 1;
+    console.log(ev.deltaMode, WheelEvent.DOM_DELTA_LINE, WheelEvent.DOM_DELTA_PAGE, WheelEvent.DOM_DELTA_PIXEL, ev.deltaY)
+    const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 10 : 1;
     if (ev.ctrlKey) {
-      const delta = -ev.deltaY * multiplier;
+      const delta = Math.min(50, Math.max(-50, -ev.deltaY * multiplier));
       this.smooth = Math.abs(delta) * 5;
       //zoom
       this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), delta * scroll_factor * this.scale);
