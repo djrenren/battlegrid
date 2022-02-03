@@ -1,7 +1,7 @@
 import { css, html, LitElement } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { Point } from "../util/math";
-import {DurableSignaler} from "../net/signaling";
+import { DurableSignaler } from "../net/signaling";
 import { Server } from "../net/server";
 import { GameClient } from "../game/game-client";
 import { GameEvent } from "../game/game-events";
@@ -30,13 +30,7 @@ class App extends LitElement {
           <input id="width" type="number" @input=${this.updateDim} value=${this.dim[0]} /> x
           <input id="height" type="number" @input=${this.updateDim} value=${this.dim[1]} />
         </div>
-        ${this.client ? 
-            html`<div>hosting</div>`:
-            html`
-                <button @click=${this.#host}>Host</button>
-            `
-
-        }
+        ${this.client ? html`<div>hosting</div>` : html` <button @click=${this.#host}>Host</button> `}
       </section>
       <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
     `;
@@ -77,9 +71,9 @@ class App extends LitElement {
     ///@ts-ignore
     this.dim = [this.width?.value ?? 0, this.height?.value ?? 0];
     this.client?.send({
-      type: 'grid-resized',
-      dim: this.dim
-    })
+      type: "grid-resized",
+      dim: this.dim,
+    });
   };
 
   @state()
@@ -96,26 +90,30 @@ class App extends LitElement {
 
   #host = async () => {
     try {
-        let srv = await Server.establish();
-        this.client = srv;
-        this.client.on_event = this.#incoming_event;
+      let srv = await Server.establish();
+      this.client = srv;
+      srv.on_event = this.#incoming_event;
+      srv.get_state = this.canvas?.get_state;
 
-        window.location.hash = srv.signaler.ident;
-        navigator.clipboard.writeText(window.location.toString());
-    } catch(e) {
-        console.error(e);
+      window.location.hash = srv.signaler.ident;
+      navigator.clipboard.writeText(window.location.toString());
+    } catch (e) {
+      console.error(e);
     }
-  }
+  };
 
   #incoming_event = (ev: GameEvent) => {
+    if (ev.type === "state-sync") {
+      this.dim = ev.grid_dim;
+    }
     if (ev.type === "grid-resized") {
       this.dim = ev.dim;
     } else {
       this.canvas?.apply(ev);
     }
-  }
+  };
 
   #on_event = (ev: CustomEvent<GameEvent>) => {
     this.client?.send(ev.detail);
-  }
+  };
 }

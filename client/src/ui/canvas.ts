@@ -6,7 +6,7 @@ import { add_c, add_p, eq_p, max_p, min_p, mul_c, Point, sub_p } from "../util/m
 import { is_primary_down, stop_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage } from "../util/files";
-import { GameEvent, game_event, uuidv4 } from "../game/game-events";
+import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
 
 const GRID_SIZE = 24; // scale-dependent px
 const LINE_WIDTH = 0.5; // scale-dependent px
@@ -47,11 +47,11 @@ export class Canvas extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    document.addEventListener("keydown", this.keydown);
+    document.addEventListener("keydown", this.#keydown);
   }
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    document.removeEventListener("keydown", this.keydown);
+    document.removeEventListener("keydown", this.#keydown);
   }
   render() {
     let [width, height] = this.#dim;
@@ -127,7 +127,12 @@ export class Canvas extends LitElement {
           
           `
             : null}
-          <svg @pointerdown=${this.#selection_drag_start} @pointermove=${this.#selection_drag} @pointerup=${this.#selection_drag_end} @click=${stop_ev}>
+          <svg
+            @pointerdown=${this.#selection_drag_start}
+            @pointermove=${this.#selection_drag}
+            @pointerup=${this.#selection_drag_end}
+            @click=${stop_ev}
+          >
             ${selected
               ? svg`
             <rect
@@ -171,7 +176,7 @@ export class Canvas extends LitElement {
   _drop_hint?: Point;
   #drag_over = (ev: DragEvent) => {
     stop_ev(ev);
-    this._drop_hint = this.screen_to_svg(ev).map(occupied_cell) as Point;
+    this._drop_hint = this.#screen_to_svg(ev).map(occupied_cell) as Point;
   };
 
   #drag_leave = (ev: DragEvent) => {
@@ -221,7 +226,7 @@ export class Canvas extends LitElement {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
     (ev.target as SVGElement).setPointerCapture(ev.pointerId);
-    this.#drag_offset = this.screen_to_svg(ev) as Point;
+    this.#drag_offset = this.#screen_to_svg(ev) as Point;
   };
 
   @state()
@@ -229,7 +234,7 @@ export class Canvas extends LitElement {
   #selection_drag = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
-    const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], this.screen_to_svg(ev)));
+    const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], this.#screen_to_svg(ev)));
     const selection = this.tokens.get(this.selection!)!;
     const dim = selection.dim;
     const loc = selection.loc;
@@ -279,23 +284,27 @@ export class Canvas extends LitElement {
 
   apply(ev: GameEvent) {
     switch (ev.type) {
-      case 'token-manipulated':
+      case "token-manipulated":
         let ex_token = this.tokens.get(ev.id);
         if (!ex_token) {
           console.error("Update received for nonexistant token", ev.id);
           return;
         }
-        Object.assign(ex_token, {dim: ev.dim, loc: ev.loc});
+        Object.assign(ex_token, { dim: ev.dim, loc: ev.loc });
         break;
 
-      case 'token-added':
-        this.tokens.set(ev.id, {id: ev.id, dim: [GRID_SIZE, GRID_SIZE], loc: ev.loc, res: ev.res});
+      case "token-added":
+        this.tokens.set(ev.id, { id: ev.id, dim: [GRID_SIZE, GRID_SIZE], loc: ev.loc, res: ev.res });
         break;
-      case 'token-removed':
+      case "token-removed":
         if (!this.tokens.delete(ev.id)) {
           console.error("Tried to remove nonexistant token", ev.id);
           return;
         }
+        break;
+      case "state-sync":
+        this.tokens = new Map(ev.tokens.map((t) => [t.id, t]));
+        break;
     }
 
     this.requestUpdate();
@@ -314,11 +323,11 @@ export class Canvas extends LitElement {
   // Normally we'd use SVG machinery but it's broken in one browser...
   // ... I'll let you guess who...
   // ... it's safari
-  screen_to_svg = (ev: { clientX: number; clientY: number }): Point => {
+  #screen_to_svg = (ev: { clientX: number; clientY: number }): Point => {
     return this.viewport!.coordToLocal([ev.clientX, ev.clientY]);
   };
 
-  keydown = (ev: KeyboardEvent) => {
+  #keydown = (ev: KeyboardEvent) => {
     // Backspace
     if (ev.keyCode === 8) {
       this.tokens.delete(this.selection!);
@@ -332,6 +341,14 @@ export class Canvas extends LitElement {
       this.selection = undefined;
       stop_ev(ev);
     }
+  };
+
+  get_state = (): StateSync => {
+    return {
+      type: "state-sync",
+      tokens: [...this.tokens.values()],
+      grid_dim: [this.width, this.height],
+    };
   };
 
   static styles = css`
@@ -416,13 +433,6 @@ export class Canvas extends LitElement {
     }
   `;
 }
-
-type TokenData = {
-  loc: Point;
-  dim: Point;
-  res: string;
-  id: string;
-};
 
 const nearest_corner = (n: number) => Math.round(n / GRID_SIZE) * GRID_SIZE;
 const occupied_cell = (n: number) => n - (n % GRID_SIZE);
