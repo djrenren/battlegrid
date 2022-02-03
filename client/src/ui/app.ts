@@ -76,6 +76,10 @@ class App extends LitElement {
   updateDim = () => {
     ///@ts-ignore
     this.dim = [this.width?.value ?? 0, this.height?.value ?? 0];
+    this.client?.send({
+      type: 'grid-resized',
+      dim: this.dim
+    })
   };
 
   @state()
@@ -86,7 +90,7 @@ class App extends LitElement {
     let target = window.location.hash;
     if (target.length > 0 && (target = target.substring(1))) {
       this.client = await Client.establish(target);
-      this.client.on_event = (ev) => this.canvas?.apply(ev);
+      this.client.on_event = this.#incoming_event;
     }
   }
 
@@ -94,12 +98,20 @@ class App extends LitElement {
     try {
         let srv = await Server.establish();
         this.client = srv;
-        this.client.on_event = (ev) => this.canvas?.apply(ev);
+        this.client.on_event = this.#incoming_event;
 
         window.location.hash = srv.signaler.ident;
         navigator.clipboard.writeText(window.location.toString());
     } catch(e) {
         console.error(e);
+    }
+  }
+
+  #incoming_event = (ev: GameEvent) => {
+    if (ev.type === "grid-resized") {
+      this.dim = ev.dim;
+    } else {
+      this.canvas?.apply(ev);
     }
   }
 

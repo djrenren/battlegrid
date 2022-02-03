@@ -1,6 +1,6 @@
 import { Point } from "../util/math";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved;
+export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized;
 
 export type TokenAdded = {
   type: "token-added";
@@ -19,6 +19,11 @@ export type TokenManipulated = {
 export type TokenRemoved = {
   type: "token-removed";
   id: string;
+};
+
+export type GridResized = {
+  type: "grid-resized";
+  dim: [number, number];
 };
 
 export const uuidv4 = () => {
