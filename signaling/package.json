@@ -6,7 +6,8 @@
     "typescript": "^4.5.5"
   },
   "scripts": {
-    "start": "tsc -p . && node build/signaling.js"
+    "build": "tsc -p .",
+    "start": "node build/signaling.js"
   },
   "type": "module",
   "dependencies": {

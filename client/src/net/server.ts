@@ -16,7 +16,7 @@ export class Server implements GameClient {
     }
 
     static async establish(): Promise<Server> {
-        return new Server(await DurableSignaler.establish(new URL("ws://localhost:8080")));
+        return new Server(await DurableSignaler.establish(new URL("wss://battlegrid-signaling.herokuapp.com/")));
     }
 
     #on_data(src: Peer | null, data: any) {

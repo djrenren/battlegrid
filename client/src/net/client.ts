@@ -14,7 +14,7 @@ export class Client implements GameClient {
     }
 
     static async establish(game_id: string) {
-        let signaler = await DurableSignaler.establish(new URL("ws://localhost:8080"));
+        let signaler = await DurableSignaler.establish(new URL("wss://battlegrid-signaling.herokuapp.com/"));
         let peer = await signaler.connect_to(game_id);
         return new Client(signaler, peer);
     }
