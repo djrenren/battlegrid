@@ -1,6 +1,6 @@
 import { Point } from "../util/math";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync;
+export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | File;
 
 export type TokenAdded = {
   type: "token-added";
@@ -37,6 +37,12 @@ export type TokenData = {
   dim: Point;
   res: string;
   id: string;
+};
+
+export type File = {
+  type: "file";
+  name: string;
+  contents: Blob;
 };
 
 export const uuidv4 = () => {

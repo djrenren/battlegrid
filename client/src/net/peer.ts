@@ -18,8 +18,11 @@ export class Peer {
   /** Tracks whether this peer was the initiator. Used during reconnect. */
   #initiator = false;
 
-  /** Buffers messages for later delivery */
-  #msg_buffer: Map<string, Message[]> = new Map();
+  //@ts-ignore
+  data: RTCDataChannel;
+
+  //@ts-ignore
+  events: RTCDataChannel;
 
   constructor(on_signal: (signal: Signal) => void) {
     this.#on_signal = on_signal;
@@ -45,36 +48,20 @@ export class Peer {
       this.#rtc_peer.onicecandidate = null;
       this.#rtc_peer.onconnectionstatechange = null;
       this.#rtc_peer.close();
-
-      for (const [label, channel] of this.#channels.entries()) {
-        if (channel) {
-          channel.onopen = null;
-          channel.onmessage = null;
-          channel.onclose = null;
-        }
-        this.#channels.delete(label);
-      }
     }
     this.#rtc_peer = new RTCPeerConnection(PEER_CONFIG);
 
-    for (let [id, label] of ["control", "data"].entries()) {
-      let channel = this.#rtc_peer.createDataChannel(label, {
-        ordered: true,
-        negotiated: true,
-        id,
-      }) as RTCDataChannel;
+    this.data = this.#rtc_peer.createDataChannel("data", {
+      ordered: true,
+      negotiated: true,
+      id: 1,
+    });
 
-      channel.onmessage = ({ data }) => this.on_data(label, data);
-      channel.onopen = () => {
-        this.#msg_buffer.get(label)?.forEach((msg) => this.send(label, msg));
-        this.#msg_buffer.set(label, []);
-      };
-      // We never expect a channel to close independently of the peer
-      channel.onclose = (ev) => console.error(ev);
-
-      this.#msg_buffer.set(label, []);
-      this.#channels.set(label, channel);
-    }
+    this.events = this.#rtc_peer.createDataChannel("control", {
+      ordered: true,
+      negotiated: true,
+      id: 2,
+    });
 
     this.#rtc_peer.onicecandidate = ({ candidate }) => {
       if (candidate !== null) {
@@ -94,18 +81,6 @@ export class Peer {
         }
       }
     };
-  }
-
-  send(label: string, msg: Message) {
-    console.log("sending", msg);
-    let channel = this.#channels.get(label)!;
-    if (channel.readyState !== "open") {
-      this.#msg_buffer.get(label)?.push(msg);
-    } else {
-      // Typescript won't unify our union with the overloads but the
-      // Message type is correct so we just tell ts ot shut up.
-      channel.send(msg as any);
-    }
   }
 
   /** Handles incoming signals */

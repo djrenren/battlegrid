@@ -5,7 +5,7 @@ export const getImage = async (ev: DragEvent): Promise<string> => {
     for (let i = 0; i < dataItems.length; i++) {
       console.log(dataItems[i].type);
       if (dataItems[i].type.startsWith("image/")) {
-        const dataURL = await getDataURL(dataItems[i].getAsFile()!);
+        const dataURL = URL.createObjectURL(dataItems[i].getAsFile()!);
         return resolve(dataURL);
       }
       if (dataItems[i].type === "text/html") {
@@ -23,14 +23,6 @@ export const getImage = async (ev: DragEvent): Promise<string> => {
     return reject("No compatible drop type found");
   });
 };
-
-async function getDataURL(file: File): Promise<string> {
-  const reader = new FileReader();
-  return new Promise((resolve, reject) => {
-    reader.onload = () => resolve(reader.result as string);
-    reader.readAsDataURL(file);
-  });
-}
 
 function extractURLFromHTML(html: string): string | null {
   const parser = new DOMParser();

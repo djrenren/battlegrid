@@ -3,9 +3,8 @@ import { customElement, query, state } from "lit/decorators.js";
 import { Point } from "../util/math";
 import { DurableSignaler } from "../net/signaling";
 import { Server } from "../net/server";
-import { GameClient } from "../game/game-client";
 import { GameEvent } from "../game/game-events";
-import { Client } from "../net/client";
+import { Client, GameClient } from "../net/client";
 import { Canvas } from "./canvas";
 
 @customElement("bg-app")
@@ -27,8 +26,8 @@ class App extends LitElement {
       <section id="toolbar">
         <div>
           Grid:
-          <input id="width" type="number" @input=${this.updateDim} value=${this.dim[0]} /> x
-          <input id="height" type="number" @input=${this.updateDim} value=${this.dim[1]} />
+          <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
+          <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
         </div>
         ${this.client ? html`<div>hosting</div>` : html` <button @click=${this.#host}>Host</button> `}
       </section>
@@ -67,10 +66,10 @@ class App extends LitElement {
     }
   `;
 
-  updateDim = () => {
+  #updateDim = () => {
     ///@ts-ignore
     this.dim = [this.width?.value ?? 0, this.height?.value ?? 0];
-    this.client?.send({
+    this.client?.send_event({
       type: "grid-resized",
       dim: this.dim,
     });
@@ -94,6 +93,7 @@ class App extends LitElement {
       this.client = srv;
       srv.on_event = this.#incoming_event;
       srv.get_state = this.canvas?.get_state;
+      srv.get_images = () => this.canvas?.images;
 
       window.location.hash = srv.signaler.ident;
       navigator.clipboard.writeText(window.location.toString());
@@ -114,6 +114,6 @@ class App extends LitElement {
   };
 
   #on_event = (ev: CustomEvent<GameEvent>) => {
-    this.client?.send(ev.detail);
+    this.client?.send_event(ev.detail);
   };
 }

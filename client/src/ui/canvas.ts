@@ -92,6 +92,9 @@ export class Canvas extends LitElement {
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
+            <pattern id="loading">
+              <circle class="loading" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+            </pattern>
           </defs>
           <g style="clip-path: url(#canvasClip)">
             <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
@@ -109,7 +112,7 @@ export class Canvas extends LitElement {
                     @click=${this.#focus}
                     width=${(this.selection === t.id ? new_dim[0] : t.dim[0]) - LINE_WIDTH}
                     height=${(this.selection === t.id ? new_dim[1] : t.dim[1]) - LINE_WIDTH}
-                    href=${t.res}
+                    href=${this.images.get(t.res)}
                     preserveAspectRatio="none"
                 />
                 `
@@ -188,21 +191,33 @@ export class Canvas extends LitElement {
     console.log(ev);
     try {
       const res = await getImage(ev);
+
       const id = uuidv4();
+      const res_id = uuidv4();
+      this.images.set(res_id, res);
       this.tokens.set(id, {
         loc: this._drop_hint!,
         dim: [GRID_SIZE, GRID_SIZE],
         id,
-        res: res,
+        res: res_id,
       });
       this.dispatchEvent(
         game_event({
           type: "token-added",
           loc: this._drop_hint!,
           id,
-          res,
+          res: res_id,
         })
       );
+      if (res.substring(0, 5) === "blob:") {
+        this.dispatchEvent(
+          game_event({
+            type: "file",
+            name: res_id,
+            contents: await (await fetch(res)).blob(),
+          })
+        );
+      }
     } catch (e) {}
     this._drop_hint = undefined;
   };
@@ -282,7 +297,8 @@ export class Canvas extends LitElement {
     }
   };
 
-  apply(ev: GameEvent) {
+  async apply(ev: GameEvent) {
+    console.log("APPLYING TO CANVAS", ev);
     switch (ev.type) {
       case "token-manipulated":
         let ex_token = this.tokens.get(ev.id);
@@ -305,6 +321,8 @@ export class Canvas extends LitElement {
       case "state-sync":
         this.tokens = new Map(ev.tokens.map((t) => [t.id, t]));
         break;
+      case "file":
+        this.images.set(ev.name, URL.createObjectURL(ev.contents));
     }
 
     this.requestUpdate();
@@ -346,27 +364,28 @@ export class Canvas extends LitElement {
     }
 
     let s = this.tokens.get(this.selection)!;
-    const movements: {[key: string]: Point} = {
-      "ArrowUp": [0,-GRID_SIZE],
-      "ArrowDown": [0,GRID_SIZE],
-      "ArrowLeft": [-GRID_SIZE, 0],
-      "ArrowRight": [GRID_SIZE, 0],
-    }
+    const movements: { [key: string]: Point } = {
+      ArrowUp: [0, -GRID_SIZE],
+      ArrowDown: [0, GRID_SIZE],
+      ArrowLeft: [-GRID_SIZE, 0],
+      ArrowRight: [GRID_SIZE, 0],
+    };
 
     let move: Point | undefined = movements[ev.key];
     if (move) {
-      s.loc = min_p(sub_p(this.#dim, s.dim), max_p([0,0], add_p(s.loc, move)));
-      this.dispatchEvent(game_event({
-        type: "token-manipulated",
-        id: s.id,
-        loc: s.loc,
-        dim: s.dim,
-      }))
+      s.loc = min_p(sub_p(this.#dim, s.dim), max_p([0, 0], add_p(s.loc, move)));
+      this.dispatchEvent(
+        game_event({
+          type: "token-manipulated",
+          id: s.id,
+          loc: s.loc,
+          dim: s.dim,
+        })
+      );
       this.requestUpdate();
       stop_ev(ev);
     }
   };
-
 
   get_state = (): StateSync => {
     return {
@@ -375,6 +394,12 @@ export class Canvas extends LitElement {
       grid_dim: [this.width, this.height],
     };
   };
+
+  images: Map<string, string> = new Map();
+  async #register_image(name: string, contents: Blob) {
+    let url = await URL.createObjectURL(contents);
+    this.images.set(name, url);
+  }
 
   static styles = css`
     :host {
