@@ -86,17 +86,16 @@ export class Canvas extends LitElement {
         >
           <defs>
             <clipPath id="canvasClip">
-              <rect x="0" y="0" width=${width} height=${height} rx="5" />
+              <rect x="0" y="0" width=${width} height=${height} rx="5"></rect>
             </clipPath>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height=${GRID_SIZE} patternUnits="userSpaceOnUse">
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
-            <image id="loading" href="/assets/loading.svg" />
+            <image id="loading" href="/assets/loading.svg"></image>
           </defs>
           <g style="clip-path: url(#canvasClip)">
             <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
-
             <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
 
             ${repeat(
@@ -114,7 +113,7 @@ export class Canvas extends LitElement {
                     height=${(this.selection === t.id ? new_dim[1] : t.dim[1]) - LINE_WIDTH}
                     href=${url || "assets/loading.svg"}
                     preserveAspectRatio=${url ? "none" : ""}
-                />
+                ></image>
                 `;
               }
             )}
@@ -128,7 +127,6 @@ export class Canvas extends LitElement {
                 width=${GRID_SIZE}
                 height=${GRID_SIZE}
                 ></rect>
-          
           `
             : null}
           <svg
