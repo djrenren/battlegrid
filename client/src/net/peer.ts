@@ -4,16 +4,11 @@ const PEER_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 type Message = string | Blob | ArrayBuffer | ArrayBufferView;
 
 export class Peer {
-  on_data: (channel: string, data: string) => void = () => {};
-
   /** Allows the Peer to communicate signals outwards */
   #on_signal: (signal: Signal) => void = () => {};
 
   /** The underlying peer connection, this may be close and replaced at any time */
   #rtc_peer: RTCPeerConnection = new RTCPeerConnection(PEER_CONFIG);
-
-  /** The map of channels */
-  #channels: Map<string, RTCDataChannel> = new Map();
 
   /** Tracks whether this peer was the initiator. Used during reconnect. */
   #initiator = false;

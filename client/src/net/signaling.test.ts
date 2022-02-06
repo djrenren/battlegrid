@@ -71,40 +71,4 @@ describe(DurableSignaler, () => {
 
     await expect(DurableSignaler.establish(new URL("ws://localhost:8080"), ident)).rejects.toBeInstanceOf(CloseEvent);
   });
-
-  it("can facilitate a connection", (done) => {
-    (async () => {
-      let [local, remote] = await Promise.all([
-        DurableSignaler.establish(new URL("ws://localhost:8080"), "local"),
-        DurableSignaler.establish(new URL("ws://localhost:8080"), "remote"),
-      ]);
-
-      remote.addEventListener("peer", ({ detail: peer }) => {
-        peer.on_data = (c, m) => {
-          try {
-            expect(c).toBe("control");
-            expect(m).toBe("5");
-          } catch (e) {
-            return done(e);
-          }
-          peer.send(c, "6");
-        };
-      });
-
-      let peer = await local.connect_to(remote.ident);
-
-      peer.on_data = (c, m) => {
-        try {
-          expect(c).toBe("control");
-          expect(m).toBe("6");
-        } catch (e) {
-          return done(e);
-        }
-
-        done();
-      };
-
-      peer.send("control", "5");
-    })().catch(done);
-  });
 });

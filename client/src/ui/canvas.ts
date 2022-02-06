@@ -113,7 +113,7 @@ export class Canvas extends LitElement {
                     width=${(this.selection === t.id ? new_dim[0] : t.dim[0]) - LINE_WIDTH}
                     height=${(this.selection === t.id ? new_dim[1] : t.dim[1]) - LINE_WIDTH}
                     href=${url || "assets/loading.svg"}
-                    preserveAspectRatio=${url ? "none" :  ""}
+                    preserveAspectRatio=${url ? "none" : ""}
                 />
                 `;
               }

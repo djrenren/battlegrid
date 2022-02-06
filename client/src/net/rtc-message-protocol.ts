@@ -26,7 +26,6 @@ export const decoder = (): TransformStream<RTCMessage, LogicalMessage> => {
   return new TransformStream({
     start() {},
     async transform(chunk, controller) {
-      console.log("decoding----------");
       switch (typeof chunk) {
         case "string":
           let meta = JSON.parse(chunk) as MetaMessage;
@@ -34,19 +33,15 @@ export const decoder = (): TransformStream<RTCMessage, LogicalMessage> => {
             controller.enqueue(meta.event);
             return;
           }
-          console.log("is file", chunk);
           file = meta;
           break;
         default:
-          console.log("found blob chunk", chunk);
           // Must be a bytechunk now
           if (!file) {
-            console.error("Found chunk without metadata. Ignoring");
             return;
           }
           buffer.push(chunk as any);
           if (--file.chunks === 0) {
-            console.log("file complete");
             controller.enqueue({ type: "file", name: file.name, contents: new Blob(buffer) });
 
             // Don't retain the buffer
@@ -66,9 +61,7 @@ export const encoder = (): TransformStream<LogicalMessage, RTCMessage> => {
   return new TransformStream({
     start() {},
     async transform(chunk, controller) {
-      console.log("TRANSFORMING------");
       if (chunk.type === "file") {
-        console.log("is file", chunk);
         // For files, first send the metadata
         controller.enqueue(
           JSON.stringify({
