@@ -92,9 +92,7 @@ export class Canvas extends LitElement {
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
-            <pattern id="loading">
-              <circle class="loading" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
-            </pattern>
+            <image id="loading" href="/assets/loading.svg" />
           </defs>
           <g style="clip-path: url(#canvasClip)">
             <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
@@ -104,7 +102,9 @@ export class Canvas extends LitElement {
             ${repeat(
               this.tokens.values(),
               (t) => t.id,
-              (t, index) => svg`
+              (t, index) => {
+                let url = this.images.get(t.res);
+                return svg`
                 <image
                     id=${t.id}
                     x=${(this.selection === t.id ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2}
@@ -112,10 +112,11 @@ export class Canvas extends LitElement {
                     @click=${this.#focus}
                     width=${(this.selection === t.id ? new_dim[0] : t.dim[0]) - LINE_WIDTH}
                     height=${(this.selection === t.id ? new_dim[1] : t.dim[1]) - LINE_WIDTH}
-                    href=${this.images.get(t.res)}
+                    href=${url || "/assets/loading.svg"}
                     preserveAspectRatio="none"
                 />
-                `
+                `;
+              }
             )}
           </g>
           ${this._drop_hint
@@ -408,6 +409,7 @@ export class Canvas extends LitElement {
       display: inline-block;
       box-sizing: content-box !important;
       --selection-color: cornflowerblue;
+      --spinner-size: 0.5;
     }
 
     svg {
