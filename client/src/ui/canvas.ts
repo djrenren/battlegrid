@@ -74,7 +74,7 @@ export class Canvas extends LitElement {
           height: 100%;
         }
       </style>
-      <bg-viewport style="width: 100%; height: 100%" @click=${this.#unfocus}>
+      <bg-viewport style="width: 100%; height: 100%" @pointerup=${this.#unfocus}>
         <svg
           id="root"
           width=${width}
@@ -106,9 +106,10 @@ export class Canvas extends LitElement {
                 return svg`
                 <image
                     id=${t.id}
+                    class="token"
                     x=${(this.selection === t.id ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2}
                     y=${(this.selection === t.id ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2}
-                    @click=${this.#focus}
+                    @mousedown=${this.#focus}
                     width=${(this.selection === t.id ? new_dim[0] : t.dim[0]) - LINE_WIDTH}
                     height=${(this.selection === t.id ? new_dim[1] : t.dim[1]) - LINE_WIDTH}
                     href=${url || "assets/loading.svg"}
@@ -143,8 +144,8 @@ export class Canvas extends LitElement {
                 y=${top!}
                 width=${new_dim![0]}
                 height=${new_dim![1]}
-                fill="transparent"
                 @click=${stop_ev}
+                fill="transparent"
             ></rect>
             <line class="rn" x1=${left!} y1=${top!} x2=${right!} y2=${top!}></line>
             <line class="rw" x1=${left!} y1=${top!} x2=${left!} y2=${bot!}></line>
@@ -230,11 +231,12 @@ export class Canvas extends LitElement {
     this.selection = (ev.target! as SVGElement).id;
   };
 
-  #unfocus = () => {
+  #unfocus = (ev: PointerEvent) => {
     this.selection = undefined;
   };
 
-  #drag_offset: Point = [0, 0];
+  #drag_offset?: Point;
+
   #selection_drag_start = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
@@ -246,6 +248,9 @@ export class Canvas extends LitElement {
   _selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point };
   #selection_drag = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
+    if (!this.#drag_offset) {
+      this.#selection_drag_start(ev);
+    }
     stop_ev(ev);
     const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], this.#screen_to_svg(ev)));
     const selection = this.tokens.get(this.selection!)!;
@@ -274,7 +279,7 @@ export class Canvas extends LitElement {
     }
 
     if (classes.contains("selection")) {
-      move = sub_p(grid_loc, this.#drag_offset).map(nearest_corner) as Point;
+      move = sub_p(grid_loc, this.#drag_offset!).map(nearest_corner) as Point;
     } else {
       // Don't let top-left drags cause movement pas the dimensions
       move = min_p(add_c(dim, -GRID_SIZE), move);
@@ -334,6 +339,7 @@ export class Canvas extends LitElement {
       el.dim = add_p(el.dim, this._selection_transform.resize);
     }
     this._selection_transform = { move: [0, 0], resize: [0, 0] };
+    this.#drag_offset = undefined;
   };
 
   // Normally we'd use SVG machinery but it's broken in one browser...
@@ -425,7 +431,7 @@ export class Canvas extends LitElement {
       filter: drop-shadow(0px 0px 2px var(--selection-color));
     }
 
-    .selection:active {
+    .selection:hover {
       cursor: move;
     }
 
