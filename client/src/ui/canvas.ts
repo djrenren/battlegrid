@@ -208,7 +208,7 @@ export class Canvas extends LitElement {
           game_event({
             type: "file",
             name: res,
-            contents: await (await fetch(res)).blob(),
+            contents: img.blob,
           })
         );
       }
