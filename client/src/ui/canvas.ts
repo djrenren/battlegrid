@@ -138,7 +138,6 @@ export class Canvas extends LitElement {
             ${selected
               ? svg`
             <rect
-                id="mover"
                 class="selection"
                 x=${left!}
                 y=${top!}
@@ -147,18 +146,18 @@ export class Canvas extends LitElement {
                 fill="transparent"
                 @click=${stop_ev}
             ></rect>
-            <line id="r-n" x1=${left!} y1=${top!} x2=${right!} y2=${top!}></line>
-            <line id="r-w" x1=${left!} y1=${top!} x2=${left!} y2=${bot!}></line>
-            <line id="r-e" x1=${right!} y1=${top!} x2=${right!} y2=${bot!}></line>
-            <line id="r-s" x1=${left!} y1=${bot!} x2=${right!} y2=${bot!}></line>
-            <rect id="r-nw" class="handle" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
+            <line class="rn" x1=${left!} y1=${top!} x2=${right!} y2=${top!}></line>
+            <line class="rw" x1=${left!} y1=${top!} x2=${left!} y2=${bot!}></line>
+            <line class="re" x1=${right!} y1=${top!} x2=${right!} y2=${bot!}></line>
+            <line class="rs" x1=${left!} y1=${bot!} x2=${right!} y2=${bot!}></line>
+            <rect class="handle rn rw" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
                   HANDLE_SIZE + "px"
                 }></rect>
-            <rect id="r-ne" class="handle" x=${right! - HANDLE_SIZE / 2} y=${
+            <rect class="handle rn re" x=${right! - HANDLE_SIZE / 2} y=${
                   top! - HANDLE_SIZE / 2
                 } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect id="r-sw" class="handle" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect id="r-se" class="handle" x=${right! - HANDLE_SIZE / 2} y=${
+            <rect class="handle rs rw" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
+            <rect class="handle rs re" x=${right! - HANDLE_SIZE / 2} y=${
                   bot! - HANDLE_SIZE / 2
                 } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
           `
@@ -252,29 +251,29 @@ export class Canvas extends LitElement {
     const selection = this.tokens.get(this.selection!)!;
     const dim = selection.dim;
     const loc = selection.loc;
-    const id = (ev.target as SVGGraphicsElement).id!;
+    const classes = (ev.target as SVGGraphicsElement).classList;
     let move = [0, 0] as Point;
     let resize = [0, 0] as Point;
 
-    if (new Set(["r-n", "r-ne", "r-nw"]).has(id)) {
+    if (classes.contains('rn')) {
       resize[1] = loc[1] - grid_loc[1];
       move[1] = nearest_corner(grid_loc[1]) - loc[1];
     }
 
-    if (new Set(["r-w", "r-nw", "r-sw"]).has(id)) {
+    if (classes.contains('rw')) {
       resize[0] = loc[0] - grid_loc[0];
       move[0] = nearest_corner(grid_loc[0]) - loc[0];
     }
 
-    if (new Set(["r-s", "r-se", "r-sw"]).has(id)) {
+    if (classes.contains('rs')) {
       resize[1] = nearest_corner(grid_loc[1]) - dim[1] - loc[1];
     }
 
-    if (new Set(["r-e", "r-se", "r-ne"]).has(id)) {
+    if (classes.contains('re')) {
       resize[0] = nearest_corner(grid_loc[0]) - dim[0] - loc[0];
     }
 
-    if (id === "mover") {
+    if (classes.contains("selection")) {
       move = sub_p(grid_loc, this.#drag_offset).map(nearest_corner) as Point;
     } else {
       // Don't let top-left drags cause movement pas the dimensions
@@ -407,7 +406,6 @@ export class Canvas extends LitElement {
       display: inline-block;
       box-sizing: content-box !important;
       --selection-color: cornflowerblue;
-      --spinner-size: 0.5;
     }
 
     svg {
@@ -437,31 +435,28 @@ export class Canvas extends LitElement {
       stroke: var(--selection-color);
     }
 
-    #r-n,
-    #r-s,
-    #r-e,
-    #r-w {
+    line.rn,
+    line.rs,
+    line.re,
+    line.rw {
       stroke-width: ${HANDLE_SIZE};
       vector-effect: non-scaling-stroke;
       stroke: transparent;
     }
 
-    #r-ne,
-    #r-sw {
+    .rn.re, .rs.rw {
       cursor: nesw-resize;
     }
-    #r-nw,
-    #r-se {
+
+    .rn.rw, .rs.re {
       cursor: nwse-resize;
     }
 
-    #r-n,
-    #r-s {
+    .rn, .rs {
       cursor: row-resize;
     }
 
-    #r-e,
-    #r-w {
+    .re, .rw {
       cursor: col-resize;
     }
 
