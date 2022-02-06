@@ -7,6 +7,7 @@ import { is_primary_down, stop_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
+import { ResourceManager } from "../fs/resource-manager";
 
 const GRID_SIZE = 24; // scale-dependent px
 const LINE_WIDTH = 0.5; // scale-dependent px
@@ -101,7 +102,7 @@ export class Canvas extends LitElement {
               this.tokens.values(),
               (t) => t.id,
               (t, index) => {
-                let url = this.images.get(t.res);
+                let url = this.resources.get(t.res);
                 return svg`
                 <image
                     id=${t.id}
@@ -153,13 +154,9 @@ export class Canvas extends LitElement {
             <rect class="handle rn rw" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
                   HANDLE_SIZE + "px"
                 }></rect>
-            <rect class="handle rn re" x=${right! - HANDLE_SIZE / 2} y=${
-                  top! - HANDLE_SIZE / 2
-                } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
+            <rect class="handle rn re" x=${right! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
             <rect class="handle rs rw" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect class="handle rs re" x=${right! - HANDLE_SIZE / 2} y=${
-                  bot! - HANDLE_SIZE / 2
-                } width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
+            <rect class="handle rs re" x=${right! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
           `
               : null}
           </svg>
@@ -188,30 +185,29 @@ export class Canvas extends LitElement {
     stop_ev(ev);
     console.log(ev);
     try {
-      const res = await getImage(ev);
-
+      const img = await getImage(ev);
+      const res = "blob" in img ? this.resources.register(img.blob) : img.url;
       const id = uuidv4();
-      const res_id = uuidv4();
-      this.images.set(res_id, res);
+
       this.tokens.set(id, {
         loc: this._drop_hint!,
         dim: [GRID_SIZE, GRID_SIZE],
         id,
-        res: res_id,
+        res,
       });
       this.dispatchEvent(
         game_event({
           type: "token-added",
           loc: this._drop_hint!,
           id,
-          res: res_id,
+          res,
         })
       );
-      if (res.substring(0, 5) === "blob:") {
+      if ("blob" in img) {
         this.dispatchEvent(
           game_event({
             type: "file",
-            name: res_id,
+            name: res,
             contents: await (await fetch(res)).blob(),
           })
         );
@@ -259,21 +255,21 @@ export class Canvas extends LitElement {
     let move = [0, 0] as Point;
     let resize = [0, 0] as Point;
 
-    if (classes.contains('rn')) {
+    if (classes.contains("rn")) {
       resize[1] = loc[1] - grid_loc[1];
       move[1] = nearest_corner(grid_loc[1]) - loc[1];
     }
 
-    if (classes.contains('rw')) {
+    if (classes.contains("rw")) {
       resize[0] = loc[0] - grid_loc[0];
       move[0] = nearest_corner(grid_loc[0]) - loc[0];
     }
 
-    if (classes.contains('rs')) {
+    if (classes.contains("rs")) {
       resize[1] = nearest_corner(grid_loc[1]) - dim[1] - loc[1];
     }
 
-    if (classes.contains('re')) {
+    if (classes.contains("re")) {
       resize[0] = nearest_corner(grid_loc[0]) - dim[0] - loc[0];
     }
 
@@ -324,7 +320,7 @@ export class Canvas extends LitElement {
         this.tokens = new Map(ev.tokens.map((t) => [t.id, t]));
         break;
       case "file":
-        this.images.set(ev.name, URL.createObjectURL(ev.contents));
+        this.resources.register(ev.contents, ev.name);
     }
 
     this.requestUpdate();
@@ -398,11 +394,7 @@ export class Canvas extends LitElement {
     };
   };
 
-  images: Map<string, string> = new Map();
-  async #register_image(name: string, contents: Blob) {
-    let url = await URL.createObjectURL(contents);
-    this.images.set(name, url);
-  }
+  resources = new ResourceManager();
 
   static styles = css`
     :host {
@@ -449,19 +441,23 @@ export class Canvas extends LitElement {
       stroke: transparent;
     }
 
-    .rn.re, .rs.rw {
+    .rn.re,
+    .rs.rw {
       cursor: nesw-resize;
     }
 
-    .rn.rw, .rs.re {
+    .rn.rw,
+    .rs.re {
       cursor: nwse-resize;
     }
 
-    .rn, .rs {
+    .rn,
+    .rs {
       cursor: row-resize;
     }
 
-    .re, .rw {
+    .re,
+    .rw {
       cursor: col-resize;
     }
 
