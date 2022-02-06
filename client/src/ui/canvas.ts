@@ -92,7 +92,6 @@ export class Canvas extends LitElement {
               <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
-            <image id="loading" href="/assets/loading.svg"></image>
           </defs>
           <g style="clip-path: url(#canvasClip)">
             <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>

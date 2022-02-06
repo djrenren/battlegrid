@@ -2,14 +2,22 @@
     <rect width="100%" height="100%" fill="white" />
 
     <svg viewBox="0 0 1 1" width="100%" height="100%">
-    <circle cx="0.5" cy="0.5" r="0.25" fill="transparent" stroke="grey" stroke-dasharray=".75" stroke-width=".05">
-        <animateTransform attributeType="xml"
-            attributeName="transform"
-            type="rotate"
-            from="0 .5 .5"
-            to="360 .5 .5"
-            dur="2s"
-            repeatCount="indefinite"/>
-    </circle>
+        <style>
+            circle {
+                transform-origin: 50% 50%;
+                animation: 2s infinite linear spin;
+            }
+
+            @keyframes spin {
+                from {
+                    transform: rotate(0deg);
+                }
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+        <circle cx="0.5" cy="0.5" r="0.25" fill="transparent" stroke="grey" stroke-dasharray=".75" stroke-width=".05">
+        </circle>
     </svg>
   </svg>
