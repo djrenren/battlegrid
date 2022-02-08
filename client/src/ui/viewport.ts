@@ -215,6 +215,7 @@ export class Viewport extends LitElement {
           this.v_dim = [e.contentRect.width, e.contentRect.height];
           const rect = this.getBoundingClientRect();
           this.v_loc = [rect.x, rect.y];
+          this.smooth = 0;
           break;
         case this.#content:
           // this.c_dim = [e.contentRect.width, e.contentRect.height];
