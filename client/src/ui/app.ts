@@ -47,7 +47,7 @@ class App extends LitElement {
               <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
               <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
             </div>
-            ${this.client?.status ? html`<div>${this.client.server ? 'hosting' : 'connected'}</div>` : html` <button @click=${this.#host}>Host</button> `}
+            ${this.client?.status ? html`<div>${this.client.server ? `hosting` : 'connected'}</div>` : html` <button @click=${this.#host}>Host</button> `}
           </section>
           <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
         `;
@@ -123,6 +123,7 @@ class App extends LitElement {
 
   #new_local = () => {
     this.client = undefined;
+    window.history.pushState(null, "", window.location.href.split('?')[0]);
   }
 
   #host = async () => {
