@@ -2,13 +2,14 @@ import { GameEvent, StateSync } from "../game/game-events";
 import { DurableSignaler } from "./signaling";
 import { read_stream, write_stream } from "./rtc-data-stream";
 import { decoder, encoder } from "./rtc-message-protocol";
-import { GameClient } from "./client";
+import { Status, GameClient } from "./client";
 
 export class Server implements GameClient {
   signaler: DurableSignaler;
+  status: Status = "connected";
+  server = this;
 
   #writers: Set<WritableStreamDefaultWriter> = new Set();
-
   constructor(signaler: DurableSignaler) {
     this.signaler = signaler;
     let { readable, writable } = new TransformStream({

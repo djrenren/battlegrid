@@ -1,7 +1,6 @@
 import { css, html, LitElement } from "lit";
-import { customElement, query, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { Point } from "../util/math";
-import { DurableSignaler } from "../net/signaling";
 import { Server } from "../net/server";
 import { GameEvent } from "../game/game-events";
 import { Client, GameClient } from "../net/client";
@@ -21,18 +20,37 @@ class App extends LitElement {
   @query("bg-canvas", true)
   canvas?: Canvas;
 
+  @state()
+  client?: GameClient;
+
   render() {
-    return html`
-      <section id="toolbar">
+    let error = this.client?.status === "error" ? html`
+      <div class="message error">
         <div>
-          Grid:
-          <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
-          <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
+          <h1> Error connecting to remote grid</h1>
+          <button @click=${this.#try_again}>Try again</button>
+          <button @click=${this.#new_local}>New local grid</button>
         </div>
-        ${this.client ? html`<div>hosting</div>` : html` <button @click=${this.#host}>Host</button> `}
-      </section>
-      <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
-    `;
+      </div>` : null;
+    let connecting = this.client?.status === "connecting" ? html`
+      <div class="message">
+        <div>
+          <h1>Connecting to grid...</h1>
+        </div>
+      </div>` : null;
+    let status = this.client?.server ? 'hosting' : 'connected';
+    return error || connecting || 
+    html`
+          <section id="toolbar">
+            <div>
+              Grid:
+              <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
+              <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
+            </div>
+            ${this.client?.status ? html`<div>${this.client.server ? 'hosting' : 'connected'}</div>` : html` <button @click=${this.#host}>Host</button> `}
+          </section>
+          <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
+        `;
   }
 
   static styles = css`
@@ -46,6 +64,14 @@ class App extends LitElement {
         / 1fr;
       font-family: inherit;
     }
+
+    .message {
+      grid-area: 1 / 1 / 3 / 1;
+      display: grid;
+      align-items: center;
+      justify-items: center;
+    }
+
 
     bg-canvas {
       grid-area: viewport;
@@ -75,16 +101,28 @@ class App extends LitElement {
     });
   };
 
-  @state()
-  client?: GameClient;
-
   async connectedCallback() {
     super.connectedCallback();
-    let target = window.location.hash;
-    if (target.length > 0 && (target = target.substring(1))) {
-      this.client = await Client.establish(target);
-      this.client.on_event = this.#incoming_event;
+
+    let params = new URLSearchParams(window.location.search);
+    let game_id = params.get('game');
+    if (!game_id) return {};
+
+    let c = new Client(game_id);
+    c.on_event = this.#incoming_event;
+    c.on_status = () => this.requestUpdate();
+    this.client = c;
+    await c.connect();
+  }
+
+  #try_again = () => {
+    if (this.client && !this.client.server) {
+      (this.client as Client).connect();
     }
+  }
+
+  #new_local = () => {
+    this.client = undefined;
   }
 
   #host = async () => {
@@ -95,7 +133,7 @@ class App extends LitElement {
       srv.get_state = this.canvas?.get_state;
       srv.get_images = () => this.canvas!.resources.local;
 
-      window.location.hash = srv.signaler.ident;
+      window.history.pushState({}, "", "?game=" + srv.signaler.ident);
       navigator.clipboard.writeText(window.location.toString());
     } catch (e) {
       console.error(e);

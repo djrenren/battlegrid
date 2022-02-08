@@ -94,8 +94,8 @@ export class Canvas extends LitElement {
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
             </pattern>
           </defs>
-          <g style="clip-path: url(#canvasClip)">
-            <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white"></rect>
+          <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" rx="5"></rect>
+          <g style="clip-path: url(#canvasClip)" >
             <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
 
             ${repeat(
@@ -409,6 +409,10 @@ export class Canvas extends LitElement {
       overflow: visible;
     }
 
+    .shadow {
+      filter: drop-shadow(2px 4px 4px rgba(0,0,0, .4))
+    }
+
     .drop_hint {
       transition: none;
       pointer-events: none;
@@ -462,10 +466,7 @@ export class Canvas extends LitElement {
     }
 
     bg-viewport::part(background) {
-      background-color: #dbdbdb;
-      background-image: url("https://www.transparenttextures.com/patterns/45-degree-fabric-dark.png");
-      background-size: calc(var(--scale) * 315px);
-      /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
+      background-color: #acacac;
     }
 
     bg-viewport::part(bar) {
