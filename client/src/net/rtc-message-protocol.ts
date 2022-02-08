@@ -1,5 +1,5 @@
 import { GameEvent } from "../game/game-events";
-import { type RTCMessage } from "./rtc-data-stream";
+import { read_stream, write_stream, type RTCMessage } from "./rtc-data-stream";
 
 export type LogicalMessage = GameEvent;
 
@@ -16,8 +16,6 @@ type MetaFile = {
   name: string;
   chunks: number;
 };
-
-type WireMessage = MetaMessage | ArrayBuffer | ArrayBufferView | Blob;
 
 export const decoder = (): TransformStream<RTCMessage, LogicalMessage> => {
   let buffer: (ArrayBuffer | Blob | ArrayBufferView)[] = [];
@@ -85,4 +83,13 @@ export const encoder = (): TransformStream<LogicalMessage, RTCMessage> => {
       }
     },
   });
+};
+
+export const proto_pair = (dc: RTCDataChannel): { writable: WritableStream<LogicalMessage>; readable: ReadableStream<LogicalMessage> } => {
+  let readable = read_stream(dc).pipeThrough(decoder());
+  let enc = encoder();
+
+  enc.readable.pipeTo(write_stream(dc));
+  let writable = enc.writable;
+  return { writable, readable };
 };

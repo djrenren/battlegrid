@@ -317,10 +317,13 @@ export class Canvas extends LitElement {
         }
         break;
       case "state-sync":
+        console.log("applying tokens", ev.tokens);
         this.tokens = new Map(ev.tokens.map((t) => [t.id, t]));
         break;
       case "file":
         this.resources.register(ev.contents, ev.name);
+        this.requestUpdate();
+        break;
     }
 
     this.requestUpdate();

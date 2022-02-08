@@ -98,10 +98,7 @@ export class Viewport extends LitElement {
         @gesturestart=${this._gesturestart}
         @gesturechange=${this._gesturechange}
       >
-        <div
-          id="bg"
-          part="background"
-        ></div>
+        <div id="bg" part="background"></div>
         <slot @slotchange=${this.handleSlotchange}></slot>
         <div
           part="bar"

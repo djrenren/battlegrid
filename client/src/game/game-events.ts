@@ -1,6 +1,6 @@
 import { Point } from "../util/math";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | File;
+export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse;
 
 export type TokenAdded = {
   type: "token-added";
@@ -39,7 +39,7 @@ export type TokenData = {
   id: string;
 };
 
-export type File = {
+export type FileResponse = {
   type: "file";
   name: string;
   contents: Blob;

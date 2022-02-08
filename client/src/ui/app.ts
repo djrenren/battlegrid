@@ -17,7 +17,7 @@ class App extends LitElement {
   @query("#height", true)
   height?: HTMLInputElement;
 
-  @query("bg-canvas", true)
+  @query("bg-canvas", false)
   canvas?: Canvas;
 
   @state()
@@ -53,24 +53,19 @@ class App extends LitElement {
           </div>`
         : null;
 
-    return (
-      error ||
-      connecting ||
-      disconnected ||
-      html`
-        <section id="toolbar">
-          <div>
-            Grid:
-            <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
-            <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
-          </div>
-          ${this.client?.status
-            ? html`<div>${this.client.server ? `hosting` : "connected"}</div>`
-            : html` <button @click=${this.#host}>Host</button> `}
-        </section>
-        <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
-      `
-    );
+    let overlay = error || connecting || disconnected;
+    return html`
+      <section id="toolbar">
+        <div>
+          Grid:
+          <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
+          <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
+        </div>
+        ${this.client?.status ? html`<div>${this.client.server ? `hosting` : "connected"}</div>` : html` <button @click=${this.#host}>Host</button> `}
+      </section>
+      <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
+      ${overlay}
+    `;
   }
 
   static styles = css`
@@ -90,6 +85,8 @@ class App extends LitElement {
       display: grid;
       align-items: center;
       justify-items: center;
+      background: white;
+      z-index: 2;
     }
 
     bg-canvas {
@@ -161,9 +158,11 @@ class App extends LitElement {
   };
 
   #incoming_event = (ev: GameEvent) => {
+    console.log("APPLOY!", this.canvas);
     if (ev.type === "state-sync") {
       this.dim = ev.grid_dim;
     }
+
     if (ev.type === "grid-resized") {
       this.dim = ev.dim;
     } else {

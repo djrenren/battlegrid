@@ -1,4 +1,12 @@
-import { uuidv4 } from "../game/game-events";
+import { FileResponse, uuidv4 } from "../game/game-events";
+import { proto_pair } from "../net/rtc-message-protocol";
+
+type FileRequest = {
+  type: "file-request";
+  name: string;
+};
+
+type FileEvent = FileResponse | FileRequest;
 
 export class ResourceManager {
   local: Map<string, string> = new Map();
@@ -12,8 +20,8 @@ export class ResourceManager {
   }
 
   register(file: Blob, id?: string): string {
-    let res_id = id ?? "local:" + uuidv4();
-    this.local.set(res_id, URL.createObjectURL(file));
-    return res_id;
+    let name = id ?? "local:" + uuidv4();
+    this.local.set(name, URL.createObjectURL(file));
+    return name;
   }
 }

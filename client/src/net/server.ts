@@ -1,15 +1,15 @@
 import { GameEvent, StateSync } from "../game/game-events";
 import { DurableSignaler } from "./signaling";
-import { read_stream, write_stream } from "./rtc-data-stream";
-import { decoder, encoder } from "./rtc-message-protocol";
 import { Status, GameClient } from "./client";
+import { proto_pair } from "./rtc-message-protocol";
 
 export class Server implements GameClient {
   signaler: DurableSignaler;
   status: Status = "connected";
   server = this;
+  #event_writers: Set<WritableStreamDefaultWriter> = new Set();
+  #data_writers: Set<WritableStreamDefaultWriter> = new Set();
 
-  #writers: Set<WritableStreamDefaultWriter> = new Set();
   constructor(signaler: DurableSignaler) {
     this.signaler = signaler;
     let { readable, writable } = new TransformStream({
@@ -25,40 +25,50 @@ export class Server implements GameClient {
     let ev_write = writable.getWriter();
 
     this.signaler.addEventListener("peer", async ({ detail: peer }) => {
-      let reader = read_stream(peer.data).pipeThrough(decoder());
+      let events = proto_pair(peer.events);
+      let data = proto_pair(peer.data);
 
-      let enc = encoder();
-      enc.readable.pipeTo(write_stream(peer.data));
+      const event_writer = events.writable.getWriter();
+      const data_writer = data.writable.getWriter();
 
-      const writer = enc.writable.getWriter();
-      this.#writers.add(writer);
+      this.#event_writers.add(event_writer);
+      this.#data_writers.add(data_writer);
 
       console.log("Getting state");
       if (this.get_state) {
-        writer.write(this.get_state());
+        event_writer.write(this.get_state());
       }
-
       console.log("writing images");
       for (const [name, url] of this.get_images ? this.get_images().entries() : []) {
         console.log(name, url);
-        writer.write({
+        data_writer.write({
           type: "file",
           name,
           contents: await (await fetch(url)).blob(),
         });
       }
 
+      // Loop for data events
       (async () => {
-        let iter = reader.getReader();
-
+        let iter = events.readable.getReader();
         let ev: any, done: boolean;
         while (({ value: ev, done } = await iter.read()) && !done) {
-          console.log("EVENT!", ev);
           // This returns a promise, but we won't await it because we don't want to cause
           // deadlock with writers
-          await ev_write.write({ author: writer, ev });
+          await ev_write.write({ author: event_writer, ev });
         }
-        this.#writers.delete(writer);
+        this.#event_writers.delete(event_writer);
+      })();
+
+      (async () => {
+        let iter = data.readable.getReader();
+        let ev: any, done: boolean;
+        while (({ value: ev, done } = await iter.read()) && !done) {
+          // This returns a promise, but we won't await it because we don't want to cause
+          // deadlock with writers
+          await ev_write.write({ author: event_writer, ev });
+        }
+        this.#data_writers.delete(data_writer);
       })();
     });
 
@@ -80,8 +90,9 @@ export class Server implements GameClient {
   }
 
   async send_event(ev: GameEvent, author?: WritableStreamDefaultWriter) {
+    let sink = ev.type === "file" ? this.#data_writers : this.#event_writers;
     await Promise.all(
-      Array.from(this.#writers)
+      Array.from(sink)
         .filter((w) => w !== author)
         .map((w) => w.write(ev))
     );

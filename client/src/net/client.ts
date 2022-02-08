@@ -1,7 +1,8 @@
-import { GameEvent } from "../game/game-events";
+import { ResourceManager } from "../fs/resource-manager";
+import { FileResponse, GameEvent } from "../game/game-events";
 import { Peer } from "./peer";
 import { read_stream, write_stream } from "./rtc-data-stream";
-import { decoder, encoder } from "./rtc-message-protocol";
+import { decoder, encoder, proto_pair } from "./rtc-message-protocol";
 import { Server } from "./server";
 import { DurableSignaler } from "./signaling";
 
@@ -14,8 +15,9 @@ export interface GameClient {
 }
 
 export class Client implements GameClient {
-  #writer?: WritableStreamDefaultWriter;
-  #reader?: ReadableStreamDefaultReader;
+  #event_writer?: WritableStreamDefaultWriter;
+  #data_writer?: WritableStreamDefaultWriter;
+
   #remote_id: string;
   status: Status = "disconnected";
   server = undefined;
@@ -44,20 +46,36 @@ export class Client implements GameClient {
       this.#set_status("error");
       return;
     }
+    let events = proto_pair(peer.events);
+    this.#event_writer = events.writable.getWriter();
+    let event_reader = events.readable.getReader();
 
-    let reader = read_stream(peer.data).pipeThrough(decoder()).getReader();
-    let enc = encoder();
+    let data = proto_pair(peer.data);
+    this.#event_writer = data.writable.getWriter();
+    let data_reader = data.readable.getReader();
 
-    enc.readable.pipeTo(write_stream(peer.data));
-    this.#writer = enc.writable.getWriter();
     this.#set_status("connected");
     (async () => {
       let ev, done;
 
-      while (({ value: ev, done } = await reader.read()) && !done) {
+      while (({ value: ev, done } = await data_reader.read()) && !done) {
+        console.log("DATA", ev);
         this.on_event(ev as GameEvent);
       }
 
+      console.log("dccccc");
+      this.#set_status("disconnected");
+    })();
+
+    (async () => {
+      let ev, done;
+
+      while (({ value: ev, done } = await event_reader.read()) && !done) {
+        console.log("EVENT!", ev);
+        this.on_event(ev as GameEvent);
+      }
+
+      console.log("dccccc");
       this.#set_status("disconnected");
     })();
   }
@@ -66,6 +84,7 @@ export class Client implements GameClient {
   on_status = () => {};
 
   async send_event(ev: GameEvent) {
-    this.#writer?.write(ev);
+    let sink = ev.type === "file" ? this.#data_writer : this.#event_writer;
+    sink?.write(ev);
   }
 }
