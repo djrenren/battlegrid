@@ -17,7 +17,7 @@ class App extends LitElement {
   @query("#height", true)
   height?: HTMLInputElement;
 
-  @query("bg-canvas", false)
+  @query("bg-canvas", true)
   canvas?: Canvas;
 
   @state()
