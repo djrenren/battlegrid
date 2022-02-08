@@ -148,7 +148,7 @@ class App extends LitElement {
       this.client = srv;
       srv.on_event = this.#incoming_event;
       srv.get_state = this.canvas?.get_state;
-      srv.get_images = () => this.canvas!.resources.local;
+      srv.get_images = () => this.canvas!.resources.all();
 
       window.history.pushState({}, "", "?game=" + srv.signaler.ident);
       navigator.clipboard.writeText(window.location.toString());

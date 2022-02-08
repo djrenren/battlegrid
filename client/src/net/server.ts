@@ -39,7 +39,7 @@ export class Server implements GameClient {
         event_writer.write(this.get_state());
       }
       console.log("writing images");
-      for (const [name, url] of this.get_images ? this.get_images().entries() : []) {
+      for (const [name, url] of this.get_images ? this.get_images() : []) {
         console.log(name, url);
         data_writer.write({
           type: "file",
@@ -104,5 +104,5 @@ export class Server implements GameClient {
 
   on_event: (ev: any) => any = () => {};
   get_state?: () => StateSync;
-  get_images?: () => Map<string, string>;
+  get_images?: () => Iterable<[string, string]>;
 }

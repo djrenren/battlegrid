@@ -9,11 +9,12 @@ type FileRequest = {
 type FileEvent = FileResponse | FileRequest;
 
 export class ResourceManager {
-  local: Map<string, string> = new Map();
+  // Don't restore the index between sessions.
+  index: string[] = [];
 
-  get(res: string) {
+  get(res: string): string | null {
     if (res.startsWith("local:")) {
-      return this.local.get(res);
+      return window.sessionStorage.getItem(res);
     } else {
       return res;
     }
@@ -21,7 +22,10 @@ export class ResourceManager {
 
   register(file: Blob, id?: string): string {
     let name = id ?? "local:" + uuidv4();
-    this.local.set(name, URL.createObjectURL(file));
+    this.index.push(name);
+    window.sessionStorage.setItem(name, URL.createObjectURL(file));
     return name;
   }
+
+  all = (): [string, string][] => this.index.map((i) => [i, this.get(i)!]);
 }
