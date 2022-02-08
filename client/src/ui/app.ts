@@ -24,33 +24,53 @@ class App extends LitElement {
   client?: GameClient;
 
   render() {
-    let error = this.client?.status === "error" ? html`
-      <div class="message error">
-        <div>
-          <h1> Error connecting to remote grid</h1>
-          <button @click=${this.#try_again}>Try again</button>
-          <button @click=${this.#new_local}>New local grid</button>
-        </div>
-      </div>` : null;
-    let connecting = this.client?.status === "connecting" ? html`
-      <div class="message">
-        <div>
-          <h1>Connecting to grid...</h1>
-        </div>
-      </div>` : null;
-    let status = this.client?.server ? 'hosting' : 'connected';
-    return error || connecting || 
-    html`
-          <section id="toolbar">
+    let error =
+      this.client?.status === "error"
+        ? html` <div class="message error">
             <div>
-              Grid:
-              <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
-              <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
+              <h1>Error connecting to remote grid</h1>
+              <button @click=${this.#try_again}>Try again</button>
+              <button @click=${this.#new_local}>New local grid</button>
             </div>
-            ${this.client?.status ? html`<div>${this.client.server ? `hosting` : 'connected'}</div>` : html` <button @click=${this.#host}>Host</button> `}
-          </section>
-          <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
-        `;
+          </div>`
+        : null;
+    let connecting =
+      this.client?.status === "connecting"
+        ? html` <div class="message">
+            <div>
+              <h1>Connecting to grid...</h1>
+            </div>
+          </div>`
+        : null;
+    let disconnected =
+      this.client?.status === "disconnected"
+        ? html` <div class="message">
+            <div>
+              <h1>Disconnected from host</h1>
+              <button @click=${this.#try_again}>Try again</button>
+              <button @click=${this.#new_local}>New local grid</button>
+            </div>
+          </div>`
+        : null;
+
+    return (
+      error ||
+      connecting ||
+      disconnected ||
+      html`
+        <section id="toolbar">
+          <div>
+            Grid:
+            <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
+            <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
+          </div>
+          ${this.client?.status
+            ? html`<div>${this.client.server ? `hosting` : "connected"}</div>`
+            : html` <button @click=${this.#host}>Host</button> `}
+        </section>
+        <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
+      `
+    );
   }
 
   static styles = css`
@@ -71,7 +91,6 @@ class App extends LitElement {
       align-items: center;
       justify-items: center;
     }
-
 
     bg-canvas {
       grid-area: viewport;
@@ -105,7 +124,7 @@ class App extends LitElement {
     super.connectedCallback();
 
     let params = new URLSearchParams(window.location.search);
-    let game_id = params.get('game');
+    let game_id = params.get("game");
     if (!game_id) return {};
 
     let c = new Client(game_id);
@@ -119,12 +138,12 @@ class App extends LitElement {
     if (this.client && !this.client.server) {
       (this.client as Client).connect();
     }
-  }
+  };
 
   #new_local = () => {
     this.client = undefined;
-    window.history.pushState(null, "", window.location.href.split('?')[0]);
-  }
+    window.history.pushState(null, "", window.location.href.split("?")[0]);
+  };
 
   #host = async () => {
     try {

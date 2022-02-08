@@ -95,7 +95,7 @@ export class Canvas extends LitElement {
             </pattern>
           </defs>
           <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" rx="5"></rect>
-          <g style="clip-path: url(#canvasClip)" >
+          <g style="clip-path: url(#canvasClip)">
             <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
 
             ${repeat(
@@ -410,7 +410,7 @@ export class Canvas extends LitElement {
     }
 
     .shadow {
-      filter: drop-shadow(2px 4px 4px rgba(0,0,0, .4))
+      filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.4));
     }
 
     .drop_hint {
