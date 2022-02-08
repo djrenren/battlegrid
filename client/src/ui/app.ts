@@ -48,7 +48,7 @@ class App extends LitElement {
             <div>
               <h1>Disconnected from host</h1>
               <button @click=${this.#try_again}>Try again</button>
-              <button @click=${this.#new_local}>New local grid</button>
+              <button @click=${this.#new_local}>Continue locally</button>
             </div>
           </div>`
         : null;
