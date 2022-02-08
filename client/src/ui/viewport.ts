@@ -101,9 +101,6 @@ export class Viewport extends LitElement {
         <div
           id="bg"
           part="background"
-          style=${styleMap({
-            backgroundPosition: `${offset[0] - scrollPos[0]}px ${offset[1] - scrollPos[1]}px`,
-          })}
         ></div>
         <slot @slotchange=${this.handleSlotchange}></slot>
         <div
