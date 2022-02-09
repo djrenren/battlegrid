@@ -9,10 +9,12 @@ import { getImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
 import { ResourceManager } from "../fs/resource-manager";
 
-const GRID_SIZE = 24; // scale-dependent px
-const LINE_WIDTH = 0.5; // scale-dependent px
-const HANDLE_SIZE = 5; // scale-independent px
-const PADDING = 20;
+const PIXEL_SCALE = 2;
+const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
+const LINE_WIDTH = 0.5 * PIXEL_SCALE; // scale-dependent px
+const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
+const CANVAS_RADIUS = 5 * PIXEL_SCALE;
+const PADDING = 20 * PIXEL_SCALE;
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -34,8 +36,8 @@ export class Canvas extends LitElement {
     [
       "1",
       {
-        loc: [48, 48],
-        dim: [48, 48],
+        loc: [2 * GRID_SIZE, 2 * GRID_SIZE],
+        dim: [2 * GRID_SIZE, 2 * GRID_SIZE],
         res: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",
         id: "1",
       },
@@ -73,14 +75,7 @@ export class Canvas extends LitElement {
       bot = new_origin[1] + new_dim[1];
     }
     return html`
-      <style>
-        :host {
-          width: 100%;
-          height: 100%;
-        }
-      </style>
       <bg-viewport
-        style="width: 100%; height: 100%"
         @pointerup=${this.#unfocus}
         @dragstart=${stop_ev}
         @dragenter=${this.#drag_enter}
@@ -92,18 +87,18 @@ export class Canvas extends LitElement {
         <svg id="root" width=${width + PADDING * 2} height=${height + PADDING * 2}>
           <defs>
             <clipPath id="canvasClip">
-              <rect x="0" y="0" width=${width} height=${height} rx="5"></rect>
+              <rect width=${width} height=${height} rx=${CANVAS_RADIUS}></rect>
             </clipPath>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height=${GRID_SIZE} patternUnits="userSpaceOnUse">
-              <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" opacity="1"></rect>
-              <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" opacity="1"></rect>
+              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" opacity="1"></rect>
+              <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" opacity="1"></rect>
             </pattern>
           </defs>
           <g transform=${`translate(${PADDING} ${PADDING})`}>
-            <rect class="shadow" width=${width} height=${height} fill="white" rx="5"></rect>
+            <rect class="shadow" width=${width} height=${height} fill="white" rx=${CANVAS_RADIUS}></rect>
             <g style="clip-path: url(#canvasClip)">
               ${this.bg ? svg`<image href=${this.resources.get(this.bg)} width=${width} height=${height} preserveAspectRatio="none" />` : null}
-              <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
+              <rect width=${width} height=${height} fill="url(#pat)" opacity="0.75" pointer-events="none"></rect>
 
               ${repeat(
                 this.tokens.values(),
@@ -470,7 +465,7 @@ export class Canvas extends LitElement {
   static styles = css`
     :host {
       position: relative;
-      display: inline-block;
+      display: block;
       --selection-color: cornflowerblue;
     }
 
@@ -491,12 +486,14 @@ export class Canvas extends LitElement {
       padding: 5px;
       grid: 1fr 1fr;
       text-align: center;
+      display: none;
     }
 
     #bg-drop.canvas,
     #bg-drop.bg {
       bottom: 0;
       box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+      display: block;
     }
 
     #bg-drop-label {
@@ -533,7 +530,7 @@ export class Canvas extends LitElement {
 
     .selection {
       stroke: var(--selection-color);
-      stroke-width: 1;
+      stroke-width: 1px;
       vector-effect: non-scaling-stroke;
       filter: drop-shadow(0px 0px 2px var(--selection-color));
     }
@@ -543,7 +540,8 @@ export class Canvas extends LitElement {
     }
 
     .handle {
-      vector-effect: non-scaling-size;
+      vector-effect: non-scaling-stroke;
+      stroke-width: 1px;
       fill: white;
       stroke: var(--selection-color);
     }

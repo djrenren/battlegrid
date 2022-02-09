@@ -4,10 +4,10 @@ import { styleMap } from "lit/directives/style-map.js";
 import { is_non_touch_drag, stop_ev } from "../util/events";
 import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 
-const min_scale = 0.5;
-const max_scale = 5;
+const min_scale = 0.2;
+const max_scale = 2;
 const scroll_factor = 0.005;
-const AUTO_ZOOM_FILL = 0.9; // Percentage of the viewport to fill on first load
+const AUTO_ZOOM_FILL = 1; // Percentage of the viewport to fill on first load
 
 @customElement("bg-viewport")
 export class Viewport extends LitElement {
@@ -104,9 +104,10 @@ export class Viewport extends LitElement {
           part="bar"
           class="bottombar"
           style=${styleMap({
-            transform: `translate(${scroll_loc[0]}px, 0) scale(${scroll_size[0]}, 1)`,
-            opacity: needs_h_bar ? "0.75" : "0",
-            pointerEvents: needs_h_bar ? "auto" : "none",
+            transform: `translate(${scroll_loc[0]}px, 0)`,
+            width: `${scroll_size[0]}px`,
+            // opacity: needs_h_bar ? "0.75" : "0",
+            display: needs_h_bar ? "block" : "none",
           })}
           @pointerdown=${this.#scrollbar_down}
           @pointermove=${this.#scrollbar_change_horiz}
@@ -116,9 +117,10 @@ export class Viewport extends LitElement {
           part="bar"
           class="rightbar"
           style=${styleMap({
-            transform: `translate(0, ${scroll_loc[1]}px) scale(1, ${scroll_size[1]})`,
-            opacity: needs_v_bar ? "0.75" : "0",
-            pointerEvents: needs_v_bar ? "auto" : "none",
+            transform: `translate(0, ${scroll_loc[1]}px)`,
+            height: `${scroll_size[1]}px`,
+            // opacity: needs_v_bar ? "0.75" : "0",
+            display: needs_v_bar ? "block" : "none",
           })}
           @pointerdown=${this.#scrollbar_down}
           @pointermove=${this.#scrollbar_change_vert}
@@ -144,18 +146,19 @@ export class Viewport extends LitElement {
 
   // Chrome and Firefox model pinches as ctrl + scroll (to match the classic
   // desktop idiom). This handler turns that into a _performZoom call.
-  @eventOptions({ passive: false })
+  @eventOptions({ passive: false, capture: true })
   _wheel(ev: WheelEvent) {
     stop_ev(ev);
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 10 : 1;
     if (ev.ctrlKey) {
       const delta = Math.min(50, Math.max(-50, -ev.deltaY * multiplier));
-      this.smooth = Math.abs(delta) * 5;
+      this.smooth = Math.abs(delta) > 5 ? Math.abs(delta) * 5 : 0;
       //zoom
       this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), delta * scroll_factor * this.scale);
     } else {
       const delta = mul_c([ev.deltaX, ev.deltaY], multiplier);
       this.smooth = (Math.abs(delta[0]) + Math.abs(delta[1])) * 2;
+      this.smooth = 0;
       // Firefox scrolls by lines so we need to multiply that by a line size
       // to get actual pixels. Page scrolling is unsupported currently.
       this.#scrollPos = add_p(delta, this.#scrollPos);
@@ -307,21 +310,21 @@ export class Viewport extends LitElement {
       }
 
       .bottombar {
-        position: absolute;
+        position: fixed;
         bottom: 0;
         height: var(--thickness);
-        width: 1px;
         transform-origin: 0 0;
         backface-visibility: hidden;
+        will-change: width;
       }
 
       .rightbar {
-        position: absolute;
+        position: fixed;
         width: var(--thickness);
-        height: 1px;
         transform-origin: 0 0;
         backface-visibility: hidden;
         right: 0;
+        will-change: height;
       }
 
       *,
