@@ -100,7 +100,7 @@ class App extends LitElement {
 
     #toolbar {
       grid-area: toolbar;
-      background: #eee;
+      background: #f9f9fa;
       box-shadow: 0 0 4px gray;
       z-index: 2;
       display: flex;

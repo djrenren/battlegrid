@@ -12,6 +12,7 @@ import { ResourceManager } from "../fs/resource-manager";
 const GRID_SIZE = 24; // scale-dependent px
 const LINE_WIDTH = 0.5; // scale-dependent px
 const HANDLE_SIZE = 5; // scale-independent px
+const PADDING = 20;
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -78,8 +79,8 @@ export class Canvas extends LitElement {
       <bg-viewport style="width: 100%; height: 100%" @pointerup=${this.#unfocus}>
         <svg
           id="root"
-          width=${width}
-          height=${height}
+          width=${width + PADDING * 2}
+          height=${height + PADDING * 2}
           @dragstart=${stop_ev}
           @dragleave=${this.#drag_leave}
           @dragover=${this.#drag_over}
@@ -90,20 +91,21 @@ export class Canvas extends LitElement {
               <rect x="0" y="0" width=${width} height=${height} rx="5"></rect>
             </clipPath>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height=${GRID_SIZE} patternUnits="userSpaceOnUse">
-              <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="grey" opacity="1"></rect>
-              <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="grey" opacity="1"></rect>
+              <rect class="gridline" x="0" y="0" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" opacity="1"></rect>
+              <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" opacity="1"></rect>
             </pattern>
           </defs>
-          <rect class="shadow" x="0" y="0" width=${width} height=${height} fill="white" rx="5"></rect>
-          <g style="clip-path: url(#canvasClip)">
-            <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
+          <rect class="shadow" x=${PADDING} y=${PADDING} width=${width} height=${height} fill="white" rx="5"></rect>
+          <g transform=${`translate(${PADDING} ${PADDING})`}>
+            <g style="clip-path: url(#canvasClip)">
+              <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
 
-            ${repeat(
-              this.tokens.values(),
-              (t) => t.id,
-              (t, index) => {
-                let url = this.resources.get(t.res);
-                return svg`
+              ${repeat(
+                this.tokens.values(),
+                (t) => t.id,
+                (t, index) => {
+                  let url = this.resources.get(t.res);
+                  return svg`
                 <image
                     id=${t.id}
                     class="token"
@@ -116,11 +118,11 @@ export class Canvas extends LitElement {
                     preserveAspectRatio=${url ? "none" : ""}
                 ></image>
                 `;
-              }
-            )}
-          </g>
-          ${this._drop_hint
-            ? svg`
+                }
+              )}
+            </g>
+            ${this._drop_hint
+              ? svg`
             <rect
                 class="drop_hint"
                 x=${this._drop_hint[0]}
@@ -129,15 +131,15 @@ export class Canvas extends LitElement {
                 height=${GRID_SIZE}
                 ></rect>
           `
-            : null}
-          <svg
-            @pointerdown=${this.#selection_drag_start}
-            @pointermove=${this.#selection_drag}
-            @pointerup=${this.#selection_drag_end}
-            @click=${stop_ev}
-          >
-            ${selected
-              ? svg`
+              : null}
+            <svg
+              @pointerdown=${this.#selection_drag_start}
+              @pointermove=${this.#selection_drag}
+              @pointerup=${this.#selection_drag_end}
+              @click=${stop_ev}
+            >
+              ${selected
+                ? svg`
             <rect
                 class="selection"
                 x=${left!}
@@ -152,14 +154,15 @@ export class Canvas extends LitElement {
             <line class="re" x1=${right!} y1=${top!} x2=${right!} y2=${bot!}></line>
             <line class="rs" x1=${left!} y1=${bot!} x2=${right!} y2=${bot!}></line>
             <rect class="handle rn rw" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
-                  HANDLE_SIZE + "px"
-                }></rect>
+                    HANDLE_SIZE + "px"
+                  }></rect>
             <rect class="handle rn re" x=${right! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
             <rect class="handle rs rw" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
             <rect class="handle rs re" x=${right! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
           `
-              : null}
-          </svg>
+                : null}
+            </svg>
+          </g>
         </svg>
       </bg-viewport>
     `;
@@ -344,7 +347,7 @@ export class Canvas extends LitElement {
   // ... I'll let you guess who...
   // ... it's safari
   #screen_to_svg = (ev: { clientX: number; clientY: number }): Point => {
-    return this.viewport!.coordToLocal([ev.clientX, ev.clientY]);
+    return sub_p(this.viewport!.coordToLocal([ev.clientX, ev.clientY]), [PADDING, PADDING]);
   };
 
   #keydown = (ev: KeyboardEvent) => {
@@ -408,12 +411,17 @@ export class Canvas extends LitElement {
       --selection-color: cornflowerblue;
     }
 
+    #root {
+      backface-visibility: hidden;
+    }
     svg {
       overflow: visible;
     }
 
     .shadow {
-      filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.4));
+      stroke-width: ${LINE_WIDTH};
+      stroke: rgba(0, 0, 0, 0.2);
+      filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.3));
     }
 
     .drop_hint {
@@ -469,7 +477,7 @@ export class Canvas extends LitElement {
     }
 
     bg-viewport::part(background) {
-      background-color: #acacac;
+      background-color: #ededf0;
     }
 
     bg-viewport::part(bar) {
