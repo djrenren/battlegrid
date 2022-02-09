@@ -1,6 +1,6 @@
 import { Point } from "../util/math";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse;
+export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse | Background;
 
 export type TokenAdded = {
   type: "token-added";
@@ -30,6 +30,7 @@ export type StateSync = {
   type: "state-sync";
   tokens: TokenData[];
   grid_dim: Point;
+  bg?: string;
 };
 
 export type TokenData = {
@@ -37,6 +38,11 @@ export type TokenData = {
   dim: Point;
   res: string;
   id: string;
+};
+
+export type Background = {
+  type: "bg";
+  res?: string;
 };
 
 export type FileResponse = {

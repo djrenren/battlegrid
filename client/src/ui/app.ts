@@ -78,6 +78,7 @@ class App extends LitElement {
         "viewport" 1fr
         / 1fr;
       font-family: inherit;
+      --ui-bg: #f9f9fa;
     }
 
     .message {
@@ -100,9 +101,9 @@ class App extends LitElement {
 
     #toolbar {
       grid-area: toolbar;
-      background: #f9f9fa;
       box-shadow: 0 0 4px gray;
       z-index: 2;
+      background: var(--ui-bg);
       display: flex;
       align-items: center;
     }

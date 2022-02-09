@@ -2,7 +2,7 @@ import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { add_c, add_p, eq_p, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
+import { add_c, add_p, clamp_p, eq_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 import { is_primary_down, stop_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage } from "../util/files";
@@ -20,6 +20,9 @@ export class Canvas extends LitElement {
 
   @property({ type: Number })
   height = 10;
+
+  @state()
+  bg?: string;
 
   @query("root", true)
   root?: SVGElement;
@@ -76,16 +79,17 @@ export class Canvas extends LitElement {
           height: 100%;
         }
       </style>
-      <bg-viewport style="width: 100%; height: 100%" @pointerup=${this.#unfocus}>
-        <svg
-          id="root"
-          width=${width + PADDING * 2}
-          height=${height + PADDING * 2}
-          @dragstart=${stop_ev}
-          @dragleave=${this.#drag_leave}
-          @dragover=${this.#drag_over}
-          @drop=${this.#drop}
-        >
+      <bg-viewport
+        style="width: 100%; height: 100%"
+        @pointerup=${this.#unfocus}
+        @dragstart=${stop_ev}
+        @dragenter=${this.#drag_enter}
+        @dragleave=${this.#drag_leave}
+        @dragstop=${this.#drag_leave}
+        @dragover=${this.#drag_over}
+        @drop=${this.#drop}
+      >
+        <svg id="root" width=${width + PADDING * 2} height=${height + PADDING * 2}>
           <defs>
             <clipPath id="canvasClip">
               <rect x="0" y="0" width=${width} height=${height} rx="5"></rect>
@@ -95,9 +99,10 @@ export class Canvas extends LitElement {
               <rect class="gridline" x="0" y="0" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" opacity="1"></rect>
             </pattern>
           </defs>
-          <rect class="shadow" x=${PADDING} y=${PADDING} width=${width} height=${height} fill="white" rx="5"></rect>
           <g transform=${`translate(${PADDING} ${PADDING})`}>
+            <rect class="shadow" width=${width} height=${height} fill="white" rx="5"></rect>
             <g style="clip-path: url(#canvasClip)">
+              ${this.bg ? svg`<image href=${this.resources.get(this.bg)} width=${width} height=${height} preserveAspectRatio="none" />` : null}
               <rect x="0" y="0" width=${width} height=${height} fill="url(#pat)" pointer-events="none"></rect>
 
               ${repeat(
@@ -165,6 +170,16 @@ export class Canvas extends LitElement {
           </g>
         </svg>
       </bg-viewport>
+      <div
+        id="bg-drop"
+        class=${this.hovering ?? ""}
+        @dragenter=${this.#drag_enter}
+        @dragover=${this.#bg_drag_over}
+        @dragleave=${this.#drag_leave}
+        @drop=${this.#bg_drop}
+      >
+        <div id="bg-drop-label" @drop=${this.#bg_drop}>Set Background</div>
+      </div>
     `;
   }
 
@@ -175,13 +190,57 @@ export class Canvas extends LitElement {
 
   @state()
   _drop_hint?: Point;
+
+  @state()
+  hovering?: "canvas" | "bg";
+
+  #drag_depth = 0;
+  #drag_enter = (ev: DragEvent) => {
+    stop_ev(ev);
+    this.#drag_depth++;
+  };
   #drag_over = (ev: DragEvent) => {
     stop_ev(ev);
-    this._drop_hint = this.#screen_to_svg(ev).map(occupied_cell) as Point;
+    this._drop_hint = clamp_p([0, 0], mul_c([this.width - 1, this.height - 1], GRID_SIZE), this.#screen_to_svg(ev).map(occupied_cell) as Point);
+    this.hovering = "canvas";
   };
 
   #drag_leave = (ev: DragEvent) => {
+    if (--this.#drag_depth <= 0) {
+      this._drop_hint = undefined;
+      this.hovering = undefined;
+    }
+  };
+
+  #bg_drag_over = (ev: DragEvent) => {
+    stop_ev(ev);
     this._drop_hint = undefined;
+    this.hovering = "bg";
+  };
+
+  #bg_drop = async (ev: DragEvent) => {
+    stop_ev(ev);
+    try {
+      const img = await getImage(ev);
+      const res = "blob" in img ? this.resources.register(img.blob) : img.url;
+      this.bg = res;
+      this.dispatchEvent(
+        game_event({
+          type: "bg",
+          res,
+        })
+      );
+      if ("blob" in img) {
+        this.dispatchEvent(
+          game_event({
+            type: "file",
+            name: res,
+            contents: img.blob,
+          })
+        );
+      }
+    } catch (e) {}
+    this.hovering = undefined;
   };
 
   #drop = async (ev: DragEvent) => {
@@ -217,6 +276,7 @@ export class Canvas extends LitElement {
       }
     } catch (e) {}
     this._drop_hint = undefined;
+    this.hovering = undefined;
   };
 
   /** Selection handling */
@@ -250,7 +310,7 @@ export class Canvas extends LitElement {
       this.#selection_drag_start(ev);
     }
     stop_ev(ev);
-    const grid_loc = max_p([0, 0], min_p([this.width * GRID_SIZE, this.height * GRID_SIZE], this.#screen_to_svg(ev)));
+    const grid_loc = clamp_p([0, 0], [this.width * GRID_SIZE, this.height * GRID_SIZE], this.#screen_to_svg(ev));
     const selection = this.tokens.get(this.selection!)!;
     const dim = selection.dim;
     const loc = selection.loc;
@@ -322,10 +382,14 @@ export class Canvas extends LitElement {
       case "state-sync":
         console.log("applying tokens", ev.tokens);
         this.tokens = new Map(ev.tokens.map((t) => [t.id, t]));
+        this.bg = ev.bg;
         break;
       case "file":
         this.resources.register(ev.contents, ev.name);
         this.requestUpdate();
+        break;
+      case "bg":
+        this.bg = ev.res;
         break;
     }
 
@@ -378,7 +442,7 @@ export class Canvas extends LitElement {
 
     let move: Point | undefined = movements[ev.key];
     if (move) {
-      s.loc = min_p(sub_p(this.#dim, s.dim), max_p([0, 0], add_p(s.loc, move)));
+      s.loc = clamp_p([0, 0], sub_p(this.#dim, s.dim), add_p(s.loc, move));
       this.dispatchEvent(
         game_event({
           type: "token-manipulated",
@@ -397,6 +461,7 @@ export class Canvas extends LitElement {
       type: "state-sync",
       tokens: [...this.tokens.values()],
       grid_dim: [this.width, this.height],
+      bg: this.bg,
     };
   };
 
@@ -404,16 +469,52 @@ export class Canvas extends LitElement {
 
   static styles = css`
     :host {
-      font-size: 0.25in;
       position: relative;
       display: inline-block;
-      box-sizing: content-box !important;
       --selection-color: cornflowerblue;
     }
 
     #root {
       backface-visibility: hidden;
     }
+
+    #bg-drop {
+      position: absolute;
+      right: 5px;
+      bottom: -60px;
+      display: inline-block;
+      height: 50px;
+      transition: bottom 250ms;
+      background: var(--ui-bg);
+      border-radius: 5px 5px 0 0;
+      display: grid;
+      padding: 5px;
+      grid: 1fr 1fr;
+      text-align: center;
+    }
+
+    #bg-drop.canvas,
+    #bg-drop.bg {
+      bottom: 0;
+      box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    #bg-drop-label {
+      --color: gray;
+      padding: 0 1em;
+      border: 2px solid var(--color);
+      color: var(--color);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .bg > #bg-drop-label {
+      --color: blue;
+    }
+
     svg {
       overflow: visible;
     }
