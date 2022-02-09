@@ -7,7 +7,7 @@ import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from ".
 const min_scale = 0.2;
 const max_scale = 2;
 const scroll_factor = 0.005;
-const AUTO_ZOOM_FILL = 1; // Percentage of the viewport to fill on first load
+const AUTO_ZOOM_FILL = .95; // Percentage of the viewport to fill on first load
 
 @customElement("bg-viewport")
 export class Viewport extends LitElement {
@@ -229,10 +229,33 @@ export class Viewport extends LitElement {
     this.#resize_observer.observe(this.surface!);
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    document.addEventListener("keydown", this.#keydown);
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#resize_observer.disconnect();
+    document.removeEventListener("keydown", this.#keydown);
   }
+
+  #keydown = (ev: KeyboardEvent) => {
+    if (!ev.ctrlKey) return;
+
+    if (ev.key === "=") {
+      stop_ev(ev);
+      this.smooth = 200;
+      this._performZoom(this.coordToLocal(div_c(add_p(this.v_loc, this.v_dim), 2)), 0.2 * this.scale);
+    } else if (ev.key === "-") {
+      stop_ev(ev);
+      this.smooth = 200;
+      this._performZoom(this.coordToLocal(div_c(add_p(this.v_loc, this.v_dim), 2)), -0.2 * this.scale);
+    } else if (ev.key === "0") {
+      this.smooth = 100;
+      this.#fit_to_viewport();
+    }
+  };
 
   // Converts screen coordinates into content coordinates, accounting for
   // the viewport's offset and scale. This calculation also incorportated
@@ -247,11 +270,15 @@ export class Viewport extends LitElement {
     this.#content = target.assignedElements().find((el) => el.matches("svg")) as SVGSVGElement;
 
     // Whenever #content changes, let's auto-zoom to a comfortable level
+    this.#fit_to_viewport();
+
+    this.#content ? this.#resize_observer.observe(this.#content) : 0;
+  }
+
+  #fit_to_viewport() {
     const dim = [this.#content!.width.baseVal.value, this.#content!.height.baseVal.value] as Point;
     const rect = this.surface!.getBoundingClientRect();
     this.scale = Math.max(min_scale, Math.min(max_scale, ...mul_c(div_p([rect.width, rect.height], dim), AUTO_ZOOM_FILL)));
-
-    this.#content ? this.#resize_observer.observe(this.#content) : 0;
   }
 
   // Drag Logic (reused by touch panning, and scrollbar dragging)
