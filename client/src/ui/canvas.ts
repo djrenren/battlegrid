@@ -32,17 +32,7 @@ export class Canvas extends LitElement {
   @query("bg-viewport", true)
   viewport?: Viewport;
 
-  tokens: Map<string, TokenData> = new Map([
-    [
-      "1",
-      {
-        loc: [2 * GRID_SIZE, 2 * GRID_SIZE],
-        dim: [2 * GRID_SIZE, 2 * GRID_SIZE],
-        res: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==",
-        id: "1",
-      },
-    ],
-  ]);
+  tokens: Map<string, TokenData> = new Map([]);
 
   constructor() {
     super();
