@@ -7,7 +7,7 @@ import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from ".
 const min_scale = 0.2;
 const max_scale = 2;
 const scroll_factor = 0.005;
-const AUTO_ZOOM_FILL = .95; // Percentage of the viewport to fill on first load
+const AUTO_ZOOM_FILL = 0.95; // Percentage of the viewport to fill on first load
 
 @customElement("bg-viewport")
 export class Viewport extends LitElement {

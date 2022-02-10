@@ -6,7 +6,7 @@ import { proto_pair } from "./rtc-message-protocol";
 export class Server implements GameClient {
   signaler: DurableSignaler;
   get status(): Status {
-    return this.signaler.status === 'connected' ? 'connected' : 'disconnected';
+    return this.signaler.status === "connected" ? "connected" : "disconnected";
   }
   server = this;
   #event_writers: Set<WritableStreamDefaultWriter> = new Set();

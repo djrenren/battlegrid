@@ -14,6 +14,7 @@ export type TokenManipulated = {
   id: string;
   loc: Point;
   dim: Point;
+  r: number;
 };
 
 export type TokenRemoved = {
@@ -38,6 +39,7 @@ export type TokenData = {
   dim: Point;
   res: string;
   id: string;
+  r: number; // degrees!
 };
 
 export type Background = {

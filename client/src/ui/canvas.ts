@@ -2,7 +2,7 @@ import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { add_c, add_p, clamp_p, eq_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
+import { add_c, add_p, clamp_p, div_c, eq_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 import { is_primary_down, stop_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage } from "../util/files";
@@ -14,6 +14,8 @@ const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
 const LINE_WIDTH = 0.5 * PIXEL_SCALE; // scale-dependent px
 const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
 const CANVAS_RADIUS = 5 * PIXEL_SCALE;
+const ROTATE_DISTANCE = 10 * PIXEL_SCALE;
+const ROTATE_SIZE = HANDLE_SIZE / 2;
 const PADDING = 20 * PIXEL_SCALE;
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
@@ -53,7 +55,7 @@ export class Canvas extends LitElement {
   render() {
     let [width, height] = this.#dim;
     let selected = this.tokens.get(this.selection!);
-    let left: number, right: number, top: number, bot: number;
+    let left: number, right: number, top: number, bot: number, center: Point;
     let new_dim: Point, new_origin: Point;
     if (selected) {
       new_origin = add_p(selected.loc, this._selection_transform.move);
@@ -63,6 +65,7 @@ export class Canvas extends LitElement {
       right = new_origin[0] + new_dim[0];
       top = new_origin[1];
       bot = new_origin[1] + new_dim[1];
+      center = add_p(new_origin, div_c(new_dim, 2));
     }
     return html`
       <bg-viewport
@@ -94,19 +97,26 @@ export class Canvas extends LitElement {
                 this.tokens.values(),
                 (t) => t.id,
                 (t, index) => {
-                  let url = this.resources.get(t.res);
+                  const url = this.resources.get(t.res);
+                  const s = this.selection === t.id;
+                  let r = s ? t.r + this._selection_transform.r : t.r;
+                  const width = (s ? new_dim[0] : t.dim[0]) - LINE_WIDTH;
+                  const height = (s ? new_dim[1] : t.dim[1]) - LINE_WIDTH;
+                  const x = (s ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2;
+                  const y = (s ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2;
                   return svg`
-                <image
-                    id=${t.id}
-                    class="token"
-                    x=${(this.selection === t.id ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2}
-                    y=${(this.selection === t.id ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2}
-                    @mousedown=${this.#focus}
-                    width=${(this.selection === t.id ? new_dim[0] : t.dim[0]) - LINE_WIDTH}
-                    height=${(this.selection === t.id ? new_dim[1] : t.dim[1]) - LINE_WIDTH}
-                    href=${url || "assets/loading.svg"}
-                    preserveAspectRatio=${url ? "none" : ""}
-                ></image>
+                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} preserveAspectRatio="none">
+                  <image
+                      id=${t.id}
+                      class="token"
+                      width="1"
+                      height="1"
+                      @mousedown=${this.#focus}
+                      href=${url || "assets/loading.svg"}
+                      style=${`transform: rotate(${r}deg)`}
+                      preserveAspectRatio=${url ? "none" : ""}
+                  ></image>
+                </svg>
                 `;
                 }
               )}
@@ -119,19 +129,22 @@ export class Canvas extends LitElement {
                 y=${this._drop_hint[1]}
                 width=${GRID_SIZE}
                 height=${GRID_SIZE}
+                shapeRendering="geometricPrecision"
                 ></rect>
           `
               : null}
-            <svg
+            ${selected
+              ? svg`
+            <g
+              id="selection"
               @pointerdown=${this.#selection_drag_start}
               @pointermove=${this.#selection_drag}
               @pointerup=${this.#selection_drag_end}
               @click=${stop_ev}
+              style=${`transform: rotate(${selected.r + this._selection_transform.r})`}
             >
-              ${selected
-                ? svg`
             <rect
-                class="selection"
+                class="selection-box"
                 x=${left!}
                 y=${top!}
                 width=${new_dim![0]}
@@ -139,19 +152,20 @@ export class Canvas extends LitElement {
                 @click=${stop_ev}
                 fill="transparent"
             ></rect>
+            <line class="ro" x1=${center![0]} y1=${top!} x2=${left! + new_dim![0] / 2} y2=${top! - ROTATE_DISTANCE}></line>
+            <circle class="ro handle" cx=${center![0]} cy=${top! - ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
             <line class="rn" x1=${left!} y1=${top!} x2=${right!} y2=${top!}></line>
             <line class="rw" x1=${left!} y1=${top!} x2=${left!} y2=${bot!}></line>
             <line class="re" x1=${right!} y1=${top!} x2=${right!} y2=${bot!}></line>
             <line class="rs" x1=${left!} y1=${bot!} x2=${right!} y2=${bot!}></line>
             <rect class="handle rn rw" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
-                    HANDLE_SIZE + "px"
-                  }></rect>
+                  HANDLE_SIZE + "px"
+                }></rect>
             <rect class="handle rn re" x=${right! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
             <rect class="handle rs rw" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
             <rect class="handle rs re" x=${right! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-          `
-                : null}
-            </svg>
+            </g>`
+              : null}
           </g>
         </svg>
       </bg-viewport>
@@ -241,6 +255,7 @@ export class Canvas extends LitElement {
         dim: [GRID_SIZE, GRID_SIZE],
         id,
         res,
+        r: 0,
       });
       this.dispatchEvent(
         game_event({
@@ -279,7 +294,6 @@ export class Canvas extends LitElement {
   };
 
   #drag_offset?: Point;
-
   #selection_drag_start = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     stop_ev(ev);
@@ -288,7 +302,7 @@ export class Canvas extends LitElement {
   };
 
   @state()
-  _selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point };
+  _selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point, r: 0 };
   #selection_drag = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
     if (!this.#drag_offset) {
@@ -302,6 +316,7 @@ export class Canvas extends LitElement {
     const classes = (ev.target as SVGGraphicsElement).classList;
     let move = [0, 0] as Point;
     let resize = [0, 0] as Point;
+    let r = 0;
 
     if (classes.contains("rn")) {
       resize[1] = loc[1] - grid_loc[1];
@@ -321,7 +336,15 @@ export class Canvas extends LitElement {
       resize[0] = nearest_corner(grid_loc[0]) - dim[0] - loc[0];
     }
 
-    if (classes.contains("selection")) {
+    if (classes.contains("ro")) {
+      const center = add_p(loc, div_c(dim, 2));
+      const rel = sub_p(grid_loc, center);
+      const angle = Math.atan2(rel[0], -rel[1]);
+      const deg = (angle * 180) / Math.PI;
+      r = Math.round(deg / 90) * 90 - (selection.r % 360);
+    }
+
+    if (classes.contains("selection-box")) {
       move = sub_p(grid_loc, this.#drag_offset!).map(nearest_corner) as Point;
     } else {
       // Don't let top-left drags cause movement pas the dimensions
@@ -330,14 +353,15 @@ export class Canvas extends LitElement {
       resize = max_p(add_c(mul_c(dim, -1), GRID_SIZE), resize.map(nearest_corner) as Point);
     }
 
-    if (!eq_p(move, this._selection_transform.move) || !eq_p(resize, this._selection_transform.resize)) {
-      this._selection_transform = { move, resize };
+    if (r !== this._selection_transform.r || !eq_p(move, this._selection_transform.move) || !eq_p(resize, this._selection_transform.resize)) {
+      this._selection_transform = { move, resize, r };
       this.dispatchEvent(
         game_event({
           type: "token-manipulated",
           id: selection.id,
           loc: add_p(selection.loc, move),
           dim: add_p(selection.dim, resize),
+          r: selection.r + r,
         })
       );
     }
@@ -352,11 +376,11 @@ export class Canvas extends LitElement {
           console.error("Update received for nonexistant token", ev.id);
           return;
         }
-        Object.assign(ex_token, { dim: ev.dim, loc: ev.loc });
+        Object.assign(ex_token, { dim: ev.dim, loc: ev.loc, r: ev.r });
         break;
 
       case "token-added":
-        this.tokens.set(ev.id, { id: ev.id, dim: [GRID_SIZE, GRID_SIZE], loc: ev.loc, res: ev.res });
+        this.tokens.set(ev.id, { id: ev.id, dim: [GRID_SIZE, GRID_SIZE], loc: ev.loc, res: ev.res, r: 0 });
         break;
       case "token-removed":
         if (!this.tokens.delete(ev.id)) {
@@ -387,8 +411,10 @@ export class Canvas extends LitElement {
     if (el) {
       el.loc = add_p(el.loc, this._selection_transform.move);
       el.dim = add_p(el.dim, this._selection_transform.resize);
+      el.r += this._selection_transform.r;
+      console.log("el.r", el.r);
     }
-    this._selection_transform = { move: [0, 0], resize: [0, 0] };
+    this._selection_transform = { move: [0, 0], resize: [0, 0], r: 0 };
     this.#drag_offset = undefined;
   };
 
@@ -434,6 +460,7 @@ export class Canvas extends LitElement {
           id: s.id,
           loc: s.loc,
           dim: s.dim,
+          r: s.r,
         })
       );
       this.requestUpdate();
@@ -518,22 +545,27 @@ export class Canvas extends LitElement {
       fill: gray;
     }
 
-    .selection {
+    #selection {
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    .selection-box {
       stroke: var(--selection-color);
       stroke-width: 1px;
       vector-effect: non-scaling-stroke;
       filter: drop-shadow(0px 0px 2px var(--selection-color));
     }
 
-    .selection:hover {
+    .selection-box:hover {
       cursor: move;
     }
 
     .handle {
       vector-effect: non-scaling-stroke;
       stroke-width: 1px;
-      fill: white;
-      stroke: var(--selection-color);
+      fill: var(--selection-color);
+      stroke: white;
     }
 
     line.rn,
@@ -545,6 +577,12 @@ export class Canvas extends LitElement {
       stroke: transparent;
     }
 
+    .ro {
+      stroke: var(--selection-color);
+    }
+    .ro.handle {
+      cursor: crosshair;
+    }
     .rn.re,
     .rs.rw {
       cursor: nesw-resize;
@@ -577,6 +615,11 @@ export class Canvas extends LitElement {
 
     bg-viewport::part(bar):hover {
       opacity: 1;
+    }
+
+    .token {
+      transform-box: fill-box;
+      transform-origin: center;
     }
   `;
 }
