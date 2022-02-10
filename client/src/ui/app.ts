@@ -23,6 +23,9 @@ class App extends LitElement {
   @state()
   client?: GameClient;
 
+  @state()
+  host_pending = false;
+
   render() {
     let error =
       this.client?.status === "error"
@@ -61,11 +64,20 @@ class App extends LitElement {
           <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
           <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
         </div>
-        ${this.client?.status ? html`<div>${this.client.server ? `hosting` : "connected"}</div>` : html` <button @click=${this.#host}>Host</button> `}
+        ${this.host_pending ? html`<img src="assets/loading.svg">` :
+          (!this.client ? html`<button @click=${this.#host}>Host</button>` :
+          html`<div>${this.client.server ? `hosting` : this.client.status}</div>`)}
       </section>
       <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
       ${overlay}
     `;
+  }
+
+  updated(changedProperties: Map<string, any>) {
+    if (changedProperties.has('client')) {
+      document.title = `BattleGrid${(this.client && (this.client.status === "connected"))  ? (this.client.server ? "- Hosting" :  "- Connected"): ''}`;
+    }
+
   }
 
   static styles = css`
@@ -107,6 +119,10 @@ class App extends LitElement {
       display: flex;
       align-items: center;
     }
+
+    #toolbar > * {
+      max-height: 100%;
+    }
   `;
 
   #updateDim = () => {
@@ -127,7 +143,7 @@ class App extends LitElement {
 
     let c = new Client(game_id);
     c.on_event = this.#incoming_event;
-    c.on_status = () => this.requestUpdate();
+    c.on_status = () => this.requestUpdate('client');
     this.client = c;
     await c.connect();
   }
@@ -145,7 +161,9 @@ class App extends LitElement {
 
   #host = async () => {
     try {
+      this.host_pending = true;
       let srv = await Server.establish();
+      this.host_pending = false;
       this.client = srv;
       srv.on_event = this.#incoming_event;
       srv.get_state = this.canvas?.get_state;
