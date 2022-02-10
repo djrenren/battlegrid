@@ -51,7 +51,7 @@ export class Client implements GameClient {
     let event_reader = events.readable.getReader();
 
     let data = proto_pair(peer.data);
-    this.#event_writer = data.writable.getWriter();
+    this.#data_writer = data.writable.getWriter();
     let data_reader = data.readable.getReader();
 
     this.#set_status("connected");
