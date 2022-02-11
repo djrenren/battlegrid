@@ -152,9 +152,10 @@ export class Viewport extends LitElement {
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 10 : 1;
     if (ev.ctrlKey) {
       const delta = Math.min(50, Math.max(-50, -ev.deltaY * multiplier));
-      this.smooth = Math.abs(delta) > 5 ? Math.abs(delta) * 5 : 0;
+      const zoom = delta * scroll_factor * this.scale;
+      this.smooth = Math.abs(zoom) >  0.05 ? Math.abs(zoom) * 20 : 0;
       //zoom
-      this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), delta * scroll_factor * this.scale);
+      this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), zoom);
     } else {
       const delta = mul_c([ev.deltaX, ev.deltaY], multiplier);
       this.smooth = (Math.abs(delta[0]) + Math.abs(delta[1])) * 2;
@@ -328,7 +329,7 @@ export class Viewport extends LitElement {
         position: relative;
         width: 100%;
         height: 100%;
-        overflow: hidden;
+        overflow: clip;
       }
 
       ::slotted(svg) {
