@@ -55,17 +55,10 @@ export class Canvas extends LitElement {
   render() {
     let [width, height] = this.#dim;
     let selected = this.tokens.get(this.selection!);
-    let left: number, right: number, top: number, bot: number, center: Point;
     let new_dim: Point, new_origin: Point;
     if (selected) {
       new_origin = add_p(selected.loc, this._selection_transform.move);
       new_dim = add_p(selected.dim, this._selection_transform.resize);
-
-      left = new_origin[0];
-      right = new_origin[0] + new_dim[0];
-      top = new_origin[1];
-      bot = new_origin[1] + new_dim[1];
-      center = add_p(new_origin, div_c(new_dim, 2));
     }
     return html`
       <bg-viewport
