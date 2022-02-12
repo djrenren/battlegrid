@@ -141,7 +141,6 @@ export class Canvas extends LitElement {
               @pointermove=${this.#selection_drag}
               @pointerup=${this.#selection_drag_end}
               @click=${stop_ev}
-              style=${`transform: rotate(${selected.r + this._selection_transform.r})`}
               x=${new_origin![0]}
               y=${new_origin![1]}
               width=${new_dim![0]}
@@ -154,8 +153,10 @@ export class Canvas extends LitElement {
                 @click=${stop_ev}
                 fill="transparent"
             ></rect>
+            <g style=${`transform-origin: center; transform: rotate(${selected.r + this._selection_transform.r}deg)`}>
             <line class="ro" x1="50%" x2="50%" y2=${-ROTATE_DISTANCE}></line>
             <circle class="ro handle" cx="50%" cy=${-ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
+            </g>
             <line class="rn" x2="100%"></line>
             <line class="rw" y2="100%"></line>
             <line class="re" x1="100%" x2="100%" y2="100%"></line>
@@ -546,7 +547,7 @@ export class Canvas extends LitElement {
     }
 
     #selection {
-      transform-origin: center;
+      transform-origin: 50% 50%;
       transform-box: fill-box;
     }
 
