@@ -135,36 +135,36 @@ export class Canvas extends LitElement {
               : null}
             ${selected
               ? svg`
-            <g
+            <svg
               id="selection"
               @pointerdown=${this.#selection_drag_start}
               @pointermove=${this.#selection_drag}
               @pointerup=${this.#selection_drag_end}
               @click=${stop_ev}
               style=${`transform: rotate(${selected.r + this._selection_transform.r})`}
+              x=${new_origin![0]}
+              y=${new_origin![1]}
+              width=${new_dim![0]}
+              height=${new_dim![1]}
             >
             <rect
                 class="selection-box"
-                x=${left!}
-                y=${top!}
-                width=${new_dim![0]}
-                height=${new_dim![1]}
+                width="100%"
+                height="100%"
                 @click=${stop_ev}
                 fill="transparent"
             ></rect>
-            <line class="ro" x1=${center![0]} y1=${top!} x2=${left! + new_dim![0] / 2} y2=${top! - ROTATE_DISTANCE}></line>
-            <circle class="ro handle" cx=${center![0]} cy=${top! - ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
-            <line class="rn" x1=${left!} y1=${top!} x2=${right!} y2=${top!}></line>
-            <line class="rw" x1=${left!} y1=${top!} x2=${left!} y2=${bot!}></line>
-            <line class="re" x1=${right!} y1=${top!} x2=${right!} y2=${bot!}></line>
-            <line class="rs" x1=${left!} y1=${bot!} x2=${right!} y2=${bot!}></line>
-            <rect class="handle rn rw" x=${left! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE + "px"} height=${
-                  HANDLE_SIZE + "px"
-                }></rect>
-            <rect class="handle rn re" x=${right! - HANDLE_SIZE / 2} y=${top! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect class="handle rs rw" x=${left! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            <rect class="handle rs re" x=${right! - HANDLE_SIZE / 2} y=${bot! - HANDLE_SIZE / 2} width=${HANDLE_SIZE} height=${HANDLE_SIZE}></rect>
-            </g>`
+            <line class="ro" x1="50%" x2="50%" y2=${-ROTATE_DISTANCE}></line>
+            <circle class="ro handle" cx="50%" cy=${-ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
+            <line class="rn" x2="100%"></line>
+            <line class="rw" y2="100%"></line>
+            <line class="re" x1="100%" x2="100%" y2="100%"></line>
+            <line class="rs" y1="100%" x2="100%" y2="100%"></line>
+            <rect class="handle rn rw"></rect>
+            <rect class="handle rn re" x="100%"></rect>
+            <rect class="handle rs rw" y="100%"></rect>
+            <rect class="handle rs re" x="100%" y="100%"></rect>
+            </svg>`
               : null}
           </g>
         </svg>
@@ -566,6 +566,12 @@ export class Canvas extends LitElement {
       stroke-width: 1px;
       fill: var(--selection-color);
       stroke: white;
+    }
+
+    rect.handle {
+      width: ${HANDLE_SIZE}px;
+      height: ${HANDLE_SIZE}px;
+      transform: translate(${-HANDLE_SIZE/2}px, ${-HANDLE_SIZE/2}px)
     }
 
     line.rn,
