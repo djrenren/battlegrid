@@ -9,7 +9,7 @@ import { getImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
 import { ResourceManager } from "../fs/resource-manager";
 
-const PIXEL_SCALE = 2;
+const PIXEL_SCALE = 3;
 const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
 const LINE_WIDTH = 0.5 * PIXEL_SCALE; // scale-dependent px
 const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
@@ -77,8 +77,8 @@ export class Canvas extends LitElement {
               <rect width=${width} height=${height} rx=${CANVAS_RADIUS}></rect>
             </clipPath>
             <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height=${GRID_SIZE} patternUnits="userSpaceOnUse">
-              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" opacity="1"></rect>
-              <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" opacity="1"></rect>
+              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
+              <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3"></rect>
             </pattern>
           </defs>
           <g transform=${`translate(${PADDING} ${PADDING})`}>

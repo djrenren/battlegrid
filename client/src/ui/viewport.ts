@@ -5,7 +5,7 @@ import { is_non_touch_drag, stop_ev } from "../util/events";
 import { add_p, div_c, div_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 
 const min_scale = 0.2;
-const max_scale = 2;
+const max_scale = 1;
 const scroll_factor = 0.005;
 const AUTO_ZOOM_FILL = 0.95; // Percentage of the viewport to fill on first load
 
@@ -330,7 +330,7 @@ export class Viewport extends LitElement {
         position: relative;
         width: 100%;
         height: 100%;
-        overflow: clip;
+        overflow: hidden;
       }
 
       ::slotted(svg) {
