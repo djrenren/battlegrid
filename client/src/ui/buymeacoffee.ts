@@ -53,7 +53,7 @@ export class BuyMeACoffee extends LitElement {
       height: 525px;
       bottom: -535px;
       opacity: 0;
-      left: 0;
+      right: 0;
       border-radius: 5px;
       box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
       background: #ededf0;

@@ -59,18 +59,22 @@ class App extends LitElement {
 
     let overlay = error || connecting || disconnected;
     return html`
-      <section id="toolbar">
-        <div>
+      <section id="toolbar" class="group">
+        <div class="group">
+        <span>
           Grid:
           <input id="width" type="number" @input=${this.#updateDim} value=${this.dim[0]} /> x
           <input id="height" type="number" @input=${this.#updateDim} value=${this.dim[1]} />
-        </div>
+        </span>
         ${this.host_pending
           ? html`<img src="assets/loading.svg" />`
           : !this.client
           ? html`<button @click=${this.#host}>Host</button>`
           : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
+        </div>
+        <div class="group">
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
+        </div>
       </section>
       <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
       ${overlay}
@@ -106,7 +110,7 @@ class App extends LitElement {
     }
 
     .right {
-      align-self: right;
+      justify-self: end;
     }
 
     bg-canvas {
@@ -118,19 +122,30 @@ class App extends LitElement {
       width: 3em;
     }
 
+    .group {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      flex-wrap: nowrap;
+    } 
+
     #toolbar {
       grid-area: toolbar;
       box-shadow: 0 0 4px gray;
       z-index: 2;
       background: var(--ui-bg);
-      display: flex;
-      align-items: center;
+      justify-content: space-between;
+      padding: 0 1em;
+      grid-template-rows: unset;
     }
-
-    #toolbar > * {
-      max-height: 100%;
+    .group img {
+      width: 1em;
+      height: 1em;
+      object-fit: cover;
+      display: inline-block;
     }
-  `;
+    `
+  ;
 
   #updateDim = () => {
     ///@ts-ignore

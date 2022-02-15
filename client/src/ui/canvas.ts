@@ -99,7 +99,7 @@ export class Canvas extends LitElement {
                   const x = (s ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2;
                   const y = (s ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2;
                   return svg`
-                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} preserveAspectRatio="none">
+                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill=${url ? 'transparent' : 'white'} preserveAspectRatio="none">
                   <image
                       id=${t.id}
                       class="token"
