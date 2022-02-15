@@ -46,22 +46,41 @@ export class BuyMeACoffee extends LitElement {
       position: relative;
     }
     iframe {
-      position: absolute;
       border: none;
       display: block;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      transition: opacity 0.5s linear;
+    }
+
+    #container {
+      border-radius: 5px;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+      position: absolute;
       width: 350px;
       height: 525px;
       bottom: -535px;
-      opacity: 0;
       right: 0;
-      border-radius: 5px;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
-      background: #ededf0;
-      transition: opacity 0.5s linear;
+      animation-name: fade;
+      animation-duration: 0.5s;
+      animation-direction: backwards;
+      background-color: #ededf0;
+      background-image: url('assets/loading.svg');
+      overflow: hidden;
     }
 
     iframe.loaded {
         opacity: 1;
+    }
+
+    @keyframes fade {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
     }
   `;
 }
