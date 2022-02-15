@@ -5,6 +5,7 @@ import { Server } from "../net/server";
 import { GameEvent } from "../game/game-events";
 import { Client, GameClient } from "../net/client";
 import { Canvas } from "./canvas";
+import "./buymeacoffee";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -69,6 +70,7 @@ class App extends LitElement {
           : !this.client
           ? html`<button @click=${this.#host}>Host</button>`
           : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
+          <buy-me-a-coffee class="right"></buy-me-a-coffee>
       </section>
       <bg-canvas .width=${this.dim[0]} .height=${this.dim[1]} @game-event=${this.#on_event}></bg-canvas>
       ${overlay}
@@ -101,6 +103,10 @@ class App extends LitElement {
       justify-items: center;
       background: white;
       z-index: 2;
+    }
+
+    .right {
+      align-self: right;
     }
 
     bg-canvas {
@@ -193,4 +199,5 @@ class App extends LitElement {
   #on_event = (ev: CustomEvent<GameEvent>) => {
     this.client?.send_event(ev.detail);
   };
+
 }
