@@ -65,15 +65,14 @@ export const encoder = (): TransformStream<LogicalMessage, RTCMessage> => {
           JSON.stringify({
             type: "file",
             name: chunk.name,
-            chunks: 1//Math.ceil(chunk.contents.size / MAX_MESSAGE_SIZE),
+            chunks: Math.ceil(chunk.contents.size / MAX_MESSAGE_SIZE),
           })
         );
 
-        controller.enqueue(chunk.contents);
         // Then send the chunks
-        // for (let i = 0; i < chunk.contents.size; i += MAX_MESSAGE_SIZE) {
-        //   controller.enqueue(await chunk.contents.slice(i, Math.min(i + MAX_MESSAGE_SIZE, chunk.contents.size)).arrayBuffer());
-        // }
+        for (let i = 0; i < chunk.contents.size; i += MAX_MESSAGE_SIZE) {
+          controller.enqueue(await chunk.contents.slice(i, Math.min(i + MAX_MESSAGE_SIZE, chunk.contents.size)).arrayBuffer());
+        }
       } else {
         controller.enqueue(
           JSON.stringify({
