@@ -1,5 +1,3 @@
-import { Point } from "./math";
-
 export const is_primary_touch = (ev: PointerEvent): boolean => ev.isPrimary && ev.pointerType === "touch";
 
 export const is_primary_down = (ev: PointerEvent): boolean => ev.isPrimary && (ev.pointerType === "touch" || ev.pressure > 0);

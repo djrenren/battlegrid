@@ -7,7 +7,8 @@ import { is_primary_down, stop_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
-import { ResourceManager } from "../fs/resource-manager";
+import { ResourceManager, URLString } from "../fs/resource-manager";
+import { Game } from "../game/game";
 
 const PIXEL_SCALE = 3;
 const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
@@ -19,11 +20,11 @@ const ROTATE_SIZE = HANDLE_SIZE / 2;
 const PADDING = 20 * PIXEL_SCALE;
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
-  @property({ type: Number })
-  width = 40;
+  @property({type: Number})
+  width = 30;
 
-  @property({ type: Number })
-  height = 10;
+  @property({type: Number})
+  height = 40;
 
   @state()
   bg?: string;
@@ -34,7 +35,8 @@ export class Canvas extends LitElement {
   @query("bg-viewport", true)
   viewport?: Viewport;
 
-  tokens: Map<string, TokenData> = new Map([]);
+  @property({attribute: false})
+  tokens: Map<string, TokenData<URLString | undefined>> = new Map();
 
   constructor() {
     super();
@@ -48,11 +50,13 @@ export class Canvas extends LitElement {
     super.connectedCallback();
     document.addEventListener("keydown", this.#keydown);
   }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     document.removeEventListener("keydown", this.#keydown);
   }
   render() {
+    console.log("rendering");
     let [width, height] = this.#dim;
     let selected = this.tokens.get(this.selection!);
     let new_dim: Point, new_origin: Point, new_r: number;
@@ -83,35 +87,33 @@ export class Canvas extends LitElement {
               <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
             </pattern>
           </defs>
-          <svg x=${PADDING} y=${PADDING} width=${width} height=${height}>
-            <rect class="shadow" width=${width} height=${height} fill="white" rx=${CANVAS_RADIUS}></rect>
-            <g style="clip-path: url(#canvas-clip)">
-            ${this.bg ? svg`<image href=${this.resources.get(this.bg)} width="100%" height="100%" preserveAspectRatio="none"></image>` : null}
+          <rect x=${PADDING} y=${PADDING} class="shadow" width=${width} height=${height} fill="white" rx=${CANVAS_RADIUS} ></rect>
+          <svg x=${PADDING} y=${PADDING} width=${width} height=${height} id="surface">
+            ${this.bg ? svg`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none"></image>` : null}
             <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
-            <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+            <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none" ></rect>
 
             ${repeat(
               this.tokens.values(),
               (t) => t.id,
               (t, index) => {
-                const url = this.resources.get(t.res);
                 const s = this.selection === t.id;
                 let r = s ? new_r : t.r;
                 const width = (s ? new_dim[0] : t.dim[0]) - LINE_WIDTH;
                 const height = (s ? new_dim[1] : t.dim[1]) - LINE_WIDTH;
                 const x = (s ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2;
                 const y = (s ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2;
-                return svg`
-                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill=${url ? "transparent" : "white"} preserveAspectRatio="none">
+                return html`
+                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill=${t.res ? "transparent" : "white"}
+                      @mousedown=${this.#focus} preserveAspectRatio="none">
                   <image
                       id=${t.id}
                       class="token"
                       width="1"
                       height="1"
-                      @mousedown=${this.#focus}
-                      href=${url || "assets/loading.svg"}
+                      href=${t.res || "assets/loading.svg"}
                       style=${`transform: rotate(${r}deg)`}
-                      preserveAspectRatio=${url ? "none" : ""}
+                      preserveAspectRatio=${t.res ? "none" : ""}
                       image-rendering="optimizeSpeed"
                   ></image>
                 </svg>
@@ -129,7 +131,6 @@ export class Canvas extends LitElement {
                 ></rect>
           `
               : null}
-            </g>
             ${selected
               ? svg`
             <svg
@@ -200,7 +201,11 @@ export class Canvas extends LitElement {
   };
   #drag_over = (ev: DragEvent) => {
     stop_ev(ev);
-    this._drop_hint = clamp_p([0, 0], mul_c([this.width - 1, this.height - 1], GRID_SIZE), this.#screen_to_svg(ev).map(occupied_cell) as Point);
+    debugger;
+    const local = this.#screen_to_svg(ev);
+    const cell = local.map(occupied_cell);
+    const max = mul_c(add_c([this.width, this.height], -1), GRID_SIZE);
+    this._drop_hint = clamp_p([0, 0], max, cell as Point);
     this.hovering = "canvas";
   };
 
@@ -221,23 +226,7 @@ export class Canvas extends LitElement {
     stop_ev(ev);
     try {
       const img = await getImage(ev);
-      const res = "blob" in img ? this.resources.register(img.blob) : img.url;
-      this.bg = res;
-      this.dispatchEvent(
-        game_event({
-          type: "bg",
-          res,
-        })
-      );
-      if ("blob" in img) {
-        this.dispatchEvent(
-          game_event({
-            type: "file",
-            name: res,
-            contents: img.blob,
-          })
-        );
-      }
+      // TODO: EMIT BG
     } catch (e) {}
     this.hovering = undefined;
   };
@@ -247,33 +236,12 @@ export class Canvas extends LitElement {
     console.log(ev);
     try {
       const img = await getImage(ev);
-      const res = "blob" in img ? this.resources.register(img.blob) : img.url;
-      const id = uuidv4();
-
-      this.tokens.set(id, {
-        loc: this._drop_hint!,
-        dim: [GRID_SIZE, GRID_SIZE],
-        id,
-        res,
-        r: 0,
-      });
-      this.dispatchEvent(
-        game_event({
-          type: "token-added",
-          loc: this._drop_hint!,
-          id,
-          res,
-        })
-      );
-      if ("blob" in img) {
-        this.dispatchEvent(
-          game_event({
-            type: "file",
-            name: res,
-            contents: img.blob,
-          })
-        );
-      }
+      // TODO EMIT DROPPED TOKEN
+      // this.game!.add_token(img, {
+      //   loc: this._drop_hint!,
+      //   dim: [GRID_SIZE, GRID_SIZE],
+      //   r: 0
+      // })
     } catch (e) {}
     this._drop_hint = undefined;
     this.hovering = undefined;
@@ -287,6 +255,7 @@ export class Canvas extends LitElement {
     ev.preventDefault();
     ev.stopPropagation();
     this.selection = (ev.target! as SVGElement).id;
+    console.log(this.selection);
   };
 
   #unfocus = (ev: PointerEvent) => {
@@ -309,7 +278,7 @@ export class Canvas extends LitElement {
       this.#selection_drag_start(ev);
     }
     stop_ev(ev);
-    const grid_loc = clamp_p([0, 0], [this.width * GRID_SIZE, this.height * GRID_SIZE], this.#screen_to_svg(ev));
+    const grid_loc = clamp_p([0, 0], this.#dim, this.#screen_to_svg(ev));
     const selection = this.tokens.get(this.selection!)!;
     const dim = selection.dim;
     const loc = selection.loc;
@@ -355,55 +324,18 @@ export class Canvas extends LitElement {
 
     if (r !== this._selection_transform.r || !eq_p(move, this._selection_transform.move) || !eq_p(resize, this._selection_transform.resize)) {
       this._selection_transform = { move, resize, r };
-      this.dispatchEvent(
-        game_event({
-          type: "token-manipulated",
-          id: selection.id,
-          loc: add_p(selection.loc, move),
-          dim: add_p(selection.dim, resize),
-          r: selection.r + r,
-        })
-      );
+      // TODO: Dispatch manipulation
+      // this.dispatchEvent(
+      //   game_event({
+      //     type: "token-manipulated",
+      //     id: selection.id,
+      //     loc: add_p(selection.loc, move),
+      //     dim: add_p(selection.dim, resize),
+      //     r: selection.r + r,
+      //   })
+      // );
     }
   };
-
-  async apply(ev: GameEvent) {
-    console.log("APPLYING TO CANVAS", ev);
-    switch (ev.type) {
-      case "token-manipulated":
-        let ex_token = this.tokens.get(ev.id);
-        if (!ex_token) {
-          console.error("Update received for nonexistant token", ev.id);
-          return;
-        }
-        Object.assign(ex_token, { dim: ev.dim, loc: ev.loc, r: ev.r });
-        break;
-
-      case "token-added":
-        this.tokens.set(ev.id, { id: ev.id, dim: [GRID_SIZE, GRID_SIZE], loc: ev.loc, res: ev.res, r: 0 });
-        break;
-      case "token-removed":
-        if (!this.tokens.delete(ev.id)) {
-          console.error("Tried to remove nonexistant token", ev.id);
-          return;
-        }
-        break;
-      case "state-sync":
-        console.log("applying tokens", ev.tokens);
-        this.tokens = new Map(ev.tokens.map((t) => [t.id, t]));
-        this.bg = ev.bg;
-        break;
-      case "file":
-        this.resources.register(ev.contents, ev.name);
-        this.requestUpdate();
-        break;
-      case "bg":
-        this.bg = ev.res;
-        break;
-    }
-
-    this.requestUpdate();
-  }
 
   #selection_drag_end = (ev: PointerEvent) => {
     stop_ev(ev);
@@ -422,7 +354,9 @@ export class Canvas extends LitElement {
   // ... I'll let you guess who...
   // ... it's safari
   #screen_to_svg = (ev: { clientX: number; clientY: number }): Point => {
-    return sub_p(this.viewport!.coordToLocal([ev.clientX, ev.clientY]), [PADDING, PADDING]);
+    let res = sub_p(this.viewport!.coordToLocal([ev.clientX, ev.clientY]), [PADDING, PADDING]);
+    console.log(res, this.width, this.height);
+    return res;
   };
 
   #keydown = (ev: KeyboardEvent) => {
@@ -430,14 +364,6 @@ export class Canvas extends LitElement {
 
     // Backspace
     if (ev.keyCode === 8) {
-      this.tokens.delete(this.selection);
-      this.dispatchEvent(
-        game_event({
-          type: "token-removed",
-          id: this.selection!,
-        })
-      );
-
       this.selection = undefined;
       stop_ev(ev);
       return;
@@ -467,17 +393,6 @@ export class Canvas extends LitElement {
       stop_ev(ev);
     }
   };
-
-  get_state = (): StateSync => {
-    return {
-      type: "state-sync",
-      tokens: [...this.tokens.values()],
-      grid_dim: [this.width, this.height],
-      bg: this.bg,
-    };
-  };
-
-  resources = new ResourceManager();
 
   static styles = css`
     :host {
@@ -531,6 +446,10 @@ export class Canvas extends LitElement {
 
     svg {
       overflow: visible;
+    }
+
+    #surface {
+      clip-path: rect(100%)
     }
 
     .shadow {

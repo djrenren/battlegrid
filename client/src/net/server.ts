@@ -2,6 +2,7 @@ import { GameEvent, StateSync } from "../game/game-events";
 import { DurableSignaler } from "./signaling";
 import { Status, GameClient } from "./client";
 import { proto_pair } from "./rtc-message-protocol";
+import { Game } from "../game/game";
 
 export class Server implements GameClient {
   signaler: DurableSignaler;
@@ -12,7 +13,7 @@ export class Server implements GameClient {
   #event_writers: Set<WritableStreamDefaultWriter> = new Set();
   #data_writers: Set<WritableStreamDefaultWriter> = new Set();
 
-  constructor(signaler: DurableSignaler) {
+  private constructor(signaler: DurableSignaler) {
     this.signaler = signaler;
     let { readable, writable } = new TransformStream({
       start() {},
@@ -41,11 +42,11 @@ export class Server implements GameClient {
         event_writer.write(this.get_state());
       }
       console.log("writing images");
-      for (const [name, url] of this.get_images ? this.get_images() : []) {
+      for (const [res_name, url] of this.get_images ? this.get_images() : []) {
         console.log(name, url);
         data_writer.write({
           type: "file",
-          name,
+          res_name,
           contents: await (await fetch(url)).blob(),
         });
       }

@@ -1,3 +1,4 @@
+import { Resource } from "../fs/resource-manager";
 import { Point } from "../util/math";
 
 export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse | Background;
@@ -6,7 +7,8 @@ export type TokenAdded = {
   type: "token-added";
   id: string;
   loc: Point;
-  res: string; // base64 encoded image
+  dim: Point;
+  res: Resource;
 };
 
 export type TokenManipulated = {
@@ -29,27 +31,27 @@ export type GridResized = {
 
 export type StateSync = {
   type: "state-sync";
-  tokens: TokenData[];
+  tokens: TokenData<Resource>[];
   grid_dim: Point;
-  bg?: string;
+  bg?: Resource;
 };
 
-export type TokenData = {
+export type TokenData<R> = {
   loc: Point;
   dim: Point;
-  res: string;
+  res: R;
   id: string;
   r: number; // degrees!
 };
 
 export type Background = {
   type: "bg";
-  res?: string;
+  res?: Resource;
 };
 
 export type FileResponse = {
   type: "file";
-  name: string;
+  res_name: string;
   contents: Blob;
 };
 

@@ -1,3 +1,4 @@
+import { Resource } from "../fs/resource-manager";
 import { GameEvent } from "../game/game-events";
 import { read_stream, write_stream, type RTCMessage } from "./rtc-data-stream";
 
@@ -40,7 +41,7 @@ export const decoder = (): TransformStream<RTCMessage, LogicalMessage> => {
           }
           buffer.push(chunk as any);
           if (--file.chunks === 0) {
-            controller.enqueue({ type: "file", name: file.name, contents: new Blob(buffer) });
+            controller.enqueue({ type: "file", res_name: file.name, contents: new Blob(buffer) });
 
             // Don't retain the buffer
             buffer = [];
@@ -64,7 +65,7 @@ export const encoder = (): TransformStream<LogicalMessage, RTCMessage> => {
         controller.enqueue(
           JSON.stringify({
             type: "file",
-            name: chunk.name,
+            res_name: chunk.res_name,
             chunks: Math.ceil(chunk.contents.size / MAX_MESSAGE_SIZE),
           })
         );
