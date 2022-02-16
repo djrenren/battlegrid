@@ -54,7 +54,7 @@ export const decoder = (): TransformStream<RTCMessage, LogicalMessage> => {
   });
 };
 
-const MAX_MESSAGE_SIZE = 16 * 1000;
+const MAX_MESSAGE_SIZE = 64 * 1000;
 export const encoder = (): TransformStream<LogicalMessage, RTCMessage> => {
   return new TransformStream({
     start() {},
