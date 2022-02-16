@@ -76,30 +76,33 @@ export class Canvas extends LitElement {
             <clipPath id="canvasClip">
               <rect width=${width} height=${height} rx=${CANVAS_RADIUS}></rect>
             </clipPath>
-            <pattern id="pat" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height=${GRID_SIZE} patternUnits="userSpaceOnUse">
-              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
+            <pattern id="horiz" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height=${GRID_SIZE} patternUnits="userSpaceOnUse">
               <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3"></rect>
             </pattern>
+            <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
+              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
+            </pattern>
           </defs>
-          <g transform=${`translate(${PADDING} ${PADDING})`}>
+          <svg x=${PADDING} y=${PADDING} width=${width} height=${height}>
             <rect class="shadow" width=${width} height=${height} fill="white" rx=${CANVAS_RADIUS}></rect>
-            <g style="clip-path: url(#canvasClip)">
-              ${this.bg ? svg`<image href=${this.resources.get(this.bg)} width=${width} height=${height} preserveAspectRatio="none" />` : null}
-              <rect width=${width} height=${height} fill="url(#pat)" opacity="0.75" pointer-events="none"></rect>
+            <g style="clip-path: url(#canvas-clip)">
+            ${this.bg ? svg`<image href=${this.resources.get(this.bg)} width="100%" height="100%" preserveAspectRatio="none"></image>` : null}
+            <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
+            <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
 
-              ${repeat(
-                this.tokens.values(),
-                (t) => t.id,
-                (t, index) => {
-                  const url = this.resources.get(t.res);
-                  const s = this.selection === t.id;
-                  let r = s ? new_r : t.r;
-                  const width = (s ? new_dim[0] : t.dim[0]) - LINE_WIDTH;
-                  const height = (s ? new_dim[1] : t.dim[1]) - LINE_WIDTH;
-                  const x = (s ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2;
-                  const y = (s ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2;
-                  return svg`
-                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill=${url ? 'transparent' : 'white'} preserveAspectRatio="none">
+            ${repeat(
+              this.tokens.values(),
+              (t) => t.id,
+              (t, index) => {
+                const url = this.resources.get(t.res);
+                const s = this.selection === t.id;
+                let r = s ? new_r : t.r;
+                const width = (s ? new_dim[0] : t.dim[0]) - LINE_WIDTH;
+                const height = (s ? new_dim[1] : t.dim[1]) - LINE_WIDTH;
+                const x = (s ? new_origin[0] : t.loc[0]) + LINE_WIDTH / 2;
+                const y = (s ? new_origin[1] : t.loc[1]) + LINE_WIDTH / 2;
+                return svg`
+                <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill=${url ? "transparent" : "white"} preserveAspectRatio="none">
                   <image
                       id=${t.id}
                       class="token"
@@ -109,12 +112,12 @@ export class Canvas extends LitElement {
                       href=${url || "assets/loading.svg"}
                       style=${`transform: rotate(${r}deg)`}
                       preserveAspectRatio=${url ? "none" : ""}
+                      image-rendering="optimizeSpeed"
                   ></image>
                 </svg>
                 `;
-                }
-              )}
-            </g>
+              }
+            )}
             ${this._drop_hint
               ? svg`
             <rect
@@ -127,6 +130,7 @@ export class Canvas extends LitElement {
                 ></rect>
           `
               : null}
+            </g>
             ${selected
               ? svg`
             <svg
@@ -148,7 +152,9 @@ export class Canvas extends LitElement {
                 @click=${stop_ev}
                 fill="transparent"
             ></rect>
-            <g style=${`transform-origin: center; transform: rotate(${new_r!}deg) translateY(${Math.sign((new_r!-180) % 180) * (new_dim![0] - new_dim![1])/2}px)` }>
+            <g style=${`transform-origin: center; transform: rotate(${new_r!}deg) translateY(${
+              (Math.sign((new_r! - 180) % 180) * (new_dim![0] - new_dim![1])) / 2
+            }px)`}>
               <line class="ro" x1="50%" x2="50%" y2=${-ROTATE_DISTANCE}></line>
               <circle class="ro handle" cx="50%" cy=${-ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
             </g>
@@ -162,7 +168,7 @@ export class Canvas extends LitElement {
             <rect class="handle rs re" x="100%" y="100%"></rect>
             </svg>`
               : null}
-          </g>
+          </svg>
         </svg>
       </bg-viewport>
       <div
@@ -541,7 +547,8 @@ export class Canvas extends LitElement {
       fill: gray;
     }
 
-    .selection-box, line.ro {
+    .selection-box,
+    line.ro {
       stroke: var(--selection-color);
       stroke-width: 1px;
       filter: drop-shadow(0px 0px 2px var(--selection-color));
@@ -551,7 +558,10 @@ export class Canvas extends LitElement {
       cursor: move;
     }
 
-    .rn, .rs, .re,.rw {
+    .rn,
+    .rs,
+    .re,
+    .rw {
       stroke-width: ${HANDLE_SIZE};
       vector-effect: non-scaling-stroke;
       stroke: transparent;
@@ -563,30 +573,33 @@ export class Canvas extends LitElement {
       stroke: white;
     }
 
-
     rect.handle {
       width: ${HANDLE_SIZE}px;
       height: ${HANDLE_SIZE}px;
-      transform: translate(${-HANDLE_SIZE/2}px, ${-HANDLE_SIZE/2}px)
+      transform: translate(${-HANDLE_SIZE / 2}px, ${-HANDLE_SIZE / 2}px);
     }
 
     .ro.handle {
       cursor: crosshair;
     }
 
-    .rn.re, .rs.rw {
+    .rn.re,
+    .rs.rw {
       cursor: nesw-resize;
     }
 
-    .rn.rw, .rs.re {
+    .rn.rw,
+    .rs.re {
       cursor: nwse-resize;
     }
 
-    .rn, .rs {
+    .rn,
+    .rs {
       cursor: row-resize;
     }
 
-    .re, .rw {
+    .re,
+    .rw {
       cursor: col-resize;
     }
 
