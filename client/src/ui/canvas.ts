@@ -126,7 +126,6 @@ export class Canvas extends LitElement {
                 y=${this._drop_hint[1]}
                 width=${GRID_SIZE}
                 height=${GRID_SIZE}
-                shapeRendering="geometricPrecision"
                 ></rect>
           `
               : null}
@@ -143,7 +142,6 @@ export class Canvas extends LitElement {
               y=${new_origin![1]}
               width=${new_dim![0]}
               height=${new_dim![1]}
-              shapeRendering="geometricPrecision"
             >
             <rect
                 class="selection-box"
