@@ -31,15 +31,15 @@ export type GridResized = {
 
 export type StateSync = {
   type: "state-sync";
-  tokens: TokenData<Resource>[];
+  tokens: TokenData[];
   grid_dim: Point;
   bg?: Resource;
 };
 
-export type TokenData<R> = {
+export type TokenData = {
   loc: Point;
   dim: Point;
-  res: R;
+  res: Resource;
   id: string;
   r: number; // degrees!
 };

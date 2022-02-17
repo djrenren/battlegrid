@@ -30,7 +30,7 @@ export class Canvas extends LitElement {
   readonly bg?: string;
 
   @property({ attribute: false })
-  readonly tokens: OrderedMap<string, TokenData<Resource>> = new OrderedMap();
+  readonly tokens: OrderedMap<string, TokenData> = new OrderedMap();
 
   @property({ attribute: false })
   readonly resources?: ResourceManager;

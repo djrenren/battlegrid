@@ -24,13 +24,13 @@ class App extends LitElement {
   @state()
   client?: GameClient;
 
-  game: Game = new Game();
-
   @state()
-  selection?: TokenData<Resource>;
+  selection?: TokenData;
 
   @state()
   host_pending = false;
+
+  #game: Game = new Game();
 
   render() {
     let error =
@@ -68,8 +68,8 @@ class App extends LitElement {
         <div class="group">
           <span>
             Grid:
-            <input id="width" type="number" min="1" @input=${this.#updateDim} value=${this.game.grid_dim[0]} /> x
-            <input id="height" type="number" min="1" @input=${this.#updateDim} value=${this.game.grid_dim[1]} />
+            <input id="width" type="number" min="1" @input=${this.#updateDim} value=${this.#game.grid_dim[0]} /> x
+            <input id="height" type="number" min="1" @input=${this.#updateDim} value=${this.#game.grid_dim[1]} />
           </span>
           ${this.host_pending
             ? html`<img src="assets/loading.svg" />`
@@ -82,18 +82,18 @@ class App extends LitElement {
         </div>
       </section>
       <bg-canvas
-        bg=${ifDefined(this.game.bg ?? undefined)}
+        bg=${ifDefined(this.#game.bg ?? undefined)}
         selection=${ifDefined(this.selection?.id)}
-        width=${this.game.grid_dim[0]}
-        height=${this.game.grid_dim[1]}
-        .tokens=${this.game.tokens}
-        .resources=${this.game.resources}
-        @token-drop=${({ detail }: TokenDropEvent) => this.game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
-        @bg-drop=${({ detail }: BgDropEvent) => this.game.set_bg(detail)}
+        width=${this.#game.grid_dim[0]}
+        height=${this.#game.grid_dim[1]}
+        .tokens=${this.#game.tokens}
+        .resources=${this.#game.resources}
+        @token-drop=${({ detail }: TokenDropEvent) => this.#game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
+        @bg-drop=${({ detail }: BgDropEvent) => this.#game.set_bg(detail)}
         @token-select=${({ detail }: TokenSelectEvent) => {
-          this.selection = detail ? this.game.tokens.get(detail) : undefined;
+          this.selection = detail ? this.#game.tokens.get(detail) : undefined;
         }}
-        @game-event=${({ detail }: CustomEvent<GameEvent>) => this.game.apply(detail)}
+        @game-event=${({ detail }: CustomEvent<GameEvent>) => this.#game.apply(detail)}
       ></bg-canvas>
       ${overlay}
     `;
@@ -166,15 +166,15 @@ class App extends LitElement {
 
   #updateDim = () => {
     //@ts-ignore
-    this.game.set_dim(max_p([1,1], [parseInt(this.width?.value) ?? 0, parseInt(this.height?.value) ?? 0]));
+    this.#game.set_dim(max_p([1, 1], [parseInt(this.width?.value) ?? 0, parseInt(this.height?.value) ?? 0]));
   };
 
   async connectedCallback() {
     super.connectedCallback();
     //@ts-ignore
-    this.game.addEventListener("game-event", this.#on_event);
-    this.game.addEventListener("updated", () => {
-      if (this.selection && !this.game.tokens.has(this.selection.id)) {
+    this.#game.addEventListener("game-event", this.#on_event);
+    this.#game.addEventListener("updated", () => {
+      if (this.selection && !this.#game.tokens.has(this.selection.id)) {
         this.selection = undefined;
       }
       this.requestUpdate();
@@ -210,8 +210,8 @@ class App extends LitElement {
       this.client = srv;
       //@ts-ignore
       srv.on_event = this.#incoming_event;
-      srv.get_state = this.game.get_state;
-      srv.get_images = () => this.game.resources.all();
+      srv.get_state = this.#game.get_state;
+      srv.get_images = () => this.#game.resources.all();
 
       window.history.pushState({}, "", "?game=" + srv.signaler.ident);
       navigator.clipboard.writeText(window.location.toString());
@@ -222,7 +222,7 @@ class App extends LitElement {
 
   #incoming_event = (ev: GameEvent) => {
     console.log("APPLOY!", this.canvas);
-    this.game.apply(ev);
+    this.#game.apply(ev);
     this.requestUpdate();
   };
 

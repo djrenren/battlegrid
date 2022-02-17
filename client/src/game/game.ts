@@ -5,7 +5,7 @@ import { OrderedMap } from "../util/orderedmap";
 import { GameEvent, StateSync, TokenData, uuidv4 } from "./game-events";
 
 export class Game extends EventTarget {
-  tokens: OrderedMap<string, TokenData<Resource>> = new OrderedMap();
+  tokens: OrderedMap<string, TokenData> = new OrderedMap();
   grid_dim: Point = [30, 20];
   #bg?: Resource;
   resources = new ResourceManager();
@@ -22,7 +22,7 @@ export class Game extends EventTarget {
     });
   }
 
-  add_token(img: LocalOrRemoteImage, t: Omit<TokenData<any>, "res" | "id">) {
+  add_token(img: LocalOrRemoteImage, t: Omit<TokenData, "res" | "id">) {
     const id = uuidv4();
     const res = this.resources.register(img);
     const token = {
