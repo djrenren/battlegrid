@@ -92,7 +92,7 @@ const{H:Ut}=F,zt=()=>document.createComment(""),Nt=(t,i,e)=>{var s;const o=t._$A
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function Bt(t){const i=(new DOMParser).parseFromString(t,"text/html").querySelector("img")?.src;return i??null}const Ht=()=>([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,(t=>(t^crypto.getRandomValues(new Uint8Array(1))[0]&15>>t/4).toString(16))),Wt=t=>new CustomEvent("game-event",{detail:t});class Zt{constructor(){this.order=[],this.map=new Map}get(t){const i=this.map.get(t);if(void 0!==i)return this.order[i]}has(t){return this.map.has(t)}add(t,i){this.map.set(t,this.order.length),this.order.push(i)}delete(t){const i=this.map.get(t);return void 0!==i&&(this.order.splice(i,1),this.map.delete(t),!0)}index(t){return this.map.get(t)}set_index(t,i){const e=this.map.get(t);if(void 0===e||i>=this.order.length)return!1;const s=this.order.splice(e,1)[0];return this.order.splice(i,0,s),!0}values(){return this.order}}let Gt=class extends it{constructor(){super(),this.width=30,this.height=40,this.tokens=new Zt,this.#g=0,this.#f=t=>{bt(t),this.#g++},this.#w=t=>{bt(t);const i=this.#b(t).map(Vt),e=_t($t([this.width,this.height],-1),72);this._drop_hint=Tt([0,0],e,i),this.hovering="canvas"},this.#m=t=>{--this.#g<=0&&(this._drop_hint=void 0,this.hovering=void 0)},this.#y=t=>{bt(t),this._drop_hint=void 0,this.hovering="bg"},this.#$=async t=>{bt(t);try{const i=await Jt(t);this.dispatchEvent(mt("bg-drop",i))}catch(t){}this.hovering=void 0},this.#k=async t=>{bt(t);try{const i=await Jt(t);this.dispatchEvent(mt("token-drop",{loc:this._drop_hint,dim:[72,72],img:i}))}catch(t){}this._drop_hint=void 0,this.hovering=void 0},this.#_=t=>{t.preventDefault(),t.stopPropagation(),this.dispatchEvent(mt("token-select",t.target.id))},this.#x=t=>{this.dispatchEvent(mt("token-select",void 0))},this.#S=t=>{ft(t)&&(bt(t),t.target.setPointerCapture(t.pointerId),this.#C=this.#b(t))},this.#A={move:[0,0],resize:[0,0],r:0},this.#M=t=>{if(!ft(t))return;this.#C||this.#S(t),bt(t);const i=Tt([0,0],this.#T,this.#b(t)),e=this.tokens.get(this.selection),s=e.dim,o=e.loc,n=t.target.classList;let r=[0,0],h=[0,0],a=0;if(n.contains("rn")&&(h[1]=o[1]-Kt(i[1]),r[1]=Kt(i[1])-o[1]),n.contains("rw")&&(h[0]=o[0]-Kt(i[0]),r[0]=Kt(i[0])-o[0]),n.contains("rs")&&(h[1]=Kt(i[1])-s[1]-o[1]),n.contains("re")&&(h[0]=Kt(i[0])-s[0]-o[0]),n.contains("ro")){const t=yt(o,Ct(s,2)),n=kt(i,t),r=180*Math.atan2(n[0],-n[1])/Math.PI;a=90*Math.round(r/90)-e.r%360}n.contains("selection-box")?r=kt(i,this.#C).map(Kt):(r=Mt($t(s,-72),r),h=At($t(_t(s,-1),72),h)),a===this.#A.r&&Et(r,this.#A.move)&&Et(h,this.#A.resize)||(this.#C=yt(this.#C,r),this.#A={move:[0,0],resize:[0,0],r:0},this.dispatchEvent(Wt({type:"token-manipulated",id:e.id,loc:yt(e.loc,r),dim:yt(e.dim,h),r:e.r+a})))},this.#E=t=>{bt(t),this.#C=void 0},this.#b=t=>kt(this.viewport.coordToLocal([t.clientX,t.clientY]),[60,60]),this.#o=t=>{if(!this.selection)return;if(8===t.keyCode)return this.dispatchEvent(Wt({type:"token-removed",id:this.selection})),void bt(t);let i=this.tokens.get(this.selection);let e={ArrowUp:[0,-72],ArrowDown:[0,72],ArrowLeft:[-72,0],ArrowRight:[72,0]}[t.key];e&&(i.loc=Tt([0,0],kt(this.#T,i.dim),yt(i.loc,e)),this.dispatchEvent(Wt({type:"token-manipulated",id:i.id,loc:i.loc,dim:i.dim,r:i.r})),bt(t))}}get#T(){return _t([this.width,this.height],72)}connectedCallback(){super.connectedCallback(),document.addEventListener("keydown",this.#o)}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("keydown",this.#o)}render(){let t,i,e,[s,o]=this.#T,n=this.tokens.get(this.selection);return n&&(i=n.loc,t=n.dim,e=n.r),z`
+ */function Bt(t){const i=(new DOMParser).parseFromString(t,"text/html").querySelector("img")?.src;return i??null}const Ht=()=>([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,(t=>(t^crypto.getRandomValues(new Uint8Array(1))[0]&15>>t/4).toString(16))),Wt=t=>new CustomEvent("game-event",{detail:t});class Zt{constructor(){this.order=[],this.map=new Map}get(t){const i=this.map.get(t);if(void 0!==i)return this.order[i]}has(t){return this.map.has(t)}add(t,i){this.map.set(t,this.order.length),this.order.push(i)}delete(t){const i=this.map.get(t);return void 0!==i&&(this.order.splice(i,1),this.map.delete(t),!0)}index(t){return this.map.get(t)}set_index(t,i){const e=this.map.get(t);if(void 0===e||i>=this.order.length)return!1;const s=this.order.splice(e,1)[0];return this.order.splice(i,0,s),!0}values(){return this.order}}let Gt=class extends it{constructor(){super(),this.width=30,this.height=40,this.tokens=new Zt,this.#g=0,this.#f=t=>{bt(t),this.#g++},this.#w=t=>{bt(t);const i=this.#b(t).map(Vt),e=_t($t([this.width,this.height],-1),72);this._drop_hint=Tt([0,0],e,i),this.hovering="canvas"},this.#m=t=>{--this.#g<=0&&(this._drop_hint=void 0,this.hovering=void 0)},this.#y=t=>{bt(t),this._drop_hint=void 0,this.hovering="bg"},this.#$=async t=>{bt(t);try{const i=await Jt(t);this.dispatchEvent(mt("bg-drop",i))}catch(t){}this.hovering=void 0},this.#k=async t=>{bt(t);try{const i=await Jt(t);this.dispatchEvent(mt("token-drop",{loc:this._drop_hint,dim:[72,72],img:i}))}catch(t){}this._drop_hint=void 0,this.hovering=void 0},this.#_=t=>{t.preventDefault(),t.stopPropagation(),this.dispatchEvent(mt("token-select",t.target.id))},this.#x=t=>{this.dispatchEvent(mt("token-select",void 0))},this.#S=t=>{ft(t)&&(bt(t),t.target.setPointerCapture(t.pointerId),this.#C=this.#b(t))},this.#A={move:[0,0],resize:[0,0],r:0},this.#M=t=>{if(!ft(t))return;this.#C||this.#S(t),bt(t);const i=Tt([0,0],this.#T,this.#b(t)),e=this.tokens.get(this.selection),s=e.dim,o=e.loc,n=t.target.classList;let r=[0,0],h=[0,0],a=0;if(n.contains("rn")&&(h[1]=o[1]-Kt(i[1]),r[1]=Kt(i[1])-o[1]),n.contains("rw")&&(h[0]=o[0]-Kt(i[0]),r[0]=Kt(i[0])-o[0]),n.contains("rs")&&(h[1]=Kt(i[1])-s[1]-o[1]),n.contains("re")&&(h[0]=Kt(i[0])-s[0]-o[0]),n.contains("ro")){const t=yt(o,Ct(s,2)),n=kt(i,t),r=180*Math.atan2(n[0],-n[1])/Math.PI;a=90*Math.round(r/90)-e.r%360}n.contains("selection-box")?r=kt(i,this.#C).map(Kt):(r=Mt($t(s,-72),r),h=At($t(_t(s,-1),72),h)),a===this.#A.r&&Et(r,this.#A.move)&&Et(h,this.#A.resize)||(this.#C=yt(this.#C,r),this.#A={move:[0,0],resize:[0,0],r:0},this.dispatchEvent(Wt({type:"token-manipulated",id:e.id,loc:yt(e.loc,r),dim:yt(e.dim,h),r:e.r+a})))},this.#E=t=>{bt(t),this.#C=void 0},this.#b=t=>kt(this.viewport.coordToLocal([t.clientX,t.clientY]),[60,60]),this.#o=t=>{if(!this.selection)return;if(8===t.keyCode)return this.dispatchEvent(Wt({type:"token-removed",id:this.selection})),void bt(t);let i=this.tokens.get(this.selection);let e={ArrowUp:[0,-72],ArrowDown:[0,72],ArrowLeft:[-72,0],ArrowRight:[72,0]}[t.key];e&&(i.loc=Tt([0,0],kt(this.#T,i.dim),yt(i.loc,e)),this.dispatchEvent(Wt({type:"token-manipulated",id:i.id,loc:i.loc,dim:i.dim,r:i.r})),bt(t))}}get#T(){return _t([this.width,this.height],72)}connectedCallback(){super.connectedCallback(),document.addEventListener("keydown",this.#o)}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("keydown",this.#o)}render(){let[t,i]=this.#T,e=this.tokens.get(this.selection);return z`
       <bg-viewport
         @pointerup=${this.#x}
         @dragstart=${bt}
@@ -102,10 +102,10 @@ const{H:Ut}=F,zt=()=>document.createComment(""),Nt=(t,i,e)=>{var s;const o=t._$A
         @dragover=${this.#w}
         @drop=${this.#k}
       >
-        <svg id="root" width=${s+120} height=${o+120}>
+        <svg id="root" width=${t+120} height=${i+120}>
           <defs>
             <clipPath id="canvasClip">
-              <rect width=${s} height=${o} rx=${15}></rect>
+              <rect width=${t} height=${i} rx=${15}></rect>
             </clipPath>
             <pattern id="horiz" x=${-.75} y=${-.75} width="100%" height=${72} patternUnits="userSpaceOnUse">
               <rect class="gridline" width="100%" height=${1.5} fill="#d3d3d3"></rect>
@@ -114,36 +114,37 @@ const{H:Ut}=F,zt=()=>document.createComment(""),Nt=(t,i,e)=>{var s;const o=t._$A
               <rect class="gridline" width=${1.5} height="100%" fill="#d3d3d3"></rect>
             </pattern>
           </defs>
-          <rect x=${60} y=${60} class="shadow" width=${s} height=${o} fill="white" rx=${15}></rect>
-          <svg x=${60} y=${60} width=${s} height=${o} id="surface">
-            ${this.bg?N`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none"></image>`:null}
-            <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
-            <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+          <svg x=${60} y=${60} width=${t} height=${i} id="surface">
+            <rect class="shadow" width="100%" height="100%" fill="white" rx=${15}></rect>
+            <svg clip-path="url(#canvasClip)">
+              ${this.bg?N`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none"></image>`:null}
+              <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
+              <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
 
-            ${It(this.tokens.values(),(t=>t.id),((t,i)=>{const e=this.resources?.get(t.res),[s,o]=$t(t.dim,-1.5),[n,r]=$t(t.loc,.75);return z`
-                  <svg
-                    viewBox="0 0 1 1"
-                    x=${n}
-                    y=${r}
-                    width=${s}
-                    height=${o}
-                    fill=${e?"transparent":"white"}
-                    preserveAspectRatio="none"
-                  >
-                    <image
-                      id=${t.id}
-                      class="token"
-                      width="1"
-                      height="1"
-                      href=${e||"assets/loading.svg"}
-                      style=${`transform: rotate(${t.r}deg)`}
-                      preserveAspectRatio=${e?"none":""}
-                      image-rendering="optimizeSpeed"
-                      @mousedown=${this.#_}
-                    ></image>
-                  </svg>
-                `}))}
-            ${this._drop_hint?N`
+              ${It(this.tokens.values(),(t=>t.id),((t,i)=>{const e=this.resources?.get(t.res),[s,o]=$t(t.dim,-1.5),[n,r]=$t(t.loc,.75);return z`
+                    <svg
+                      viewBox="0 0 1 1"
+                      x=${n}
+                      y=${r}
+                      width=${s}
+                      height=${o}
+                      fill=${e?"transparent":"white"}
+                      preserveAspectRatio="none"
+                    >
+                      <image
+                        id=${t.id}
+                        class="token"
+                        width="1"
+                        height="1"
+                        href=${e||"assets/loading.svg"}
+                        style=${`transform: rotate(${t.r}deg)`}
+                        preserveAspectRatio=${e?"none":""}
+                        image-rendering="optimizeSpeed"
+                        @mousedown=${this.#_}
+                      ></image>
+                    </svg>
+                  `}))}
+              ${this._drop_hint?N`
             <rect
                 class="drop_hint"
                 x=${this._drop_hint[0]}
@@ -152,17 +153,18 @@ const{H:Ut}=F,zt=()=>document.createComment(""),Nt=(t,i,e)=>{var s;const o=t._$A
                 height=${72}
                 ></rect>
           `:null}
-            ${n?N`
+            </svg>
+            ${e?N`
             <svg
               id="selection"
               @pointerdown=${this.#S}
               @pointermove=${this.#M}
               @pointerup=${this.#E}
               @click=${bt}
-              x=${i[0]}
-              y=${i[1]}
-              width=${t[0]}
-              height=${t[1]}
+              x=${e.loc[0]}
+              y=${e.loc[1]}
+              width=${e.dim[0]}
+              height=${e.dim[1]}
             >
             <rect
                 class="selection-box"
@@ -171,7 +173,7 @@ const{H:Ut}=F,zt=()=>document.createComment(""),Nt=(t,i,e)=>{var s;const o=t._$A
                 @click=${bt}
                 fill="transparent"
             ></rect>
-            <g style=${`transform-origin: center; transform: rotate(${e}deg) translateY(${Math.sign((e-180)%180)*(t[0]-t[1])/2}px)`}>
+            <g style=${`transform-origin: center; transform: rotate(${e.r}deg) translateY(${Math.sign((e.r-180)%180)*(e.dim[0]-e.dim[1])/2}px)`}>
               <line class="ro" x1="50%" x2="50%" y2=${-30}></line>
               <circle class="ro handle" cx="50%" cy=${-30} r=${6}></circle>
             </g>
