@@ -71,11 +71,6 @@ class App extends LitElement {
             <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[0] + ""} /> x
             <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[1] + ""} />
           </span>
-          ${this.host_pending
-            ? html`<img src="assets/loading.svg" />`
-            : !this.client
-            ? html`<button @click=${this.#host}>Host</button>`
-            : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
           ${this.selection
             ? html`
                 <div>
@@ -96,6 +91,11 @@ class App extends LitElement {
             : null}
         </div>
         <div class="group">
+          ${this.host_pending
+            ? html`<img src="assets/loading.svg" />`
+            : !this.client
+            ? html`<button @click=${this.#host}>Host</button>`
+            : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
         </div>
       </section>
