@@ -8,6 +8,7 @@ import "./buymeacoffee";
 import { Game } from "../game/game";
 import { Resource } from "../fs/resource-manager";
 import { ifDefined } from "lit/directives/if-defined.js";
+import { max_p } from "../util/math";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -67,8 +68,8 @@ class App extends LitElement {
         <div class="group">
           <span>
             Grid:
-            <input id="width" type="number" @input=${this.#updateDim} value=${this.game.grid_dim[0]} /> x
-            <input id="height" type="number" @input=${this.#updateDim} value=${this.game.grid_dim[1]} />
+            <input id="width" type="number" min="1" @input=${this.#updateDim} value=${this.game.grid_dim[0]} /> x
+            <input id="height" type="number" min="1" @input=${this.#updateDim} value=${this.game.grid_dim[1]} />
           </span>
           ${this.host_pending
             ? html`<img src="assets/loading.svg" />`
@@ -164,8 +165,8 @@ class App extends LitElement {
   `;
 
   #updateDim = () => {
-    ///@ts-ignore
-    this.game.set_dim([parseInt(this.width?.value) ?? 0, parseInt(this.height?.value) ?? 0]);
+    //@ts-ignore
+    this.game.set_dim(max_p([1,1], [parseInt(this.width?.value) ?? 0, parseInt(this.height?.value) ?? 0]));
   };
 
   async connectedCallback() {
