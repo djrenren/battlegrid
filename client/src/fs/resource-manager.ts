@@ -12,7 +12,7 @@ export type Resource = string & { __brand: "resource" };
 export type URLString = string & { __brand: "url" };
 export class ResourceManager {
   // Don't restore the index between sessions.
-  index: Resource[] = [];
+  index: Set<Resource> = new Set();
 
   get(res: Resource): string | null {
     if (res.startsWith("local:")) {
@@ -22,16 +22,28 @@ export class ResourceManager {
     }
   }
 
+  delete(res: Resource): boolean {
+    const url = this.get(res);
+    if (!url) return false;
+    URL.revokeObjectURL(url);
+    window.sessionStorage.removeItem(res);
+    return true;
+  }
+
   register(file: LocalOrRemoteImage, id?: string): Resource {
     // URLs are valid resources
     if (typeof file === "string") {
       return file as Resource;
     }
     let name = (id ?? "local:" + uuidv4()) as Resource;
-    this.index.push(name);
+    this.index.add(name);
     window.sessionStorage.setItem(name, URL.createObjectURL(file));
     return name;
   }
 
-  all = (): [Resource, string][] => this.index.map((i) => [i, this.get(i)!]);
+  *all(): IterableIterator<[Resource, string]> {
+    for (let res of this.index.values()) {
+      yield [res, this.get(res)!];
+    }
+  }
 }

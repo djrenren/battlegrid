@@ -108,5 +108,5 @@ export class Server implements GameClient {
 
   on_event: (ev: any) => any = () => {};
   get_state?: () => StateSync;
-  get_images?: () => Iterable<[string, string]>;
+  get_images?: () => IterableIterator<[string, string]>;
 }

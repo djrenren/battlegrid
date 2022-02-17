@@ -57,10 +57,14 @@ export class Game extends EventTarget {
         this.grid_dim = ev.dim;
         break;
       case "token-removed":
-        if (!this.tokens.delete(ev.id)) {
+        const rem_token = this.tokens.get(ev.id);
+        if (!rem_token) {
           console.error("Tried to remove nonexistant token", ev.id);
           return;
         }
+        this.resources.delete(rem_token.res);
+        this.tokens.delete(rem_token.id);
+
         break;
       case "state-sync":
         console.log("applying #tokens", ev.tokens);
