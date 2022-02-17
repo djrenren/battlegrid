@@ -71,8 +71,7 @@ export class BuyMeACoffee extends LitElement {
       animation-name: fade;
       animation-duration: 0.5s;
       animation-direction: backwards;
-      background-color: #ededf0;
-      background-image: url("assets/loading.svg");
+      background: url("assets/loading.svg") center/100px no-repeat, #ededf0;
       overflow: hidden;
     }
 
