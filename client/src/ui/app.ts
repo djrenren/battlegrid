@@ -68,8 +68,8 @@ class App extends LitElement {
         <div class="group">
           <span>
             Grid:
-            <input id="width" type="number" min="1" @input=${this.#updateDim} value=${this.#game.grid_dim[0]} /> x
-            <input id="height" type="number" min="1" @input=${this.#updateDim} value=${this.#game.grid_dim[1]} />
+            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[0]+''} /> x
+            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[1]+''} />
           </span>
           ${this.host_pending
             ? html`<img src="assets/loading.svg" />`
@@ -221,9 +221,7 @@ class App extends LitElement {
   };
 
   #incoming_event = (ev: GameEvent) => {
-    console.log("APPLOY!", this.canvas);
     this.#game.apply(ev);
-    this.requestUpdate();
   };
 
   #on_event = (ev: CustomEvent<GameEvent>) => {
