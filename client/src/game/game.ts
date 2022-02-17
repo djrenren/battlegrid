@@ -6,7 +6,7 @@ import { GameEvent, StateSync, TokenData, uuidv4 } from "./game-events";
 
 export class Game extends EventTarget {
   tokens: OrderedMap<string, TokenData<Resource>> = new OrderedMap();
-  grid_dim: Point = [30, 40];
+  grid_dim: Point = [30, 20];
   #bg?: Resource;
   resources = new ResourceManager();
 
