@@ -62,4 +62,4 @@ export const uuidv4 = () => {
   );
 };
 
-export const game_event = (detail: GameEvent): CustomEvent => new CustomEvent("game-event", { detail });
+export const game_event = (detail: GameEvent): CustomEvent<GameEvent> => new CustomEvent("game-event", { detail });

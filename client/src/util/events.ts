@@ -8,3 +8,7 @@ export const stop_ev = (ev: Event) => {
   ev.preventDefault();
   ev.stopPropagation();
 };
+
+type CustomEventType<T extends Event> = T extends CustomEvent<infer U> ? U : never;
+export const window_ev = <N extends keyof WindowEventMap>(name: N, detail: CustomEventType<WindowEventMap[N]>): WindowEventMap[N] =>
+  new CustomEvent(name, { detail }) as any;

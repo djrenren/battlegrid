@@ -16,7 +16,13 @@ export class BuyMeACoffee extends LitElement {
       ${this._state
         ? html`
             <div id="container">
-                <iframe class=${this._loaded ? 'loaded' :  ''} allow="payment" src="https://ko-fi.com/djrenren/?hidefeed=true&widget=true&embed=true&preview=true" title="djrenren" @load=${this.#iframe_load}></iframe>
+              <iframe
+                class=${this._loaded ? "loaded" : ""}
+                allow="payment"
+                src="https://ko-fi.com/djrenren/?hidefeed=true&widget=true&embed=true&preview=true"
+                title="djrenren"
+                @load=${this.#iframe_load}
+              ></iframe>
             </div>
           `
         : null}
@@ -38,7 +44,7 @@ export class BuyMeACoffee extends LitElement {
 
   #iframe_load = (ev: Event) => {
     this._loaded = true;
-  }
+  };
 
   static styles = css`
     :host {
@@ -66,12 +72,12 @@ export class BuyMeACoffee extends LitElement {
       animation-duration: 0.5s;
       animation-direction: backwards;
       background-color: #ededf0;
-      background-image: url('assets/loading.svg');
+      background-image: url("assets/loading.svg");
       overflow: hidden;
     }
 
     iframe.loaded {
-        opacity: 1;
+      opacity: 1;
     }
 
     @keyframes fade {

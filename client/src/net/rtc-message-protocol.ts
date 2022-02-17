@@ -14,7 +14,7 @@ type MetaEvent = {
 
 type MetaFile = {
   type: "file";
-  name: string;
+  res_name: string;
   chunks: number;
 };
 
@@ -41,7 +41,7 @@ export const decoder = (): TransformStream<RTCMessage, LogicalMessage> => {
           }
           buffer.push(chunk as any);
           if (--file.chunks === 0) {
-            controller.enqueue({ type: "file", res_name: file.name, contents: new Blob(buffer) });
+            controller.enqueue({ type: "file", res_name: file.res_name, contents: new Blob(buffer) });
 
             // Don't retain the buffer
             buffer = [];
@@ -67,7 +67,7 @@ export const encoder = (): TransformStream<LogicalMessage, RTCMessage> => {
             type: "file",
             res_name: chunk.res_name,
             chunks: Math.ceil(chunk.contents.size / MAX_MESSAGE_SIZE),
-          })
+          } as MetaFile)
         );
 
         // Then send the chunks

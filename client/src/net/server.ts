@@ -39,11 +39,12 @@ export class Server implements GameClient {
 
       console.log("Getting state");
       if (this.get_state) {
+        console.log("state", this.get_state());
         event_writer.write(this.get_state());
       }
       console.log("writing images");
       for (const [res_name, url] of this.get_images ? this.get_images() : []) {
-        console.log(name, url);
+        console.log(res_name, url);
         data_writer.write({
           type: "file",
           res_name,

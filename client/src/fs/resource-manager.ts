@@ -8,8 +8,8 @@ type FileRequest = {
 };
 
 type FileEvent = FileResponse | FileRequest;
-export type Resource = string & {__brand: 'resource'}
-export type URLString = string & {__brand: 'url'}
+export type Resource = string & { __brand: "resource" };
+export type URLString = string & { __brand: "url" };
 export class ResourceManager {
   // Don't restore the index between sessions.
   index: Resource[] = [];

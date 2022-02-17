@@ -3,11 +3,11 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { Server } from "../net/server";
 import { GameEvent, TokenData } from "../game/game-events";
 import { Client, GameClient } from "../net/client";
-import { Canvas } from "./canvas";
+import { BgDropEvent, Canvas, TokenDropEvent, TokenSelectEvent } from "./canvas";
 import "./buymeacoffee";
 import { Game } from "../game/game";
 import { Resource } from "../fs/resource-manager";
-import {ifDefined} from 'lit/directives/if-defined.js';
+import { ifDefined } from "lit/directives/if-defined.js";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -65,16 +65,16 @@ class App extends LitElement {
     return html`
       <section id="toolbar" class="group">
         <div class="group">
-        <span>
-          Grid:
-          <input id="width" type="number" @input=${this.#updateDim} value=${this.game.grid_dim[0]} /> x
-          <input id="height" type="number" @input=${this.#updateDim} value=${this.game.grid_dim[1]} />
-        </span>
-        ${this.host_pending
-          ? html`<img src="assets/loading.svg" />`
-          : !this.client
-          ? html`<button @click=${this.#host}>Host</button>`
-          : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
+          <span>
+            Grid:
+            <input id="width" type="number" @input=${this.#updateDim} value=${this.game.grid_dim[0]} /> x
+            <input id="height" type="number" @input=${this.#updateDim} value=${this.game.grid_dim[1]} />
+          </span>
+          ${this.host_pending
+            ? html`<img src="assets/loading.svg" />`
+            : !this.client
+            ? html`<button @click=${this.#host}>Host</button>`
+            : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
         </div>
         <div class="group">
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
@@ -85,7 +85,15 @@ class App extends LitElement {
         selection=${ifDefined(this.selection?.id)}
         width=${this.game.grid_dim[0]}
         height=${this.game.grid_dim[1]}
-        .tokens=${this.game.tokens}></bg-canvas>
+        .tokens=${this.game.tokens}
+        .resources=${this.game.resources}
+        @token-drop=${({ detail }: TokenDropEvent) => this.game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
+        @bg-drop=${({ detail }: BgDropEvent) => this.game.set_bg(detail)}
+        @token-select=${({ detail }: TokenSelectEvent) => {
+          this.selection = detail ? this.game.tokens.get(detail) : undefined;
+        }}
+        @game-event=${({ detail }: CustomEvent<GameEvent>) => this.game.apply(detail)}
+      ></bg-canvas>
       ${overlay}
     `;
   }
@@ -136,7 +144,7 @@ class App extends LitElement {
       align-items: center;
       height: 100%;
       flex-wrap: nowrap;
-    } 
+    }
 
     #toolbar {
       grid-area: toolbar;
@@ -153,20 +161,22 @@ class App extends LitElement {
       object-fit: cover;
       display: inline-block;
     }
-    `
-  ;
+  `;
 
   #updateDim = () => {
     ///@ts-ignore
-    this.game.set_dim([this.width?.value ?? 0, this.height?.value ?? 0]);
+    this.game.set_dim([parseInt(this.width?.value) ?? 0, parseInt(this.height?.value) ?? 0]);
   };
 
   async connectedCallback() {
     super.connectedCallback();
     //@ts-ignore
-    this.game.addEventListener('game-event', this.#on_event);
-    this.game.addEventListener('updated', () => {
-      this.requestUpdate()
+    this.game.addEventListener("game-event", this.#on_event);
+    this.game.addEventListener("updated", () => {
+      if (this.selection && !this.game.tokens.has(this.selection.id)) {
+        this.selection = undefined;
+      }
+      this.requestUpdate();
       this.canvas?.requestUpdate();
     });
     let params = new URLSearchParams(window.location.search);
@@ -218,5 +228,4 @@ class App extends LitElement {
   #on_event = (ev: CustomEvent<GameEvent>) => {
     this.client?.send_event(ev.detail);
   };
-
 }

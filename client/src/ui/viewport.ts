@@ -153,8 +153,7 @@ export class Viewport extends LitElement {
     if (ev.ctrlKey) {
       const delta = Math.min(50, Math.max(-50, -ev.deltaY * multiplier));
       const zoom = delta * scroll_factor * this.scale;
-      console.log("ZOOM", zoom, delta);
-      this.smooth = Math.abs(delta) ===  50 ? 300 : 0;
+      this.smooth = Math.abs(delta) === 50 ? 300 : 0;
       //zoom
       this._performZoom(this.coordToLocal([ev.clientX, ev.clientY]), zoom);
     } else {
