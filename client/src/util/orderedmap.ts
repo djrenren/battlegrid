@@ -34,10 +34,20 @@ export class OrderedMap<K, V> {
     if (idx === undefined || i >= this.order.length) return false;
     const val = this.order.splice(idx, 1)[0];
     this.order.splice(i, 0, val);
+    this.map.forEach((val, key) => {
+      if (val >= i) {
+        this.map.set(key, val + 1);
+      }
+    });
+    this.map.set(key, i);
     return true;
   }
 
   values(): Iterable<V> {
     return this.order;
+  }
+
+  get size(): number {
+    return this.map.size;
   }
 }

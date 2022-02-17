@@ -75,6 +75,27 @@ export class Game extends EventTarget {
         this.grid_dim = ev.grid_dim;
         this.#bg = ev.bg;
         break;
+
+      case "token-reorder":
+        const idx = this.tokens.index(ev.id);
+        if (idx === undefined) {
+          console.error("Tried to reorder non-existant token", ev.id);
+          return;
+        }
+
+        let target;
+        if (ev.idx === "top") {
+          target = this.tokens.size - 1;
+        } else if (ev.idx === "bottom") {
+          target = 0;
+        } else if (ev.idx === "up") {
+          target = Math.min(this.tokens.size - 1, idx + 1);
+        } else {
+          target = Math.max(0, idx - 1);
+        }
+
+        this.tokens.set_index(ev.id, target);
+        break;
       case "file":
         this.resources.register(ev.contents, ev.res_name);
         break;

@@ -76,6 +76,24 @@ class App extends LitElement {
             : !this.client
             ? html`<button @click=${this.#host}>Host</button>`
             : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
+          ${this.selection
+            ? html`
+                <div>
+                  <button
+                    @click=${() => this.#game.apply({ type: "token-reorder", id: this.selection!.id, idx: "down" })}
+                    ?disabled=${this.#game.tokens.index(this.selection.id) === 0}
+                  >
+                    Move Down
+                  </button>
+                  <button
+                    @click=${() => this.#game.apply({ type: "token-reorder", id: this.selection!.id, idx: "up" })}
+                    ?disabled=${this.#game.tokens.index(this.selection.id) === this.#game.tokens.size - 1}
+                  >
+                    Move Up
+                  </button>
+                </div>
+              `
+            : null}
         </div>
         <div class="group">
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
