@@ -86,47 +86,47 @@ export class Canvas extends LitElement {
               <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
             </pattern>
           </defs>
-          <rect x=${PADDING} y=${PADDING} class="shadow" width=${width} height=${height} fill="white" rx=${CANVAS_RADIUS}></rect>
           <svg x=${PADDING} y=${PADDING} width=${width} height=${height} id="surface">
+            <rect class="shadow" width="100%" height="100%" fill="white" rx=${CANVAS_RADIUS}></rect>
             <svg clip-path="url(#canvasClip)">
-            ${this.bg ? svg`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none"></image>` : null}
-            <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
-            <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+              ${this.bg ? svg`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none"></image>` : null}
+              <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
+              <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
 
-            ${repeat(
-              this.tokens.values(),
-              (t) => t.id,
-              (t, index) => {
-                const url = this.resources?.get(t.res);
-                const [width, height] = add_c(t.dim, -LINE_WIDTH);
-                const [x, y] = add_c(t.loc, LINE_WIDTH / 2);
-                return html`
-                  <svg
-                    viewBox="0 0 1 1"
-                    x=${x}
-                    y=${y}
-                    width=${width}
-                    height=${height}
-                    fill=${url ? "transparent" : "white"}
-                    preserveAspectRatio="none"
-                  >
-                    <image
-                      id=${t.id}
-                      class="token"
-                      width="1"
-                      height="1"
-                      href=${url || "assets/loading.svg"}
-                      style=${`transform: rotate(${t.r}deg)`}
-                      preserveAspectRatio=${url ? "none" : ""}
-                      image-rendering="optimizeSpeed"
-                      @mousedown=${this.#focus}
-                    ></image>
-                  </svg>
-                `;
-              }
-            )}
-            ${this._drop_hint
-              ? svg`
+              ${repeat(
+                this.tokens.values(),
+                (t) => t.id,
+                (t, index) => {
+                  const url = this.resources?.get(t.res);
+                  const [width, height] = add_c(t.dim, -LINE_WIDTH);
+                  const [x, y] = add_c(t.loc, LINE_WIDTH / 2);
+                  return html`
+                    <svg
+                      viewBox="0 0 1 1"
+                      x=${x}
+                      y=${y}
+                      width=${width}
+                      height=${height}
+                      fill=${url ? "transparent" : "white"}
+                      preserveAspectRatio="none"
+                    >
+                      <image
+                        id=${t.id}
+                        class="token"
+                        width="1"
+                        height="1"
+                        href=${url || "assets/loading.svg"}
+                        style=${`transform: rotate(${t.r}deg)`}
+                        preserveAspectRatio=${url ? "none" : ""}
+                        image-rendering="optimizeSpeed"
+                        @mousedown=${this.#focus}
+                      ></image>
+                    </svg>
+                  `;
+                }
+              )}
+              ${this._drop_hint
+                ? svg`
             <rect
                 class="drop_hint"
                 x=${this._drop_hint[0]}
@@ -135,7 +135,7 @@ export class Canvas extends LitElement {
                 height=${GRID_SIZE}
                 ></rect>
           `
-              : null}
+                : null}
             </svg>
             ${selected
               ? svg`
