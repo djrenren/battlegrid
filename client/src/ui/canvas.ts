@@ -64,12 +64,6 @@ export class Canvas extends LitElement {
   render() {
     let [width, height] = this.#dim;
     let selected = this.tokens.get(this.selection!);
-    let new_dim: Point, new_origin: Point, new_r: number;
-    if (selected) {
-      new_origin = selected.loc;
-      new_dim = selected.dim;
-      new_r = selected.r;
-    }
     return html`
       <bg-viewport
         @pointerup=${this.#unfocus}
@@ -149,10 +143,10 @@ export class Canvas extends LitElement {
               @pointermove=${this.#selection_drag}
               @pointerup=${this.#selection_drag_end}
               @click=${stop_ev}
-              x=${new_origin![0]}
-              y=${new_origin![1]}
-              width=${new_dim![0]}
-              height=${new_dim![1]}
+              x=${selected.loc[0]}
+              y=${selected.loc[1]}
+              width=${selected.dim[0]}
+              height=${selected.dim[1]}
             >
             <rect
                 class="selection-box"
@@ -161,8 +155,8 @@ export class Canvas extends LitElement {
                 @click=${stop_ev}
                 fill="transparent"
             ></rect>
-            <g style=${`transform-origin: center; transform: rotate(${new_r!}deg) translateY(${
-              (Math.sign((new_r! - 180) % 180) * (new_dim![0] - new_dim![1])) / 2
+            <g style=${`transform-origin: center; transform: rotate(${selected.r}deg) translateY(${
+              (Math.sign((selected.r - 180) % 180) * (selected.dim[0] - selected.dim[1])) / 2
             }px)`}>
               <line class="ro" x1="50%" x2="50%" y2=${-ROTATE_DISTANCE}></line>
               <circle class="ro handle" cx="50%" cy=${-ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
