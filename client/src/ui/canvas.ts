@@ -88,6 +88,7 @@ export class Canvas extends LitElement {
           </defs>
           <rect x=${PADDING} y=${PADDING} class="shadow" width=${width} height=${height} fill="white" rx=${CANVAS_RADIUS}></rect>
           <svg x=${PADDING} y=${PADDING} width=${width} height=${height} id="surface">
+            <svg clip-path="url(#canvasClip)">
             ${this.bg ? svg`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none"></image>` : null}
             <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
             <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
@@ -135,6 +136,7 @@ export class Canvas extends LitElement {
                 ></rect>
           `
               : null}
+            </svg>
             ${selected
               ? svg`
             <svg
