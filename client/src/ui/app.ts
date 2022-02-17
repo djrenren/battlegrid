@@ -68,8 +68,8 @@ class App extends LitElement {
         <div class="group">
           <span>
             Grid:
-            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[0]+''} /> x
-            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[1]+''} />
+            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[0] + ""} /> x
+            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[1] + ""} />
           </span>
           ${this.host_pending
             ? html`<img src="assets/loading.svg" />`
