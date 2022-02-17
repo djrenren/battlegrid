@@ -239,7 +239,7 @@ class App extends LitElement {
   };
 
   #incoming_event = (ev: GameEvent) => {
-    this.#game.apply(ev);
+    this.#game.local_apply(ev);
   };
 
   #on_event = (ev: CustomEvent<GameEvent>) => {

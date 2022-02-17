@@ -2,7 +2,7 @@ import { Resource, ResourceManager, URLString } from "../fs/resource-manager";
 import { LocalOrRemoteImage } from "../util/files";
 import { Point } from "../util/math";
 import { OrderedMap } from "../util/orderedmap";
-import { GameEvent, StateSync, TokenData, uuidv4 } from "./game-events";
+import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "./game-events";
 
 export class Game extends EventTarget {
   tokens: OrderedMap<string, TokenData> = new OrderedMap();
@@ -16,10 +16,20 @@ export class Game extends EventTarget {
 
   set_bg(img: LocalOrRemoteImage | undefined) {
     const res = img ? this.resources.register(img) : undefined;
-    this.#local_dispatch({
+    this.apply({
       type: "bg",
       res,
     });
+
+    if (img instanceof Blob) {
+      this.dispatchEvent(
+        game_event({
+          type: "file",
+          res_name: res!,
+          contents: img,
+        })
+      );
+    }
   }
 
   add_token(img: LocalOrRemoteImage, t: Omit<TokenData, "res" | "id">) {
@@ -31,13 +41,23 @@ export class Game extends EventTarget {
       ...t,
     };
 
-    this.#local_dispatch({
+    this.apply({
       type: "token-added",
       ...token,
     });
+
+    if (img instanceof Blob) {
+      this.dispatchEvent(
+        game_event({
+          type: "file",
+          res_name: res,
+          contents: img,
+        })
+      );
+    }
   }
 
-  apply(ev: GameEvent) {
+  local_apply(ev: GameEvent) {
     console.log("APPLYING!");
     switch (ev.type) {
       case "token-manipulated":
@@ -110,19 +130,19 @@ export class Game extends EventTarget {
   }
 
   remove_token(id: string) {
-    this.#local_dispatch({
+    this.apply({
       type: "token-removed",
       id,
     });
   }
 
-  #local_dispatch(detail: GameEvent) {
-    this.apply(detail);
+  apply(detail: GameEvent) {
+    this.local_apply(detail);
     this.dispatchEvent(new CustomEvent("game-event", { detail }));
   }
 
   set_dim(dim: Point) {
-    this.#local_dispatch({
+    this.apply({
       type: "grid-resized",
       dim,
     });
