@@ -79,6 +79,9 @@ export class Game extends EventTarget {
         this.resources.register(ev.contents, ev.res_name);
         break;
       case "bg":
+        if (this.#bg) {
+          this.resources.delete(this.#bg);
+        }
         this.#bg = ev.res;
         break;
     }
