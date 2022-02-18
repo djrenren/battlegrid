@@ -13,15 +13,17 @@ export type TokenAdded = {
 
 export type TokenManipulated = {
   type: "token-manipulated";
-  id: string;
-  loc: Point;
-  dim: Point;
-  r: number;
+  tokens: {
+    id: string;
+    loc: Point;
+    dim: Point;
+    r: number;
+  }[];
 };
 
 export type TokenRemoved = {
   type: "token-removed";
-  id: string;
+  ids: string[];
 };
 
 export type GridResized = {

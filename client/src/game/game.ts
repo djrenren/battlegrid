@@ -61,12 +61,14 @@ export class Game extends EventTarget {
     console.log("APPLYING!");
     switch (ev.type) {
       case "token-manipulated":
-        let ex_token = this.tokens.get(ev.id);
-        if (!ex_token) {
-          console.error("Update received for nonexistant token", ev.id);
-          return;
+        for (let t of ev.tokens) {
+          let ex_token = this.tokens.get(t.id);
+          if (!ex_token) {
+            console.error("Update received for nonexistant token", t.id);
+            return;
+          }
+          Object.assign(ex_token, { dim: t.dim, loc: t.loc, r: t.r });
         }
-        Object.assign(ex_token, { dim: ev.dim, loc: ev.loc, r: ev.r });
         break;
 
       case "token-added":
@@ -77,13 +79,15 @@ export class Game extends EventTarget {
         this.grid_dim = ev.dim;
         break;
       case "token-removed":
-        const rem_token = this.tokens.get(ev.id);
-        if (!rem_token) {
-          console.error("Tried to remove nonexistant token", ev.id);
-          return;
+        for (let id of ev.ids) {
+          const rem_token = this.tokens.get(id);
+          if (!rem_token) {
+            console.error("Tried to remove nonexistant token", id);
+            return;
+          }
+          this.resources.delete(rem_token.res);
+          this.tokens.delete(rem_token.id);
         }
-        this.resources.delete(rem_token.res);
-        this.tokens.delete(rem_token.id);
 
         break;
       case "state-sync":
@@ -132,7 +136,7 @@ export class Game extends EventTarget {
   remove_token(id: string) {
     this.apply({
       type: "token-removed",
-      id,
+      ids: [id],
     });
   }
 

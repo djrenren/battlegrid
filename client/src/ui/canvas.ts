@@ -1,7 +1,7 @@
 import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import { abs_p, add_c, add_p, clamp_p, div_c, eq_p, intersect, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
+import { abs_p, add_c, add_p, BBox, clamp_p, div_c, eq_p, intersect, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 import { is_mouse_down, is_primary_down, stop_ev, window_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage, LocalOrRemoteImage } from "../util/files";
@@ -40,17 +40,14 @@ export class Canvas extends LitElement {
 
   #sbox?: { pin: Point; mouse: Point };
 
+  @property({ attribute: false })
+  sel_bbox?: BBox;
+
   @query("root", true)
   root?: SVGElement;
 
   @query("bg-viewport", true)
   viewport?: Viewport;
-
-  @query("#tokens", true)
-  token_svg?: SVGSVGElement;
-
-  @query("#sbox")
-  sbox_rect?: SVGRectElement;
 
   constructor() {
     super();
@@ -71,6 +68,7 @@ export class Canvas extends LitElement {
   }
   render() {
     let [width, height] = this.#dim;
+    let sbbox = this.#selection_bbox();
     let selected = this.selection.length === 1 ? this.tokens.get(this.selection[0]) : undefined;
     return html`
       <bg-viewport
@@ -160,7 +158,7 @@ export class Canvas extends LitElement {
                 ></rect>
               `
               : null}
-            ${selected
+            ${sbbox
               ? svg`
             <svg
               id="selection"
@@ -168,10 +166,10 @@ export class Canvas extends LitElement {
               @pointermove=${this.#selection_drag}
               @pointerup=${this.#selection_drag_end}
               @click=${stop_ev}
-              x=${selected.loc[0]}
-              y=${selected.loc[1]}
-              width=${selected.dim[0]}
-              height=${selected.dim[1]}
+              x=${sbbox.start[0]}
+              y=${sbbox.start[1]}
+              width=${sbbox.end[0] - sbbox.start[0]}
+              height=${sbbox.end[1] - sbbox.start[1]}
             >
             <rect
                 class="selection-box"
@@ -180,6 +178,9 @@ export class Canvas extends LitElement {
                 @click=${stop_ev}
                 fill="transparent"
             ></rect>
+            ${
+              selected
+                ? svg`
             <g style=${`transform-origin: center; transform: rotate(${selected.r}deg) translateY(${
               (Math.sign((selected.r - 180) % 180) * (selected.dim[0] - selected.dim[1])) / 2
             }px)`}>
@@ -195,6 +196,8 @@ export class Canvas extends LitElement {
             <rect class="handle rs rw" y="100%"></rect>
             <rect class="handle rs re" x="100%" y="100%"></rect>
             </svg>`
+                : null
+            }`
               : null}
           </svg>
         </svg>
@@ -257,6 +260,7 @@ export class Canvas extends LitElement {
       const img = await getImage(ev);
       this.dispatchEvent(window_ev("bg-drop", img));
     } catch (e) {}
+    this.#drag_depth = 0;
     this.hovering = undefined;
   };
 
@@ -325,6 +329,19 @@ export class Canvas extends LitElement {
     this.requestUpdate();
   }
 
+  #selection_bbox(): BBox | undefined {
+    if (this.selection.length === 0) return;
+    const s = this.selection.map((t) => this.tokens.get(t)).filter((t) => t) as TokenData[];
+    let start = s[0]!.loc;
+    let end = add_p(s[0]!.loc, s[0]!.dim);
+    s.forEach((t) => {
+      start = min_p(start, t.loc);
+      end = max_p(end, add_p(t.loc, t.dim));
+    });
+
+    return { start, end };
+  }
+
   #drag_offset?: Point;
   #selection_drag_start = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
@@ -390,10 +407,15 @@ export class Canvas extends LitElement {
       this.dispatchEvent(
         game_event({
           type: "token-manipulated",
-          id: selection.id,
-          loc: add_p(selection.loc, move),
-          dim: add_p(selection.dim, resize),
-          r: selection.r + r,
+          tokens: this.selection.map((id) => {
+            let selection = this.tokens.get(id)!;
+            return {
+              id: selection.id,
+              loc: add_p(selection.loc, move),
+              dim: add_p(selection.dim, resize),
+              r: selection.r + r,
+            };
+          }),
         })
       );
     }
@@ -420,7 +442,7 @@ export class Canvas extends LitElement {
       this.dispatchEvent(
         game_event({
           type: "token-removed",
-          id: this.selection[0],
+          ids: this.selection,
         })
       );
       stop_ev(ev);
@@ -437,14 +459,19 @@ export class Canvas extends LitElement {
 
     let move: Point | undefined = movements[ev.key];
     if (move) {
-      s.loc = clamp_p([0, 0], sub_p(this.#dim, s.dim), add_p(s.loc, move));
       this.dispatchEvent(
         game_event({
           type: "token-manipulated",
-          id: s.id,
-          loc: s.loc,
-          dim: s.dim,
-          r: s.r,
+          tokens: this.selection.map((id) => {
+            const s = this.tokens.get(id)!;
+            const loc = clamp_p([0, 0], sub_p(this.#dim, s.dim), add_p(s.loc, move!));
+            return {
+              id: s.id,
+              loc: loc,
+              dim: s.dim,
+              r: s.r,
+            };
+          }),
         })
       );
       stop_ev(ev);
