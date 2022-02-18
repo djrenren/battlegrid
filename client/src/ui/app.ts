@@ -107,6 +107,7 @@ class App extends LitElement {
         height=${this.#game.grid_dim[1]}
         .tokens=${this.#game.tokens}
         .resources=${this.#game.resources}
+        .callouts=${this.#game.callouts}
         @token-drop=${({ detail }: TokenDropEvent) => this.#game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
         @bg-drop=${({ detail }: BgDropEvent) => this.#game.set_bg(detail)}
         @token-select=${({ detail }: TokenSelectEvent) => {

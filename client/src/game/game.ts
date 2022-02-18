@@ -4,11 +4,13 @@ import { Point } from "../util/math";
 import { OrderedMap } from "../util/orderedmap";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "./game-events";
 
+const CALLOUT_TIMER = 1500;
 export class Game extends EventTarget {
   tokens: OrderedMap<string, TokenData> = new OrderedMap();
   grid_dim: Point = [30, 20];
   #bg?: Resource;
   resources = new ResourceManager();
+  callouts: Set<Point> = new Set();
 
   get bg(): string | null {
     return this.#bg ? this.resources.get(this.#bg) : null;
@@ -128,6 +130,14 @@ export class Game extends EventTarget {
           this.resources.delete(this.#bg);
         }
         this.#bg = ev.res;
+        break;
+
+      case "callout":
+        this.callouts?.add(ev.loc);
+        setTimeout(() => {
+          this.callouts.delete(ev.loc);
+          this.dispatchEvent(new CustomEvent("updated"));
+        }, CALLOUT_TIMER);
         break;
     }
     this.dispatchEvent(new CustomEvent("updated"));

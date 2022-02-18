@@ -18,6 +18,8 @@ const CANVAS_RADIUS = 5 * PIXEL_SCALE;
 const ROTATE_DISTANCE = 10 * PIXEL_SCALE;
 const ROTATE_SIZE = HANDLE_SIZE / 2;
 const PADDING = 20 * PIXEL_SCALE;
+const CALLOUT_DIM = GRID_SIZE;
+
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -38,6 +40,9 @@ export class Canvas extends LitElement {
   @property({ attribute: false })
   readonly selection: Set<string> = new Set();
 
+  @property({ attribute: false })
+  readonly callouts: Set<Point> = new Set();
+
   #sbox?: { pin: Point; mouse: Point };
 
   @property({ attribute: false })
@@ -48,6 +53,8 @@ export class Canvas extends LitElement {
 
   @query("bg-viewport", true)
   viewport?: Viewport;
+
+  #mouse_loc?: Pick<MouseEvent, "clientX" | "clientY">;
 
   constructor() {
     super();
@@ -75,6 +82,7 @@ export class Canvas extends LitElement {
         @pointerdown=${this.#sbox_start}
         @pointermove=${this.#sbox_move}
         @pointerup=${this.#sbox_stop}
+        @pointerleave=${() => (this.#mouse_loc = undefined)}
         @dragstart=${stop_ev}
         @dragenter=${this.#drag_enter}
         @dragleave=${this.#drag_leave}
@@ -158,6 +166,17 @@ export class Canvas extends LitElement {
                 ></rect>
               `
               : null}
+            ${repeat(
+              this.callouts,
+              (id) => id,
+              (point) => {
+                const [x, y] = sub_p(point, [CALLOUT_DIM / 2, CALLOUT_DIM / 2]);
+
+                return svg`
+                  <image href="assets/callout.svg" x=${x} y=${y} width=${CALLOUT_DIM} height=${CALLOUT_DIM}></image>
+                `;
+              }
+            )}
             ${sbbox
               ? svg`
             <svg
@@ -305,6 +324,7 @@ export class Canvas extends LitElement {
   }
 
   #sbox_move(ev: PointerEvent) {
+    this.#mouse_loc = { clientX: ev.clientX, clientY: ev.clientY };
     if (!this.#sbox) return;
     this.#sbox.mouse = this.#screen_to_svg(ev);
     this.requestUpdate();
@@ -489,6 +509,15 @@ export class Canvas extends LitElement {
       );
       stop_ev(ev);
       return;
+    }
+
+    if (ev.key === "z" && this.#mouse_loc) {
+      this.dispatchEvent(
+        game_event({
+          type: "callout",
+          loc: this.#screen_to_svg(this.#mouse_loc),
+        })
+      );
     }
 
     let s = this.tokens.get(this.selection.values().next().value)!;

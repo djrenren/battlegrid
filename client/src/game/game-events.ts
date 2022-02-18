@@ -1,7 +1,7 @@
 import { Resource } from "../fs/resource-manager";
 import { Point } from "../util/math";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse | Background | TokenReorder;
+export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse | Background | TokenReorder | Callout;
 
 export type TokenAdded = {
   type: "token-added";
@@ -36,6 +36,11 @@ export type StateSync = {
   tokens: TokenData[];
   grid_dim: Point;
   bg?: Resource;
+};
+
+export type Callout = {
+  type: "callout";
+  loc: Point;
 };
 
 export type TokenReorder = {
