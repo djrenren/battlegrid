@@ -9,6 +9,7 @@ import { Game } from "../game/game";
 import { Resource } from "../fs/resource-manager";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { max_p } from "../util/math";
+import { first } from "../util/iter";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -25,7 +26,7 @@ class App extends LitElement {
   client?: GameClient;
 
   @state()
-  selection: string[] = [];
+  selection: Set<string> = new Set();
 
   @state()
   host_pending = false;
@@ -71,18 +72,18 @@ class App extends LitElement {
             <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[0] + ""} /> x
             <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[1] + ""} />
           </span>
-          ${this.selection.length === 1
+          ${this.selection.size === 1
             ? html`
                 <div>
                   <button
-                    @click=${() => this.#game.apply({ type: "token-reorder", id: this.selection[0], idx: "down" })}
-                    ?disabled=${this.#game.tokens.index(this.selection[0]) === 0}
+                    @click=${() => this.#game.apply({ type: "token-reorder", id: first(this.selection)!, idx: "down" })}
+                    ?disabled=${this.#game.tokens.index(first(this.selection)!) === 0}
                   >
                     Move Down
                   </button>
                   <button
-                    @click=${() => this.#game.apply({ type: "token-reorder", id: this.selection[0], idx: "up" })}
-                    ?disabled=${this.#game.tokens.index(this.selection[0]) === this.#game.tokens.size - 1}
+                    @click=${() => this.#game.apply({ type: "token-reorder", id: first(this.selection)!, idx: "up" })}
+                    ?disabled=${this.#game.tokens.index(first(this.selection)!) === this.#game.tokens.size - 1}
                   >
                     Move Up
                   </button>
@@ -109,7 +110,7 @@ class App extends LitElement {
         @token-drop=${({ detail }: TokenDropEvent) => this.#game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
         @bg-drop=${({ detail }: BgDropEvent) => this.#game.set_bg(detail)}
         @token-select=${({ detail }: TokenSelectEvent) => {
-          this.selection = detail;
+          this.selection = new Set(detail);
         }}
         @game-event=${({ detail }: CustomEvent<GameEvent>) => this.#game.apply(detail)}
       ></bg-canvas>
@@ -192,7 +193,9 @@ class App extends LitElement {
     //@ts-ignore
     this.#game.addEventListener("game-event", this.#on_event);
     this.#game.addEventListener("updated", () => {
-      this.selection = this.selection.filter((id) => this.#game.tokens.has(id));
+      for (const id of this.selection) {
+        this.#game.tokens.has(id) || this.selection.delete(id);
+      }
       this.requestUpdate();
       this.canvas?.requestUpdate();
     });
