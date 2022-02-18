@@ -22,6 +22,11 @@ export class OrderedMap<K, V> {
 
     this.order.splice(idx, 1);
     this.map.delete(key);
+    this.map.forEach((val, key) => {
+      if (val >= idx) {
+        this.map.set(key, val - 1);
+      }
+    });
     return true;
   }
 
