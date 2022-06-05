@@ -2,12 +2,11 @@ import { GameEvent, StateSync } from "../game/game-events";
 import { DurableSignaler } from "./signaling";
 import { Status, GameClient } from "./client";
 import { proto_pair } from "./rtc-message-protocol";
-import { Game } from "../game/game";
 
 export class Server implements GameClient {
   signaler: DurableSignaler;
   get status(): Status {
-    return this.signaler.status === "connected" ? "connected" : "disconnected";
+    return "connected";
   }
   server = this;
   #event_writers: Set<WritableStreamDefaultWriter> = new Set();

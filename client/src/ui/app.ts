@@ -6,7 +6,6 @@ import { Client, GameClient } from "../net/client";
 import { BgDropEvent, Canvas, TokenDropEvent, TokenSelectEvent } from "./canvas";
 import "./buymeacoffee";
 import { Game } from "../game/game";
-import { Resource } from "../fs/resource-manager";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { max_p } from "../util/math";
 import { first } from "../util/iter";
