@@ -1,111 +1,101 @@
 import { GameEvent, StateSync } from "../game/game-events";
 import { DurableSignaler } from "./signaling";
-import { Status, GameClient } from "./client";
-import { proto_pair } from "./rtc-message-protocol";
+import { type Status, type Client, RichClient } from "./client";
+import { streams } from "./rtc/rtc-data-stream";
+import { Game } from "../game/game";
+import { resources } from "./rtc/rtc-resource-encoder";
 
-export class Server implements GameClient {
+export class Server {
   signaler: DurableSignaler;
-  get status(): Status {
-    return "connected";
-  }
-  server = this;
-  #event_writers: Set<WritableStreamDefaultWriter> = new Set();
-  #data_writers: Set<WritableStreamDefaultWriter> = new Set();
+  local_client: RichClient;
+  #clients: Set<RichClient> = new Set();
+  #game: Game;
 
-  private constructor(signaler: DurableSignaler) {
+  private constructor(signaler: DurableSignaler, game: Game) {
+    this.#game = game;
     this.signaler = signaler;
-    let { readable, writable } = new TransformStream({
-      start() {},
-      transform(chunk, controller) {
-        console.log("TF STREAM");
-        controller.enqueue(chunk);
-      },
-      flush() {},
-    });
+    let [client_side, server_side] = two_way_client();
 
-    let ev_read = readable.getReader();
-    let ev_write = writable.getWriter();
-
+    this.local_client = client_side;
+    this.#add_client(server_side);
     this.signaler.addEventListener("peer", async ({ detail: peer }) => {
-      let events = proto_pair(peer.events);
-      let data = proto_pair(peer.data);
+      let events = resources(streams(peer.events));
+      let data = resources(streams(peer.data));
 
-      const event_writer = events.writable.getWriter();
-      const data_writer = data.writable.getWriter();
+      let remote_client = new RichClient({
+        status: 'connected',
+        events,
+        data,
+        close: () => peer.close()
+      });
 
-      this.#event_writers.add(event_writer);
-      this.#data_writers.add(data_writer);
-
-      console.log("Getting state");
-      if (this.get_state) {
-        console.log("state", this.get_state());
-        event_writer.write(this.get_state());
-      }
-      console.log("writing images");
-      for (const [res_name, url] of this.get_images ? this.get_images() : []) {
-        console.log(res_name, url);
-        data_writer.write({
-          type: "file",
-          res_name,
-          contents: await (await fetch(url)).blob(),
-        });
-      }
-
-      // Loop for data events
-      (async () => {
-        let iter = events.readable.getReader();
-        let ev: any, done: boolean;
-        while (({ value: ev, done } = await iter.read()) && !done) {
-          // This returns a promise, but we won't await it because we don't want to cause
-          // deadlock with writers
-          await ev_write.write({ author: event_writer, ev });
-        }
-        this.#event_writers.delete(event_writer);
-      })();
-
-      (async () => {
-        let iter = data.readable.getReader();
-        let ev: any, done: boolean;
-        while (({ value: ev, done } = await iter.read()) && !done) {
-          // This returns a promise, but we won't await it because we don't want to cause
-          // deadlock with writers
-          await ev_write.write({ author: event_writer, ev });
-        }
-        this.#data_writers.delete(data_writer);
-      })();
+      this.#add_client(remote_client);
     });
+  }
 
-    // Handles the events in order
-    (async () => {
-      let ev: any, done: boolean;
-      let author: any;
-      while (
-        ({
-          value: { author, ev },
-          done,
-        } = await ev_read.read()) &&
-        !done
-      ) {
-        await this.send_event(ev, author);
-        this.on_event(ev);
+  #add_client(client: RichClient) {
+    console.log("added client", client);
+    this.#clients.add(client);
+
+    client.on_event = async (ev) => {
+      await Promise.all(
+        Array.from(this.#clients)
+            .filter((w) => w !== client)
+            .map((w) => w.send(ev))
+      )
+    };
+
+    client.send(this.get_state!());
+
+    client.handle('get_image', ({id}) => {
+      return {
+        data: new Blob()
       }
-    })();
+    })
   }
 
-  async send_event(ev: GameEvent, author?: WritableStreamDefaultWriter) {
-    let sink = ev.type === "file" ? this.#data_writers : this.#event_writers;
-    await Promise.all(
-      Array.from(sink)
-        .filter((w) => w !== author)
-        .map((w) => w.write(ev))
-    );
-  }
 
-  static async establish(): Promise<Server> {
-    return new Server(await DurableSignaler.establish(new URL("wss://battlegrid-signaling.herokuapp.com/")));
+  static async establish(game: Game): Promise<Server> {
+    return new Server(await DurableSignaler.establish(new URL("wss://battlegrid-signaling.herokuapp.com/")), game);
   }
 
   on_event: (ev: any) => any = () => {};
-  get_state?: () => StateSync;
+  get_state(): StateSync {
+    return this.#game.get_state();
+  };
   get_images?: () => IterableIterator<[string, string]>;
+}
+
+
+const two_way_client = (): [RichClient, RichClient] => {
+    let client_events = new TransformStream();
+    let client_data = new TransformStream();
+    let server_events = new TransformStream();
+    let server_data = new TransformStream();
+
+    return [new RichClient({
+      status: 'connected',
+      events: {
+        readable: server_events.readable,
+        writable: client_events.writable
+      },
+      data: {
+        readable: server_data.readable,
+        writable: client_data.writable
+      },
+      close() {}
+    }),
+
+    new RichClient({
+      status: 'connected',
+      events: {
+        readable: client_events.readable,
+        writable: server_events.writable,
+      },
+      data: {
+        readable: client_data.readable,
+        writable: server_data.writable,
+      },
+      close() {}
+    })]
 }

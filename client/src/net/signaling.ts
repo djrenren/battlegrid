@@ -1,4 +1,4 @@
-import { Peer } from "./peer";
+import { Peer } from "./rtc/peer";
 
 export class DurableSignaler extends EventTarget {
   #ident: string;

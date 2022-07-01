@@ -1,7 +1,8 @@
 import { Resource } from "../fs/resource-manager";
+import { ResourceEvent } from "../net/rtc/rtc-resource-encoder";
 import { Point } from "../util/math";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | FileResponse | Background | TokenReorder | Callout;
+export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | Background | TokenReorder | Callout | ResourceEvent;
 
 export type TokenAdded = {
   type: "token-added";
@@ -62,12 +63,6 @@ export type Background = {
   res?: Resource;
 };
 
-export type FileResponse = {
-  type: "file";
-  res_name: string;
-  contents: Blob;
-};
-
 export const uuidv4 = () => {
   // @ts-ignore
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -75,4 +70,7 @@ export const uuidv4 = () => {
   );
 };
 
-export const game_event = (detail: GameEvent): CustomEvent<GameEvent> => new CustomEvent("game-event", { detail });
+export const game_event = (detail: GameEvent): CustomEvent<GameEvent> => {
+  console.log("GAME_EVENT", detail);
+  return new CustomEvent("game-event", { detail });
+}

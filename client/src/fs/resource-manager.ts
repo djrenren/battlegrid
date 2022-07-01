@@ -1,6 +1,6 @@
-import { FileResponse, uuidv4 } from "../game/game-events";
-import { proto_pair } from "../net/rtc-message-protocol";
+import { uuidv4 } from "../game/game-events";
 import { LocalOrRemoteImage } from "../util/files";
+import {ResourceEvent as FileResponse} from '../net/rtc/rtc-resource-encoder';
 
 type FileRequest = {
   type: "file-request";

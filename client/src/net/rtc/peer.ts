@@ -1,7 +1,6 @@
 type Signal = any;
 
 const PEER_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-type Message = string | Blob | ArrayBuffer | ArrayBufferView;
 
 export class Peer {
   /** Allows the Peer to communicate signals outwards */
@@ -35,6 +34,14 @@ export class Peer {
       type: "offer",
       offer,
     });
+  }
+
+  close () {
+    if (this.#rtc_peer.localDescription !== null) {
+      this.#rtc_peer.onicecandidate = null;
+      this.#rtc_peer.onconnectionstatechange = null;
+      this.#rtc_peer.close();
+    }
   }
 
   /** Ensures the underlying peer is in a clean state. This is a no-op if it already is */

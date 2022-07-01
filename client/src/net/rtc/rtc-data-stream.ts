@@ -1,12 +1,17 @@
-type DCReadProto = { onmessage(_: { data: RTCMessage }): void; close(): void } & EventTarget;
-type DCWriteProto = { write(_: RTCMessage): void; close(): void } & EventTarget;
-
 export type RTCMessage = string | ArrayBuffer | ArrayBufferView | Blob;
 
-export const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
+export const streams = (dc: RTCDataChannel): ReadableWritablePair<RTCMessage, RTCMessage> => ({
+  readable: read_stream(dc),
+  writable: write_stream(dc),
+})
+
+const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
   return new ReadableStream({
     start(controller) {
-      dc.onmessage = ({ data }) => controller.enqueue(data);
+      dc.onmessage = ({ data }) => {
+        console.log("RECEIVED", data);
+        controller.enqueue(data);
+      }
       const onclose = () => {
         controller.close();
         dc.removeEventListener("close", onclose);
@@ -20,7 +25,7 @@ export const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
   });
 };
 
-export const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
+const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
   let resume: (() => void) | undefined;
   return new WritableStream(
     {

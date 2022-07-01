@@ -26,9 +26,9 @@ export class Game extends EventTarget {
     if (img instanceof Blob) {
       this.dispatchEvent(
         game_event({
-          type: "file",
-          res_name: res!,
-          contents: img,
+          type: "resource",
+          name: res!,
+          data: img,
         })
       );
     }
@@ -51,9 +51,9 @@ export class Game extends EventTarget {
     if (img instanceof Blob) {
       this.dispatchEvent(
         game_event({
-          type: "file",
-          res_name: res,
-          contents: img,
+          type: "resource",
+          name: res,
+          data: img,
         })
       );
     }
@@ -122,8 +122,8 @@ export class Game extends EventTarget {
 
         this.tokens.set_index(ev.id, target);
         break;
-      case "file":
-        this.resources.register(ev.contents, ev.res_name);
+      case "resource":
+        this.resources.register(ev.data, ev.name);
         break;
       case "bg":
         if (this.#bg) {

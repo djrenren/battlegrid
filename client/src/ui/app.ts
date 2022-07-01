@@ -1,14 +1,15 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { Server } from "../net/server";
-import { GameEvent, TokenData } from "../game/game-events";
-import { Client, GameClient } from "../net/client";
+import { GameEvent, } from "../game/game-events";
+import { RichClient } from "../net/client";
 import { BgDropEvent, Canvas, TokenDropEvent, TokenSelectEvent } from "./canvas";
 import "./buymeacoffee";
 import { Game } from "../game/game";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { max_p } from "../util/math";
 import { first } from "../util/iter";
+import { RTCClient } from "../net/rtc/rtc-client";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -22,7 +23,10 @@ class App extends LitElement {
   canvas?: Canvas;
 
   @state()
-  client?: GameClient;
+  client?: RichClient;
+
+  @state()
+  server?: Server;
 
   @state()
   selection: Set<string> = new Set();
@@ -95,7 +99,7 @@ class App extends LitElement {
             ? html`<img src="assets/loading.svg" />`
             : !this.client
             ? html`<button @click=${this.#host}>Host</button>`
-            : html`<div>${this.client.server ? `hosting` : this.client.status}</div>`}
+            : html`<div>${this.server ? `hosting` : this.client.status}</div>`}
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
         </div>
       </section>
@@ -120,7 +124,7 @@ class App extends LitElement {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has("client")) {
-      document.title = `BattleGrid${this.client && this.client.status === "connected" ? (this.client.server ? "- Hosting" : "- Connected") : ""}`;
+      document.title = `BattleGrid${this.client && this.client.status === "connected" ? (this.server ? "- Hosting" : "- Connected") : ""}`;
     }
   }
 
@@ -203,16 +207,20 @@ class App extends LitElement {
     let game_id = params.get("game");
     if (!game_id) return {};
 
-    let c = new Client(game_id);
-    c.on_event = this.#incoming_event;
-    c.on_status = () => this.requestUpdate("client");
+    let rtc_client = new RTCClient(game_id);
+    let c = new RichClient(rtc_client);
+    c.on_event = (ev) => this.#game.local_apply(ev as any);
+    rtc_client.on_status = () => {
+      this.requestUpdate("client");
+      console.log("STATUS UPDATE", rtc_client.status);
+    }
     this.client = c;
-    await c.connect();
+    await rtc_client.connect();
   }
 
   #try_again = () => {
-    if (this.client && !this.client.server) {
-      (this.client as Client).connect();
+    if (this.client && !this.server) {
+      //(this.client. as Client).connect();
     }
   };
 
@@ -224,14 +232,11 @@ class App extends LitElement {
   #host = async () => {
     try {
       this.host_pending = true;
-      let srv = await Server.establish();
+      let srv = await Server.establish(this.#game);
       this.host_pending = false;
-      this.client = srv;
-      //@ts-ignore
-      srv.on_event = this.#incoming_event;
-      srv.get_state = this.#game.get_state;
-      srv.get_images = () => this.#game.resources.all();
-
+      this.server = srv;
+      this.client = srv.local_client;
+      this.client.on_event = (ev) => this.#game.local_apply(ev);
       window.history.pushState({}, "", "?game=" + srv.signaler.ident);
       navigator.clipboard.writeText(window.location.toString());
     } catch (e) {
@@ -244,6 +249,6 @@ class App extends LitElement {
   };
 
   #on_event = (ev: CustomEvent<GameEvent>) => {
-    this.client?.send_event(ev.detail);
+    this.client?.send(ev.detail);
   };
 }
