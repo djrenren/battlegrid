@@ -40,4 +40,13 @@ export default [
       format: "es",
     },
   },
+  {
+    plugins,
+    input: "src/net/resources/service-worker.ts",
+    output: {
+      sourcemap: true,
+      file: "build/service-worker.js",
+      format: "es",
+    },
+  },
 ];

@@ -1,74 +1,27 @@
 /// @ts-ignore
 import * as WebRTC from "wrtc";
+import { webcrypto } from "node:crypto";
+globalThis.crypto = webcrypto as any;
 for (var member in WebRTC) {
   /// @ts-ignore
   globalThis[member] = WebRTC[member];
 }
 
-import { DurableSignaler } from "./signaling";
+import "web-streams-polyfill";
+import "abortcontroller-polyfill";
+import { Signaler } from "./signaling";
+import { hasUncaughtExceptionCaptureCallback } from "node:process";
+
 /**
  * @jest-environment jsdom
  */
 
-describe(DurableSignaler, () => {
-  it("notifies when disconnected", async () => {
-    let x = await DurableSignaler.establish(new URL("ws://localhost:8080"));
+describe(Signaler, () => {
+  it("negotiates a connection", async () => {
+    let [x, y] = await Promise.all([Signaler.establish(new URL("ws://localhost:8080")), Signaler.establish(new URL("ws://localhost:8080"))]);
 
-    return new Promise((resolve, reject) => {
-      x.addEventListener("status", (ev) => {
-        try {
-          expect(ev.detail).toBe("disconnected");
-        } catch (e) {
-          reject(e);
-        }
-        resolve(null);
-      });
+    let peer = await x.initiate(y.peer_id);
 
-      x._disconnect();
-    });
-  });
-
-  it("reconnects after loss", async () => {
-    let x = await DurableSignaler.establish(new URL("ws://localhost:8080/"));
-
-    return new Promise((resolve, reject) => {
-      x.addEventListener("status", ({ detail: status }) => {
-        if (status === "connected") {
-          resolve(null);
-        }
-      });
-
-      x._disconnect();
-    });
-  });
-
-  it("notifies on close", async () => {
-    let x = await DurableSignaler.establish(new URL("ws://localhost:8080/"));
-
-    return new Promise((resolve, reject) => {
-      x.addEventListener("status", ({ detail: status }) => {
-        if (status === "closed") {
-          resolve(null);
-        }
-      });
-
-      x.close();
-    });
-  });
-
-  it("supports suggested ids", async () => {
-    let ident = "h4x0rz";
-    let x = await DurableSignaler.establish(new URL("ws://localhost:8080"), ident);
-
-    expect(x.ident).toBe(ident);
-  });
-
-  it("does not allow duplicate ids", async () => {
-    expect.assertions(1);
-
-    let ident = "duping";
-    let x = await DurableSignaler.establish(new URL("ws://localhost:8080"), ident);
-
-    await expect(DurableSignaler.establish(new URL("ws://localhost:8080"), ident)).rejects.toBeInstanceOf(CloseEvent);
+    expect(peer.rtc.iceConnectionState).toBe("connected");
   });
 });

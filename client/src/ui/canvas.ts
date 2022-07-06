@@ -1,14 +1,28 @@
 import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import { abs_p, add_c, add_p, BBox, clamp_p, div_c, eq_p, gt_p, intersect, lt_p, max_p, min_p, mul_c, mul_p, Point, sub_p } from "../util/math";
+import {
+  abs_p,
+  add_c,
+  add_p,
+  BBox,
+  clamp_p,
+  div_c,
+  eq_p,
+  intersect,
+  max_p,
+  min_p,
+  mul_c,
+  Point,
+  sub_p,
+} from "../util/math";
 import { is_mouse_down, is_primary_down, stop_ev, window_ev } from "../util/events";
 import { Viewport } from "./viewport";
 import { getImage, LocalOrRemoteImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
-import { Resource, ResourceManager, URLString } from "../fs/resource-manager";
 import { Game } from "../game/game";
 import { OrderedMap } from "../util/orderedmap";
+import { map } from "../util/iter";
 
 const PIXEL_SCALE = 3;
 const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
@@ -20,6 +34,10 @@ const ROTATE_SIZE = HANDLE_SIZE / 2;
 const PADDING = 20 * PIXEL_SCALE;
 const CALLOUT_DIM = GRID_SIZE;
 
+type SelectionBox = {
+  index: number;
+  bbox: BBox;
+};
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -33,9 +51,6 @@ export class Canvas extends LitElement {
 
   @property({ attribute: false })
   readonly tokens: OrderedMap<string, TokenData> = new OrderedMap();
-
-  @property({ attribute: false })
-  readonly resources?: ResourceManager;
 
   @property({ attribute: false })
   readonly selection: Set<string> = new Set();
@@ -101,6 +116,10 @@ export class Canvas extends LitElement {
             <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
               <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
             </pattern>
+            <pattern id="loading" patternUnits="userSpaceOnUse" width="1" height="1">
+              <rect width="1" height="1" fill="white"></rect>
+              <image href="/assets/loading.svg" width="1" height="1" />
+            </pattern>
           </defs>
           <svg x=${PADDING} y=${PADDING} width=${width} height=${height} id="surface">
             <rect class="shadow" width="100%" height="100%" fill="white" rx=${CANVAS_RADIUS}></rect>
@@ -115,31 +134,38 @@ export class Canvas extends LitElement {
                   this.tokens.values(),
                   (t) => t.id,
                   (t, index) => {
-                    const url = this.resources?.get(t.res);
                     const [width, height] = add_c(t.dim, -LINE_WIDTH);
                     const [x, y] = add_c(t.loc, LINE_WIDTH / 2);
                     return html`
-                      <svg
-                        viewBox="0 0 1 1"
-                        x=${x}
-                        y=${y}
-                        width=${width}
-                        height=${height}
-                        fill=${url ? "transparent" : "white"}
-                        preserveAspectRatio="none"
-                      >
+                      <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill="transparent" preserveAspectRatio="none">
                         <image
                           id=${t.id}
                           class="token"
                           width="1"
                           height="1"
-                          href=${url || "assets/loading.svg"}
+                          href=${t.url}
                           style=${`transform: rotate(${t.r}deg)`}
-                          preserveAspectRatio=${url ? "none" : ""}
                           image-rendering="optimizeSpeed"
+                          preserveAspectRatio="none"
                           @pointerdown=${this.#focus}
+                          @load=${mark_loaded}
                         ></image>
+                        <rect width="1" height="1" class="loading"></rect>
                       </svg>
+
+                      ${sbbox?.index === index
+                        ? svg`<rect
+                            class="selection-drag-target"
+                            x=${sbbox.bbox.start[0]}
+                            y=${sbbox.bbox.start[1]}
+                            width=${sbbox.bbox.end[0] - sbbox.bbox.start[0]}
+                            height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
+                            fill="transparent"
+                            @pointerdown=${this.#selection_drag_start}
+                            @pointermove=${this.#selection_drag}
+                            @pointerup=${this.#selection_drag_end}
+                        ></rect>`
+                        : null}
                     `;
                   }
                 )}
@@ -181,21 +207,14 @@ export class Canvas extends LitElement {
               ? svg`
             <svg
               id="selection"
+              x=${sbbox.bbox.start[0]}
+              y=${sbbox.bbox.start[1]}
+              width=${sbbox.bbox.end[0] - sbbox.bbox.start[0]}
+              height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
               @pointerdown=${this.#selection_drag_start}
               @pointermove=${this.#selection_drag}
-              @pointerup=${this.#selection_drag_end}
-              @click=${this.#selection_click}
-              x=${sbbox.start[0]}
-              y=${sbbox.start[1]}
-              width=${sbbox.end[0] - sbbox.start[0]}
-              height=${sbbox.end[1] - sbbox.start[1]}
-            >
-            <rect
-                class="selection-box"
-                width="100%"
-                height="100%"
-                fill="transparent"
-            ></rect>
+              @pointerup=${this.#selection_drag_end}>
+              <rect class="selection-box" width="100%" height="100%"  ></rect>
             ${
               selected
                 ? svg`
@@ -213,6 +232,7 @@ export class Canvas extends LitElement {
             <rect class="handle rn re" x="100%"></rect>
             <rect class="handle rs rw" y="100%"></rect>
             <rect class="handle rs re" x="100%" y="100%"></rect>
+            </g>
             </svg>`
                 : null
             }`
@@ -341,8 +361,6 @@ export class Canvas extends LitElement {
       end: add_p(loc, dim),
     };
 
-    console.log("box", box);
-
     const sel = this.tokens.order
       .filter((t) =>
         intersect(box, {
@@ -352,64 +370,33 @@ export class Canvas extends LitElement {
       )
       .map((t) => t.id);
 
-    console.log(sel);
     this.#sbox = undefined;
     this.dispatchEvent(window_ev("token-select", sel));
     this.requestUpdate();
   }
 
-  #selection_bbox(): BBox | undefined {
+  #selection_bbox(): SelectionBox | undefined {
     if (this.selection.size === 0) return;
     const s = Array.from(this.selection, (t) => this.tokens.get(t)).filter((t) => t) as TokenData[];
+    const index = Math.max(...map(this.selection.values(), (id) => this.tokens.index(id)!));
     let start = s[0]!.loc;
     let end = add_p(s[0]!.loc, s[0]!.dim);
+
     s.forEach((t) => {
       start = min_p(start, t.loc);
       end = max_p(end, add_p(t.loc, t.dim));
     });
 
-    return { start, end };
+    return { index, bbox: { start, end } };
   }
 
   #drag_offset?: Point;
   #selection_drag_start = (ev: PointerEvent) => {
     if (!is_primary_down(ev)) return;
+    const svg_coord = this.#screen_to_svg(ev) as Point;
     stop_ev(ev);
     (ev.target as SVGElement).setPointerCapture(ev.pointerId);
-    this.#drag_offset = this.#screen_to_svg(ev) as Point;
-  };
-
-  /*
-    Because our selection box is drawn above the selected tokens,
-    we have to detect what token they *would have* clicked on.
-    SVG doesn't help us here so it's quite manual.
-
-    CONCERN: This *could* get slow with lots of tokens
-  */
-  #selection_click = (ev: PointerEvent) => {
-    stop_ev(ev);
-    if (!ev.shiftKey && !ev.ctrlKey) return;
-
-    let max_index = -1;
-    let selected: string | undefined;
-    const loc = this.#screen_to_svg(ev);
-    for (const t of this.tokens.values()) {
-      const token = this.tokens.get(t.id)!;
-      const idx = this.tokens.index(t.id) ?? -1;
-      if (idx > max_index && gt_p(loc, token.loc) && lt_p(sub_p(loc, token.loc), token.dim)) {
-        max_index = idx;
-        selected = t.id;
-      }
-    }
-
-    if (selected) {
-      this.dispatchEvent(
-        window_ev(
-          "token-select",
-          [...this.selection].filter((s) => s !== selected || !this.selection.has(selected))
-        )
-      );
-    }
+    this.#drag_offset = svg_coord;
   };
 
   #selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point, r: 0 };
@@ -454,7 +441,8 @@ export class Canvas extends LitElement {
       r = Math.round(deg / 90) * 90 - (selection.r % 360);
     }
 
-    if (classes.contains("selection-box")) {
+    if (classes.contains("selection-drag-target")) {
+      console.log("move");
       move = sub_p(grid_loc, this.#drag_offset!).map(nearest_corner) as Point;
     } else {
       // Don't let top-left drags cause movement pas the dimensions
@@ -631,10 +619,11 @@ export class Canvas extends LitElement {
       stroke: var(--selection-color);
       stroke-width: 1px;
       filter: drop-shadow(0px 0px 2px var(--selection-color));
+      fill: transparent;
     }
 
-    .selection-box:hover {
-      cursor: move;
+    .selection-box {
+      pointer-events: none !important;
     }
 
     .rn,
@@ -650,6 +639,11 @@ export class Canvas extends LitElement {
       stroke-width: 1px;
       fill: var(--selection-color);
       stroke: white;
+    }
+
+    .selection-drag-target {
+      pointer-events: fill;
+      cursor: move;
     }
 
     rect.handle {
@@ -700,6 +694,24 @@ export class Canvas extends LitElement {
     .token {
       transform-box: fill-box;
       transform-origin: center;
+      fill: transparent;
+    }
+
+    .token + .loading {
+      fill: url(#loading);
+      pointer-events: none;
+    }
+
+    .token.loaded + .loading {
+      fill: transparent;
+    }
+
+    #selection {
+      pointer-events: none;
+    }
+
+    #selection * {
+      pointer-events: auto;
     }
   `;
 }
@@ -719,3 +731,4 @@ declare global {
 
 const nearest_corner = (n: number) => Math.round(n / GRID_SIZE) * GRID_SIZE;
 const occupied_cell = (n: number) => n - (n % GRID_SIZE);
+const mark_loaded = (ev: any) => ev.target.classList.add("loaded");

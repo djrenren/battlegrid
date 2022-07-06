@@ -1,15 +1,24 @@
-import { Resource } from "../fs/resource-manager";
-import { ResourceEvent } from "../net/rtc/rtc-resource-encoder";
+import { PeerId } from "../net/peer";
 import { Point } from "../util/math";
+import { SerializedTabletop } from "./tabletop";
 
-export type GameEvent = TokenAdded | TokenManipulated | TokenRemoved | GridResized | StateSync | Background | TokenReorder | Callout | ResourceEvent;
+export type GameEvent = { remote?: PeerId } & (
+  | TokenAdded
+  | TokenManipulated
+  | TokenRemoved
+  | GridResized
+  | StateSync
+  | Background
+  | TokenReorder
+  | Callout
+);
 
 export type TokenAdded = {
   type: "token-added";
   id: string;
   loc: Point;
   dim: Point;
-  res: Resource;
+  url: string;
 };
 
 export type TokenManipulated = {
@@ -32,12 +41,10 @@ export type GridResized = {
   dim: Point;
 };
 
-export type StateSync = {
+export interface StateSync {
   type: "state-sync";
-  tokens: TokenData[];
-  grid_dim: Point;
-  bg?: Resource;
-};
+  tabletop: SerializedTabletop;
+}
 
 export type Callout = {
   type: "callout";
@@ -53,14 +60,14 @@ export type TokenReorder = {
 export type TokenData = {
   loc: Point;
   dim: Point;
-  res: Resource;
+  url: string;
   id: string;
   r: number; // degrees!
 };
 
 export type Background = {
   type: "bg";
-  res?: Resource;
+  url: string | null;
 };
 
 export const uuidv4 = () => {
@@ -71,6 +78,5 @@ export const uuidv4 = () => {
 };
 
 export const game_event = (detail: GameEvent): CustomEvent<GameEvent> => {
-  console.log("GAME_EVENT", detail);
   return new CustomEvent("game-event", { detail });
-}
+};

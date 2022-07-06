@@ -22,6 +22,7 @@ export const abs_p = (a: Point): Point => [Math.abs(a[0]), Math.abs(a[1])];
 export const eq_p = (a: Point, b: Point): boolean => a[0] === b[0] && a[1] === b[1];
 
 export type BBox = { start: Point; end: Point };
+export const contains = (a: BBox, p: Point): boolean => lt_p(a.start, p) && lt_p(p, a.end);
 
 export const intersect = (a: BBox, b: BBox): boolean =>
   !(b.start[0] > a.end[0] || b.end[0] < a.start[0] || b.start[1] > a.end[1] || b.end[1] < a.start[1]);

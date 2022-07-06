@@ -1,133 +1,85 @@
-import { type Protocol as P } from "./protocol";
+import { Game } from "../game/game";
+import { GameEvent } from "../game/game-events";
+import { consume, iter, pipe } from "../util/streams";
+import { Peer, PeerId } from "./peer";
+import { Signaler } from "./signaling";
+import { RESOURCE_PROTOCOL, request } from "./resources/protocol";
+import { streams } from "../util/rtc";
+import { ResourceId, ResourceMessage, ResourceRequest } from "./resources/service-worker-protocol";
 
-export type Status = "disconnected" | "connecting" | "connected" | "error";
+export class Client extends EventTarget {
+  #game: Game;
+  #peer: Peer;
+  #game_id: PeerId
 
-export interface Client {
-    get status(): Status;
-    readonly events: ReadableWritablePair,
-    readonly data: ReadableWritablePair,
-    close(): void;
-}
+  get status() {
+    // TODO: Implement statuses
+    return this.#peer.rtc.iceConnectionState;
+  }
 
+  private constructor(game_id: PeerId, game: Game, peer: Peer) {
+    super();
+    this.#game = game;
+    this.#peer = peer;
+    this.#game_id = game_id;
+    this.#configure_peer();
 
-interface Descriptor<I, O> {
-    request: I,
-    response?: O,
-}
-
-type RespType<Protocol, K extends keyof Protocol> = Protocol[K] extends Descriptor<any, infer O> ? O : never;
-type ReqType<Protocol, K extends keyof Protocol> = Protocol[K] extends Descriptor<infer I, any> ? I : never;
-type Event<T, Data> = {
-    type: T;
-} & Data;
-
-type Request<Protocol, K extends keyof Protocol> = {
-    header?: {
-        request: string,
-    }
-    data: Event<K, ReqType<Protocol, K>>
-};
-
-type Response<Protocol, K extends keyof Protocol> = {
-    header: {
-        response_to: string,
-    }
-    data: Event<K, ReqType<Protocol, K>>
-};
-
-export type Message<Protocol=P> = Request<Protocol, keyof Protocol> | Response<Protocol, keyof Protocol>;
-
-export class RichClient<Protocol=P> {
-    #client: Client;
-    #handlers: Map<string, (_: any) => any> = new Map();
-    #open_requests: Map<string, {resolve: (_: any) => void, reject: (_: any) => void, timeout: ReturnType<typeof setTimeout>}> = new Map();
-    #events_writer: WritableStreamDefaultWriter<Message<Protocol>>;
-    #data_writer: WritableStreamDefaultWriter<Message<Protocol>>;
-
-    get status() {
-        return this.#client.status
-    }
-
-    constructor(client: Client) {
-        this.#client = client;
-        this.#events_writer = client.events.writable.getWriter();
-        this.#data_writer = client.data.writable.getWriter();
-
-        this.#start_read_loop(client.events.readable.getReader());
-        this.#start_read_loop(client.data.readable.getReader());
-    }
-
-
-    send<K extends keyof Protocol>(event: Event<K, ReqType<Protocol, K>>, slow?: boolean) {
-        let stream = slow ? this.#data_writer: this.#events_writer;
-        stream.write({
-            data: event
+    navigator.serviceWorker.onmessage = async (ev: MessageEvent<ResourceRequest>) => {
+      let id = ev.data.id as ResourceId;
+      console.log("CLIENT ATTEMPTING TO FETCH", this.#peer.events_dc.readyState);
+      await this.#peer.datachannel(id, {protocol: RESOURCE_PROTOCOL})
+        .then(streams<ArrayBuffer, ArrayBuffer>)
+        .then(request)
+        .then(async ({blob}) => {
+          console.log("COMMUNICATING WITH SERVICE WORKER");
+          navigator.serviceWorker.controller!.postMessage({type: 'found', id, blob} as ResourceMessage)
+        })
+        .catch(e => {
+          console.error("Error fetching resource: ", e);
+          navigator.serviceWorker.controller!.postMessage({type: 'notfound', id, error: e} as ResourceMessage)
         })
     }
 
-    async request<K extends keyof Protocol>(event: Event<K, ReqType<Protocol, K>>, slow?: boolean): Promise<RespType<Protocol, K>> {
-        let stream = slow ? this.#data_writer: this.#events_writer;
+  }
 
-        let uuid = crypto.randomUUID();
-        stream.write({
-            header: {request: uuid},
-            data: event as any
-        });
+  async reconnect() {
+    this.#peer = await Client.#get_peer(this.#game_id);
+    this.#configure_peer();
+  }
 
-        return await new Promise((resolve, reject) => {
-            let timeout = setTimeout(() => {
-                this.#open_requests.delete(uuid);
-                reject({error: 'request timeout'});
-            }, 1000);
+  #configure_peer() {
+    console.log("configuring peer", this.#peer.events_dc.readyState);
+    consume(this.#peer.events, (ev) => {
+      return this.#game.apply(ev)
+    });
 
-            this.#open_requests.set(uuid, {
-                resolve(value) {
-                    clearTimeout(timeout)
-                    resolve(value);
-                },
-                reject,
-                timeout,
-            })
-        });
+    let forward_events = ({detail: ev}: CustomEvent<GameEvent>) => {
+      console.log("CALLBACK", ev);
+      if (ev.remote) return;
+      this.#peer.write_event(ev);
     }
 
-    handle<T extends keyof Protocol & string>(type: T, func: (d: ReqType<Protocol, T>) => RespType<Protocol, T>) {
-        this.#handlers.set(type, func);
-    }
+    this.#game.addEventListener('game-event', forward_events);
 
-    #start_read_loop(reader: ReadableStreamDefaultReader) {
-        (async () => {
-            let value, done;
-            while (({value, done} = await reader.read()) && !done) {
-                console.log("RICH CLIENTS SAW", value);
-                this.#handle_incoming(value);
-            }
-        })()
-    }
+    this.#peer.events_dc.addEventListener('close', () => {
+      this.#game.removeEventListener('game-event', forward_events as any);
+    });
+  }
 
-    #handle_incoming(event: Message<Protocol>) {
-        let header = event.header;
-        if (header && 'response_to' in header) {
-            let item = this.#open_requests.get(header.response_to);
-            if (!item) {
-                console.error("Received response to unknown request: ", event);
-                return;
-            }
+  static async establish(game_id: PeerId, game: Game) {
+    console.log("ESTABLISHING CLIENT");
+    return new Client(game_id, game, await this.#get_peer(game_id));
+  }
 
-            return item.resolve(event.data);
-        }
+  static async #get_peer(game_id: PeerId) {
+    let signaler = await Signaler.establish();
+    let peer = await signaler.initiate(game_id);
+    signaler.shutdown();
+    return peer;
+  }
 
-        if (header && header.request) {
-            const handler = this.#handlers.get(header.request);
-            handler && handler(event.data);
-        }
-
-        this.on_event(event.data);
-    }
-
-    close() {
-        this.#client.close();
-    }
-
-    on_event<K extends keyof Protocol>(ev: Event<K, ReqType<Protocol, K>>) {};
+  shutdown() {
+    this.#peer.rtc.close();
+    navigator.serviceWorker.onmessage = null;
+  }
 }

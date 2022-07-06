@@ -1,45 +1,47 @@
-import { Resource, ResourceManager, URLString } from "../fs/resource-manager";
+import { ResourceMessage } from "../net/resources/service-worker-protocol";
+import { EventEmitter } from "../util/events";
 import { LocalOrRemoteImage } from "../util/files";
 import { Point } from "../util/math";
-import { OrderedMap } from "../util/orderedmap";
-import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "./game-events";
+import { consume } from "../util/streams";
+import { GameEvent, game_event, TokenData } from "./game-events";
+import { default_tabletop, deserialize_tbt } from "./tabletop";
 
 const CALLOUT_TIMER = 1500;
-export class Game extends EventTarget {
-  tokens: OrderedMap<string, TokenData> = new OrderedMap();
-  grid_dim: Point = [30, 20];
-  #bg?: Resource;
-  resources = new ResourceManager();
-  callouts: Set<Point> = new Set();
 
-  get bg(): string | null {
-    return this.#bg ? this.resources.get(this.#bg) : null;
+type EventMap = {
+  "game-event": CustomEvent<GameEvent>;
+};
+export class Game extends EventTarget implements EventEmitter<EventMap> {
+  tabletop = default_tabletop();
+  callouts = new Set<Point>();
+
+  #event_writer: WritableStreamDefaultWriter<GameEvent>;
+
+  constructor() {
+    super();
+
+    // Use a stream so that game event processing is allowed to be async
+    // but remains ordered.
+    const events = new TransformStream<GameEvent, GameEvent>();
+    this.#event_writer = events.writable.getWriter();
+
+    consume(events.readable, (ev) => this.#handle_event(ev));
   }
 
-  set_bg(img: LocalOrRemoteImage | undefined) {
-    const res = img ? this.resources.register(img) : undefined;
+  async set_bg(img: LocalOrRemoteImage | undefined) {
+    const url = img ? await this.#register_resource(img) : null;
     this.apply({
       type: "bg",
-      res,
+      url,
     });
-
-    if (img instanceof Blob) {
-      this.dispatchEvent(
-        game_event({
-          type: "resource",
-          name: res!,
-          data: img,
-        })
-      );
-    }
   }
 
-  add_token(img: LocalOrRemoteImage, t: Omit<TokenData, "res" | "id">) {
-    const id = uuidv4();
-    const res = this.resources.register(img);
+  async add_token(img: LocalOrRemoteImage, t: Omit<TokenData, "url" | "id">) {
+    const id = crypto.randomUUID();
+    const url = await this.#register_resource(img);
     const token = {
       id,
-      res,
+      url,
       ...t,
     };
 
@@ -47,112 +49,6 @@ export class Game extends EventTarget {
       type: "token-added",
       ...token,
     });
-
-    if (img instanceof Blob) {
-      this.dispatchEvent(
-        game_event({
-          type: "resource",
-          name: res,
-          data: img,
-        })
-      );
-    }
-  }
-
-  local_apply(ev: GameEvent) {
-    console.log("APPLYING!");
-    switch (ev.type) {
-      case "token-manipulated":
-        for (let t of ev.tokens) {
-          let ex_token = this.tokens.get(t.id);
-          if (!ex_token) {
-            console.error("Update received for nonexistant token", t.id);
-            return;
-          }
-          Object.assign(ex_token, { dim: t.dim, loc: t.loc, r: t.r });
-        }
-        break;
-
-      case "token-added":
-        let token = { id: ev.id, dim: ev.dim, loc: ev.loc, res: ev.res, r: 0 };
-        this.tokens.add(ev.id, token);
-        break;
-      case "grid-resized":
-        this.grid_dim = ev.dim;
-        break;
-      case "token-removed":
-        for (let id of ev.ids) {
-          const rem_token = this.tokens.get(id);
-          if (!rem_token) {
-            console.error("Tried to remove nonexistant token", id);
-            return;
-          }
-          this.resources.delete(rem_token.res);
-          this.tokens.delete(rem_token.id);
-        }
-
-        break;
-      case "state-sync":
-        console.log("applying #tokens", ev.tokens);
-        this.tokens = new OrderedMap();
-        for (const t of ev.tokens) {
-          this.tokens.add(t.id, t);
-        }
-        this.grid_dim = ev.grid_dim;
-        this.#bg = ev.bg;
-        break;
-
-      case "token-reorder":
-        const idx = this.tokens.index(ev.id);
-        if (idx === undefined) {
-          console.error("Tried to reorder non-existant token", ev.id);
-          return;
-        }
-
-        let target;
-        if (ev.idx === "top") {
-          target = this.tokens.size - 1;
-        } else if (ev.idx === "bottom") {
-          target = 0;
-        } else if (ev.idx === "up") {
-          target = Math.min(this.tokens.size - 1, idx + 1);
-        } else {
-          target = Math.max(0, idx - 1);
-        }
-
-        this.tokens.set_index(ev.id, target);
-        break;
-      case "resource":
-        this.resources.register(ev.data, ev.name);
-        break;
-      case "bg":
-        if (this.#bg) {
-          this.resources.delete(this.#bg);
-        }
-        this.#bg = ev.res;
-        break;
-
-      case "callout":
-        this.callouts?.add(ev.loc);
-        setTimeout(() => {
-          this.callouts.delete(ev.loc);
-          this.dispatchEvent(new CustomEvent("updated"));
-        }, CALLOUT_TIMER);
-        break;
-    }
-    this.dispatchEvent(new CustomEvent("updated"));
-  }
-
-  remove_token(id: string) {
-    this.apply({
-      type: "token-removed",
-      ids: [id],
-    });
-  }
-
-  apply(detail: GameEvent) {
-    this.local_apply(detail);
-    this.dispatchEvent(new CustomEvent("game-event", { detail }));
   }
 
   set_dim(dim: Point) {
@@ -162,12 +58,98 @@ export class Game extends EventTarget {
     });
   }
 
-  get_state = (): StateSync => {
-    return {
-      type: "state-sync",
-      tokens: [...this.tokens.values()],
-      grid_dim: this.grid_dim,
-      bg: this.#bg,
-    };
-  };
+  async apply(ev: GameEvent) {
+    await this.#event_writer.write(ev);
+  }
+
+  async #handle_event(ev: GameEvent): Promise<void> {
+    switch (ev.type) {
+      case "token-manipulated":
+        for (let t of ev.tokens) {
+          let ex_token = this.tabletop.tokens.get(t.id);
+          if (!ex_token) {
+            console.error("Update received for nonexistant token", t.id);
+            return;
+          }
+          Object.assign(ex_token, { dim: t.dim, loc: t.loc, r: t.r });
+        }
+        break;
+
+      case "token-added":
+        let token = { id: ev.id, dim: ev.dim, loc: ev.loc, url: ev.url, r: 0 };
+        this.tabletop.tokens.add(ev.id, token);
+        break;
+      case "grid-resized":
+        this.tabletop.grid_dim = ev.dim;
+        break;
+      case "token-removed":
+        for (let id of ev.ids) {
+          const rem_token = this.tabletop.tokens.get(id);
+          if (!rem_token) {
+            console.error("Tried to remove nonexistant token", id);
+            return;
+          }
+          this.tabletop.tokens.delete(rem_token.id);
+        }
+
+        break;
+      case "state-sync":
+        this.tabletop = deserialize_tbt(ev.tabletop);
+        break;
+
+      case "token-reorder":
+        const idx = this.tabletop.tokens.index(ev.id);
+        if (idx === undefined) {
+          console.error("Tried to reorder non-existant token", ev.id);
+          return;
+        }
+
+        let target;
+        if (ev.idx === "top") {
+          target = this.tabletop.tokens.size - 1;
+        } else if (ev.idx === "bottom") {
+          target = 0;
+        } else if (ev.idx === "up") {
+          target = Math.min(this.tabletop.tokens.size - 1, idx + 1);
+        } else {
+          target = Math.max(0, idx - 1);
+        }
+
+        this.tabletop.tokens.set_index(ev.id, target);
+        break;
+      case "bg":
+        this.tabletop.bg = ev.url;
+        break;
+
+      case "callout":
+        this.callouts.add(ev.loc);
+        setTimeout(() => {
+          this.callouts.delete(ev.loc);
+        }, CALLOUT_TIMER);
+        break;
+    }
+
+    // Notify that the game state has been altered
+    this.dispatchEvent(game_event(ev));
+  }
+
+  async #register_resource(img: LocalOrRemoteImage): Promise<string> {
+    // URLs are valid resources
+    if (typeof img === "string") {
+      return img as string;
+    }
+
+    let url = new URL(window.location.toString());
+    url.search = "";
+    let id = crypto.randomUUID();
+    url.pathname = `/resources/${id}`;
+    let cache = await caches.open("resources");
+    await cache.put(url, new Response(img));
+    return url.toString();
+  }
+}
+
+export interface Game extends EventTarget {
+  addEventListener(type: "game-event", listener: (ev: CustomEvent<GameEvent>) => any, capture?: boolean): void;
+  addEventListener(type: string, listener: EventListener | EventListenerObject, useCapture?: boolean): void;
 }

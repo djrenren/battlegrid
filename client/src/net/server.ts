@@ -1,101 +1,82 @@
-import { GameEvent, StateSync } from "../game/game-events";
-import { DurableSignaler } from "./signaling";
-import { type Status, type Client, RichClient } from "./client";
-import { streams } from "./rtc/rtc-data-stream";
 import { Game } from "../game/game";
-import { resources } from "./rtc/rtc-resource-encoder";
+import { serialize_tbt } from "../game/tabletop";
+import { waitFor } from "../util/events";
+import { streams } from "../util/rtc";
+import { consume } from "../util/streams";
+import { Peer } from "./peer";
+import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
+import { ResourceId } from "./resources/service-worker-protocol";
+import { Signaler } from "./signaling";
 
 export class Server {
-  signaler: DurableSignaler;
-  local_client: RichClient;
-  #clients: Set<RichClient> = new Set();
+  signaler: Signaler;
   #game: Game;
+  #clients: Set<Peer> = new Set();
 
-  private constructor(signaler: DurableSignaler, game: Game) {
-    this.#game = game;
+  constructor(signaler: Signaler, game: Game) {
     this.signaler = signaler;
-    let [client_side, server_side] = two_way_client();
+    this.#game = game;
 
-    this.local_client = client_side;
-    this.#add_client(server_side);
-    this.signaler.addEventListener("peer", async ({ detail: peer }) => {
-      let events = resources(streams(peer.events));
-      let data = resources(streams(peer.data));
+    consume(this.signaler.incoming_peers, async (peer) => this.#add_client(peer));
 
-      let remote_client = new RichClient({
-        status: 'connected',
-        events,
-        data,
-        close: () => peer.close()
-      });
-
-      this.#add_client(remote_client);
+    this.#game.addEventListener("game-event", ({ detail: ev }) => {
+      for (let client of this.#clients) {
+        if (client.id === ev.remote) continue;
+        client.write_event(ev);
+      }
     });
   }
 
-  #add_client(client: RichClient) {
-    console.log("added client", client);
-    this.#clients.add(client);
-
-    client.on_event = async (ev) => {
-      await Promise.all(
-        Array.from(this.#clients)
-            .filter((w) => w !== client)
-            .map((w) => w.send(ev))
-      )
-    };
-
-    client.send(this.get_state!());
-
-    client.handle('get_image', ({id}) => {
-      return {
-        data: new Blob()
-      }
-    })
-  }
-
-
   static async establish(game: Game): Promise<Server> {
-    return new Server(await DurableSignaler.establish(new URL("wss://battlegrid-signaling.herokuapp.com/")), game);
+    return new Server(await Signaler.establish(), game);
   }
 
-  on_event: (ev: any) => any = () => {};
-  get_state(): StateSync {
-    return this.#game.get_state();
-  };
-  get_images?: () => IterableIterator<[string, string]>;
-}
+  #add_client(peer: Peer) {
+    this.#clients.add(peer);
 
+    // It's a little weird that we're sending the JSON encoding
+    // as a string. But we need to capture the state of the tabletop
+    // at this exact moment. If we didn't JSON encode now, the tabletop
+    // could be mutated before being written to the wire.
+    //
+    // We aim for idempotency so this *shouldn't* be a problem, but lets
+    // just avoid it
+    peer.write_event({
+      type: "state-sync",
+      tabletop: serialize_tbt(this.#game.tabletop),
+    });
 
-const two_way_client = (): [RichClient, RichClient] => {
-    let client_events = new TransformStream();
-    let client_data = new TransformStream();
-    let server_events = new TransformStream();
-    let server_data = new TransformStream();
+    consume(peer.events, (ev) => {
+      ev.remote = peer.id;
+      return this.#game.apply(ev);
+    });
 
-    return [new RichClient({
-      status: 'connected',
-      events: {
-        readable: server_events.readable,
-        writable: client_events.writable
-      },
-      data: {
-        readable: server_data.readable,
-        writable: client_data.writable
-      },
-      close() {}
-    }),
+    peer.events_dc.addEventListener("close", () => {
+      console.log("PEEER EVENT DC");
+      this.#clients.delete(peer);
+    });
 
-    new RichClient({
-      status: 'connected',
-      events: {
-        readable: client_events.readable,
-        writable: server_events.writable,
-      },
-      data: {
-        readable: client_data.readable,
-        writable: server_data.writable,
-      },
-      close() {}
-    })]
+    peer.ondatachannel = async (ev) => {
+      console.log("INCOMING DC", ev.channel);
+      const channel = ev.channel;
+      await waitFor("open", channel);
+      console.log("new dc", channel);
+      if (channel.protocol === RESOURCE_PROTOCOL) {
+        response(streams<ArrayBuffer, ArrayBuffer>(channel), await this.#get_resource(channel.label as ResourceId));
+      }
+    };
+  }
+
+  async #get_resource(id: ResourceId): Promise<Resource> {
+    let resp = await fetch(`/resources/${id}`);
+    return { blob: await resp.blob() };
+  }
+
+  shutdown() {
+    for (let c of this.#clients) {
+      c.rtc.close();
+    }
+
+    this.#clients.clear();
+  }
 }

@@ -1,0 +1,91 @@
+export type RTCMessage = string | ArrayBuffer | ArrayBufferView | Blob;
+
+export const streams = <R extends RTCMessage, W extends RTCMessage>(dc: RTCDataChannel): ReadableWritablePair<R, W> => ({
+  readable: read_stream(dc) as ReadableStream<R>,
+  writable: write_stream(dc),
+});
+
+export const open = async (conn: RTCPeerConnection): Promise<RTCPeerConnection> => {
+  console.log("OPEN");
+  if (conn.iceConnectionState === "connected") {
+    console.log("WAT");
+    return conn;
+  }
+
+  return new Promise((resolve, reject) => {
+    console.log("P", conn.iceConnectionState);
+    const listener = () => {
+      console.log("OPEN", conn.iceConnectionState);
+      if (["failed", "closed"].includes(conn.iceConnectionState)) {
+        console.log("NAILED IT");
+        reject("Failed to connect");
+        conn.removeEventListener("iceconnectionstatechange", listener);
+      } else if (conn.iceConnectionState === "connected") {
+        resolve(conn);
+        conn.removeEventListener("iceconnectionstatechange", listener);
+      }
+    };
+    conn.addEventListener("signalingstatechange", (ev) => {
+      console.log("SIGNAL", ev);
+    });
+    conn.addEventListener("iceconnectionstatechange", listener);
+  });
+};
+
+const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
+  return new ReadableStream({
+    start(controller) {
+      dc.onmessage = ({ data }) => {
+        console.log("RECEIVED", data);
+        controller.enqueue(data);
+      };
+      const onclose = () => {
+        controller.close();
+        dc.removeEventListener("close", onclose);
+      };
+      dc.addEventListener("close", onclose);
+    },
+
+    cancel() {
+      dc.close();
+    },
+  });
+};
+
+const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
+  let resume: (() => void) | undefined;
+  dc.addEventListener("error", (err) => console.log("DC ERROR", err));
+  return new WritableStream(
+    {
+      start(controller) {
+        const onclose = () => {
+          console.log("stream closed by dc ending");
+          controller.error("Closed foo");
+          dc.removeEventListener("close", onclose);
+        };
+        dc.addEventListener("close", onclose);
+        dc.onopen = () => resume && resume();
+        dc.onbufferedamountlow = () => resume && resume();
+      },
+      async write(chunk) {
+        if (dc.readyState === "connecting" || dc.bufferedAmount > dc.bufferedAmountLowThreshold) {
+          console.log("waiting for resumptoin...");
+          await new Promise<void>((r, _) => (resume = r));
+          console.log("resumed!");
+        }
+        console.log("writing", chunk);
+        dc.send(chunk);
+      },
+      abort() {
+        console.log("aborted dc by stream");
+        dc.close();
+      },
+      close() {
+        console.log("closed dc by stream");
+        dc.close();
+      },
+    },
+    // Don't let the output stream consume more than one message in case it gets shutdown
+    new CountQueuingStrategy({ highWaterMark: 1 })
+  );
+};

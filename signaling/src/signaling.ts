@@ -50,13 +50,13 @@ server.on('upgrade', (req, socket, head) => {
         return socket.end('HTTP/1.1 409 Conflict\r\n\r\n');
     }
 
-    let id = suggested_id ?? uuid.v4() as PeerId;
+    let id = suggested_id + "" as PeerId;
 
 
     wss.handleUpgrade(req, socket, head, (socket) => {
         peers.set(id, socket);
         console.log(id, "connected");
-        socket.send(JSON.stringify({type: "assignment", id}));
+        //socket.send(JSON.stringify({type: "assignment", id}));
         socket.on('message', (data, isBinary) => {
             on_message.bind(socket)(id, data, isBinary);
         });
@@ -67,7 +67,7 @@ server.on('upgrade', (req, socket, head) => {
 
 function on_message(this: WebSocket, from: string, data: RawData, isBinary: boolean) {
     if (isBinary) {
-        return this.close(400, "Signaling server does not support binary data");
+        return this.close(1011, "Signaling server does not support binary data");
     }
 
     let msg;
@@ -75,18 +75,18 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
     try {
         msg = JSON.parse(data.toString('utf8'));
     } catch (e) {
-        return this.close(400, "All messages must be valid utf8 JSON");
+        return this.close(1011, "All messages must be valid utf8 JSON");
     }
     console.log(msg);
 
-    let target = msg.target as PeerId | undefined;
-    if (target === undefined) {
-        return this.close(400, "All messages must have a target");
+    let to = msg.to as PeerId | undefined;
+    if (to === undefined) {
+        return this.close(1011, "All messages must have a `to` field");
     }
 
-    let target_socket = peers.get(target);
+    let target_socket = peers.get(to);
     if (!target_socket) {
-        return this.send(JSON.stringify({error: "target-not-exists", target}));
+        return this.send(JSON.stringify({type: "error-not-exists", destination: to}));
     }
     target_socket.send(JSON.stringify({...msg, from}));
 }

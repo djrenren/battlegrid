@@ -1,15 +1,15 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import { Server } from "../net/server";
-import { GameEvent, } from "../game/game-events";
-import { RichClient } from "../net/client";
+import { GameEvent } from "../game/game-events";
 import { BgDropEvent, Canvas, TokenDropEvent, TokenSelectEvent } from "./canvas";
 import "./buymeacoffee";
 import { Game } from "../game/game";
 import { ifDefined } from "lit/directives/if-defined.js";
 import { max_p } from "../util/math";
 import { first } from "../util/iter";
-import { RTCClient } from "../net/rtc/rtc-client";
+import { Client } from "../net/client";
+import { Server } from "../net/server";
+import { PeerId } from "../net/peer";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -23,7 +23,7 @@ class App extends LitElement {
   canvas?: Canvas;
 
   @state()
-  client?: RichClient;
+  client?: Client;
 
   @state()
   server?: Server;
@@ -38,17 +38,16 @@ class App extends LitElement {
 
   render() {
     let error =
-      this.client?.status === "error"
+      this.client?.status === "closed"
         ? html` <div class="message error">
             <div>
               <h1>Error connecting to remote grid</h1>
-              <button @click=${this.#try_again}>Try again</button>
               <button @click=${this.#new_local}>New local grid</button>
             </div>
           </div>`
         : null;
     let connecting =
-      this.client?.status === "connecting"
+      this.client?.status === "checking"
         ? html` <div class="message">
             <div>
               <h1>Connecting to grid...</h1>
@@ -60,7 +59,6 @@ class App extends LitElement {
         ? html` <div class="message">
             <div>
               <h1>Disconnected from host</h1>
-              <button @click=${this.#try_again}>Try again</button>
               <button @click=${this.#new_local}>Continue locally</button>
             </div>
           </div>`
@@ -72,21 +70,21 @@ class App extends LitElement {
         <div class="group">
           <span>
             Grid:
-            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[0] + ""} /> x
-            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.grid_dim[1] + ""} />
+            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.tabletop.grid_dim[0] + ""} /> x
+            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.tabletop.grid_dim[1] + ""} />
           </span>
           ${this.selection.size === 1
             ? html`
                 <div>
                   <button
                     @click=${() => this.#game.apply({ type: "token-reorder", id: first(this.selection)!, idx: "down" })}
-                    ?disabled=${this.#game.tokens.index(first(this.selection)!) === 0}
+                    ?disabled=${this.#game.tabletop.tokens.index(first(this.selection)!) === 0}
                   >
                     Move Down
                   </button>
                   <button
                     @click=${() => this.#game.apply({ type: "token-reorder", id: first(this.selection)!, idx: "up" })}
-                    ?disabled=${this.#game.tokens.index(first(this.selection)!) === this.#game.tokens.size - 1}
+                    ?disabled=${this.#game.tabletop.tokens.index(first(this.selection)!) === this.#game.tabletop.tokens.size - 1}
                   >
                     Move Up
                   </button>
@@ -97,19 +95,18 @@ class App extends LitElement {
         <div class="group">
           ${this.host_pending
             ? html`<img src="assets/loading.svg" />`
-            : !this.client
+            : !this.client && !this.server
             ? html`<button @click=${this.#host}>Host</button>`
-            : html`<div>${this.server ? `hosting` : this.client.status}</div>`}
+            : html`<div>${this.server ? `hosting` : this.client!.status}</div>`}
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
         </div>
       </section>
       <bg-canvas
-        bg=${ifDefined(this.#game.bg ?? undefined)}
+        bg=${ifDefined(this.#game.tabletop.bg ?? undefined)}
         .selection=${this.selection}
-        width=${this.#game.grid_dim[0]}
-        height=${this.#game.grid_dim[1]}
-        .tokens=${this.#game.tokens}
-        .resources=${this.#game.resources}
+        width=${this.#game.tabletop.grid_dim[0]}
+        height=${this.#game.tabletop.grid_dim[1]}
+        .tokens=${this.#game.tabletop.tokens}
         .callouts=${this.#game.callouts}
         @token-drop=${({ detail }: TokenDropEvent) => this.#game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
         @bg-drop=${({ detail }: BgDropEvent) => this.#game.set_bg(detail)}
@@ -195,36 +192,26 @@ class App extends LitElement {
   async connectedCallback() {
     super.connectedCallback();
     //@ts-ignore
-    this.#game.addEventListener("game-event", this.#on_event);
-    this.#game.addEventListener("updated", () => {
+    this.#game.addEventListener("game-event", () => {
       for (const id of this.selection) {
-        this.#game.tokens.has(id) || this.selection.delete(id);
+        this.#game.tabletop.tokens.has(id) || this.selection.delete(id);
       }
       this.requestUpdate();
       this.canvas?.requestUpdate();
     });
     let params = new URLSearchParams(window.location.search);
-    let game_id = params.get("game");
+    let game_id = params.get("game") as PeerId | undefined;
     if (!game_id) return {};
 
-    let rtc_client = new RTCClient(game_id);
-    let c = new RichClient(rtc_client);
-    c.on_event = (ev) => this.#game.local_apply(ev as any);
-    rtc_client.on_status = () => {
-      this.requestUpdate("client");
-      console.log("STATUS UPDATE", rtc_client.status);
+    try {
+      this.client = await Client.establish(game_id, this.#game);
+    } catch {
+      this.#new_local();
     }
-    this.client = c;
-    await rtc_client.connect();
   }
 
-  #try_again = () => {
-    if (this.client && !this.server) {
-      //(this.client. as Client).connect();
-    }
-  };
-
   #new_local = () => {
+    this.client?.shutdown();
     this.client = undefined;
     window.history.pushState(null, "", window.location.href.split("?")[0]);
   };
@@ -232,23 +219,14 @@ class App extends LitElement {
   #host = async () => {
     try {
       this.host_pending = true;
-      let srv = await Server.establish(this.#game);
+      this.server = await Server.establish(this.#game);
+      this.client?.shutdown();
+      this.client = undefined;
       this.host_pending = false;
-      this.server = srv;
-      this.client = srv.local_client;
-      this.client.on_event = (ev) => this.#game.local_apply(ev);
-      window.history.pushState({}, "", "?game=" + srv.signaler.ident);
+      window.history.pushState({}, "", "?game=" + this.server.signaler.peer_id);
       navigator.clipboard.writeText(window.location.toString());
     } catch (e) {
       console.error(e);
     }
-  };
-
-  #incoming_event = (ev: GameEvent) => {
-    this.#game.local_apply(ev);
-  };
-
-  #on_event = (ev: CustomEvent<GameEvent>) => {
-    this.client?.send(ev.detail);
   };
 }

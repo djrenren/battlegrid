@@ -12,3 +12,17 @@ export const stop_ev = (ev: Event) => {
 type CustomEventType<T extends Event> = T extends CustomEvent<infer U> ? U : never;
 export const window_ev = <N extends keyof WindowEventMap>(name: N, detail: CustomEventType<WindowEventMap[N]>): WindowEventMap[N] =>
   new CustomEvent(name, { detail }) as any;
+
+export interface EventEmitter<EventMap> extends EventTarget {
+  addEventListener<K extends keyof EventMap>(type: K, listener: (ev: EventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+  addEventListener(type: string, listener: EventListener | EventListenerObject, useCapture?: boolean): void;
+}
+
+export function waitFor<K, E, ET extends { addEventListener(type: K, listener: (ev: E) => void, init: AddEventListenerOptions): void }>(
+  type: K,
+  target: ET
+): Promise<E> {
+  return new Promise((resolve) => {
+    target.addEventListener(type, resolve, { once: true });
+  });
+}
