@@ -12,10 +12,13 @@
   <body>
     <script type="module">
       if (!window.TransformStream) {
+        console.log("LOADING POLYFILL");
         await import("https://unpkg.com/web-streams-polyfill@3.2.0/dist/polyfill.es2018.min.js");
       }
+      console.log("LOADING BUNDLE");
+      await import("./bundle.js");
+      console.log("BUNDLE LOADED");
     </script>
-    <script type="module" src="./bundle.js"></script>
     <bg-app />
   </body>
 </html>
