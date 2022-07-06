@@ -118,7 +118,7 @@ export class Canvas extends LitElement {
             </pattern>
             <pattern id="loading" patternUnits="userSpaceOnUse" width="1" height="1">
               <rect width="1" height="1" fill="white"></rect>
-              <image href="/assets/loading.svg" width="1" height="1" />
+              <image href="assets/loading.svg" width="1" height="1" />
             </pattern>
           </defs>
           <svg x=${PADDING} y=${PADDING} width=${width} height=${height} id="surface">

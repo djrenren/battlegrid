@@ -5,7 +5,7 @@ import "./ui/safari-fix";
 import "./ui/canvas";
 import "./ui/app";
 
-let worker = await navigator.serviceWorker.register("/service-worker.js");
+await navigator.serviceWorker.register("./service-worker.js");
 
 document.body.addEventListener(
   "wheel",
