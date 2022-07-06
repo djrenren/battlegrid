@@ -6,7 +6,7 @@ import { Peer, PeerId } from "./peer";
 
 const PEER_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-const DEFAULT_SIGNALER = new URL("ws://localhost:8080");
+const DEFAULT_SIGNALER = new URL("wss://battlegrid-signaling.herokuapp.com");
 export type NewConnection = { id: PeerId; conn: RTCPeerConnection };
 
 export class Signaler {
