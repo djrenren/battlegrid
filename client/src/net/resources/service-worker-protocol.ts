@@ -14,4 +14,4 @@ export type ResourceRequest = {
   id: string;
 };
 
-export type ResourceId = string & {__braing: 'resourceid'};
+export type ResourceId = string & { __braing: "resourceid" };

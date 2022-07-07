@@ -1,30 +1,16 @@
 import { css, html, LitElement, svg } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
-import {
-  abs_p,
-  add_c,
-  add_p,
-  BBox,
-  clamp_p,
-  div_c,
-  eq_p,
-  intersect,
-  max_p,
-  min_p,
-  mul_c,
-  Point,
-  sub_p,
-} from "../util/math";
+import { abs_p, add_c, add_p, BBox, clamp_p, div_c, eq_p, intersect, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
 import { is_mouse_down, is_primary_down, stop_ev, window_ev } from "../util/events";
-import { Viewport } from "./viewport";
 import { getImage, LocalOrRemoteImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
 import { Game } from "../game/game";
 import { OrderedMap } from "../util/orderedmap";
 import { map } from "../util/iter";
+import { PPZ } from "./ppp";
 
-const PIXEL_SCALE = 3;
+const PIXEL_SCALE = 1;
 const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
 const LINE_WIDTH = 0.5 * PIXEL_SCALE; // scale-dependent px
 const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
@@ -66,8 +52,8 @@ export class Canvas extends LitElement {
   @query("root", true)
   root?: SVGElement;
 
-  @query("bg-viewport", true)
-  viewport?: Viewport;
+  @query("p-p-z", true)
+  viewport?: PPZ;
 
   #mouse_loc?: Pick<MouseEvent, "clientX" | "clientY">;
 
@@ -93,7 +79,7 @@ export class Canvas extends LitElement {
     let sbbox = this.#selection_bbox();
     let selected = this.selection.size === 1 ? this.tokens.get(this.selection.values().next().value) : undefined;
     return html`
-      <bg-viewport
+      <p-p-z
         @pointerdown=${this.#sbox_start}
         @pointermove=${this.#sbox_move}
         @pointerup=${this.#sbox_stop}
@@ -239,7 +225,7 @@ export class Canvas extends LitElement {
               : null}
           </svg>
         </svg>
-      </bg-viewport>
+      </p-p-z>
       <div
         id="bg-drop"
         class=${this.hovering ?? ""}
@@ -542,8 +528,16 @@ export class Canvas extends LitElement {
       position: relative;
       display: block;
       --selection-color: cornflowerblue;
+      overflow: hidden;
     }
 
+    p-p-z {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
     #root {
       backface-visibility: hidden;
     }
@@ -676,7 +670,7 @@ export class Canvas extends LitElement {
       cursor: col-resize;
     }
 
-    bg-viewport::part(background) {
+    p-p-z {
       background-color: #ededf0;
     }
 

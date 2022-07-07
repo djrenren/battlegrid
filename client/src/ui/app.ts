@@ -132,8 +132,8 @@ class App extends LitElement {
       display: grid;
       grid:
         "toolbar" 30px
-        "viewport" 1fr
-        / 1fr;
+        "viewport" minmax(0, 1fr)
+        / minmax(0, 1fr);
       font-family: inherit;
       --ui-bg: #f9f9fa;
     }
