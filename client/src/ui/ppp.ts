@@ -48,6 +48,14 @@ export class PPZ extends HTMLElement {
       let slot = target as HTMLSlotElement;
       let svg = slot.assignedElements()[0] as SVGSVGElement;
       this.#resize_observer.observe(svg);
+
+
+      this.smooth = false;
+      let dim = this.getBoundingClientRect();
+      let vdim = [dim.width, dim.height] as Point;
+      let cdim = [svg.width.baseVal.value, svg.height.baseVal.value] as Point;
+      const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(vdim, cdim), AUTO_ZOOM_FILL)));
+      this.zoom([0, 0], zoom - this.state.z);
     };
     this.addEventListener("scroll", () => (this.state.scroll_pos = [this.scrollLeft, this.scrollTop]));
   }
@@ -65,13 +73,6 @@ export class PPZ extends HTMLElement {
     }
 
     this.center();
-
-    // We have extra space so let's fill it by zooming
-    if (this.offset[0] !== 0 && this.offset[1] !== 0) {
-      this.smooth = false;
-      const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(this.vdim, this.cdim), AUTO_ZOOM_FILL)));
-      this.zoom([0, 0], zoom - this.state.z);
-    }
   });
 
   loop = async () => {
@@ -91,7 +92,6 @@ export class PPZ extends HTMLElement {
       // Record the new z
       this.state.z += delta_scale;
 
-      this.container.style.opacity = "1";
 
       this.center();
 
@@ -189,7 +189,6 @@ export class PPZ extends HTMLElement {
                     display: block;
                     width: fit-content;
                     height: fit-content;
-                    opacity: 0;
                 }
             </style>
                 <div id="container">
