@@ -1,3 +1,5 @@
+import { Status } from "./net";
+
 export type RTCMessage = string | ArrayBuffer | ArrayBufferView | Blob;
 
 export const streams = <R extends RTCMessage, W extends RTCMessage>(dc: RTCDataChannel): ReadableWritablePair<R, W> => ({
@@ -52,6 +54,19 @@ const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
   });
 };
 
+
+export const dc_status = (dc: RTCDataChannel): Status => {
+  switch (dc.readyState) {
+    case 'open':
+    case 'closed':
+      return dc.readyState;
+    case 'closing':
+      return 'closed';
+    case 'connecting':
+      return 'opening';
+  }
+}
+
 const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
   let resume: (() => void) | undefined;
   dc.addEventListener("error", (err) => console.log("DC ERROR", err));
@@ -68,6 +83,7 @@ const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
         dc.onbufferedamountlow = () => resume && resume();
       },
       async write(chunk) {
+        
         if (dc.readyState === "connecting" || dc.bufferedAmount > dc.bufferedAmountLowThreshold) {
           console.log("waiting for resumptoin...");
           await new Promise<void>((r, _) => (resume = r));

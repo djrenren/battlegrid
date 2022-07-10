@@ -1,28 +1,27 @@
 import { Game } from "../game/game";
 import { GameEvent } from "../game/game-events";
-import { consume, iter, pipe } from "../util/streams";
+import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";
 import { Signaler } from "./signaling";
 import { RESOURCE_PROTOCOL, request } from "./resources/protocol";
-import { streams } from "../util/rtc";
+import { dc_status, streams } from "../util/rtc";
 import { ResourceId, ResourceMessage, ResourceRequest } from "./resources/service-worker-protocol";
+import { StatusEmitter } from "../util/net";
+import { preProcessFile } from "typescript";
 
-export class Client extends EventTarget {
+export class Client {
   #game: Game;
   #peer: Peer;
   #game_id: PeerId
+  #signaler: Signaler;
+  status = new StatusEmitter();
 
-  get status() {
-    // TODO: Implement statuses
-    return this.#peer.rtc.iceConnectionState;
-  }
-
-  private constructor(game_id: PeerId, game: Game, peer: Peer) {
-    super();
+  constructor(game_id: PeerId, game: Game) {
+    this.#signaler = new Signaler(crypto.randomUUID() as PeerId);
     this.#game = game;
-    this.#peer = peer;
     this.#game_id = game_id;
-    this.#configure_peer();
+    this.#game.addEventListener('game-event', this.forward_events);
+    this.#peer = this.#setup_peer();
 
     navigator.serviceWorker.onmessage = async (ev: MessageEvent<ResourceRequest>) => {
       let id = ev.data.id as ResourceId;
@@ -42,44 +41,41 @@ export class Client extends EventTarget {
 
   }
 
-  async reconnect() {
-    this.#peer = await Client.#get_peer(this.#game_id);
-    this.#configure_peer();
+  forward_events = ({detail: ev}: CustomEvent<GameEvent>) => {
+    console.log("CALLBACK", ev);
+    if (ev.remote) return;
+    this.#peer.write_event(ev);
   }
 
-  #configure_peer() {
-    console.log("configuring peer", this.#peer.events_dc.readyState);
-    consume(this.#peer.events, (ev) => {
-      return this.#game.apply(ev)
-    });
 
-    let forward_events = ({detail: ev}: CustomEvent<GameEvent>) => {
-      console.log("CALLBACK", ev);
-      if (ev.remote) return;
-      this.#peer.write_event(ev);
-    }
-
-    this.#game.addEventListener('game-event', forward_events);
-
-    this.#peer.events_dc.addEventListener('close', () => {
-      this.#game.removeEventListener('game-event', forward_events as any);
-    });
+  async reconnect(): Promise<void> {
+    this.#peer = this.#setup_peer();
   }
 
-  static async establish(game_id: PeerId, game: Game) {
-    console.log("ESTABLISHING CLIENT");
-    return new Client(game_id, game, await this.#get_peer(game_id));
-  }
-
-  static async #get_peer(game_id: PeerId) {
-    let signaler = await Signaler.establish();
-    let peer = await signaler.initiate(game_id);
-    signaler.shutdown();
-    return peer;
-  }
-
-  shutdown() {
+  async shutdown() {
     this.#peer.rtc.close();
+    console.log("Waiting for signaler shutdown");
+    await this.#signaler.shutdown();
+    console.log("signaler dead");
     navigator.serviceWorker.onmessage = null;
+  }
+
+  #setup_peer(): Peer {
+    let peer = this.#signaler.initiate(this.#game_id);
+    peer.rtc.addEventListener('iceconnectionstatechange', () => {
+      console.log("CONN STATE CHANGED");
+      if (peer.rtc.iceConnectionState === "connected") {
+        this.status.set('open');
+      }
+    })
+    // peer.events_dc.addEventListener('close', () => this.status.set('closed'));
+    // peer.events_dc.addEventListener('open', () => this.status.set('open'));
+    // this.status.set(dc_status(peer.events_dc));
+
+    // consume(peer.events, (ev) => {
+    //   return this.#game.apply(ev)
+    // });
+
+    return peer;
   }
 }

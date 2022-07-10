@@ -1,9 +1,10 @@
 import { Game } from "../game/game";
 import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
+import { StatusEmitter } from "../util/net";
 import { streams } from "../util/rtc";
 import { consume } from "../util/streams";
-import { Peer } from "./peer";
+import { Peer, PeerId } from "./peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
 import { ResourceId } from "./resources/service-worker-protocol";
 import { Signaler } from "./signaling";
@@ -13,8 +14,9 @@ export class Server {
   #game: Game;
   #clients: Set<Peer> = new Set();
 
-  constructor(signaler: Signaler, game: Game) {
-    this.signaler = signaler;
+  constructor(game: Game) {
+    this.signaler = new Signaler(crypto.randomUUID() as PeerId);
+    this.signaler.allow_connections = true;
     this.#game = game;
 
     consume(this.signaler.incoming_peers, async (peer) => this.#add_client(peer));
@@ -25,10 +27,6 @@ export class Server {
         client.write_event(ev);
       }
     });
-  }
-
-  static async establish(game: Game): Promise<Server> {
-    return new Server(await Signaler.establish(), game);
   }
 
   #add_client(peer: Peer) {

@@ -60,14 +60,16 @@ export interface AbortableStream<R, W> extends ReadableWritablePair<R, W> {
  * @param builder the constructor for the underlying stream
  * @returns A stream
  */
-export async function durable<R, W>(builder: () => Promise<ReadableWritablePair<R, W>>): Promise<ReadableWritablePair<R, W>> {
-  let underlying = await builder();
-  let writer = underlying.writable.getWriter();
-  let reader = underlying.readable.getReader();
+export function durable<R, W>(builder: () => Promise<ReadableWritablePair<R, W>>): ReadableWritablePair<R, W> {
+  let underlying;
 
-  let promise: Promise<void> | undefined;
+  let writer: WritableStreamDefaultWriter<W> | undefined;
+  let reader: ReadableStreamDefaultReader<R> | undefined;
 
+  let promise: Promise<any> | undefined;
+  let stop = false;
   let reload = async () => {
+    if (stop) throw "No more reloading should occur";
     if (promise) return promise;
     return (promise = (async () => {
       underlying = await builder();
@@ -77,24 +79,27 @@ export async function durable<R, W>(builder: () => Promise<ReadableWritablePair<
     })());
   };
 
+  promise = reload();
+
   let writable = new WritableStream(
     {
       async write(chunk, controller) {
-        let done = false;
-        while (!done) {
-          try {
-            await writer.write(chunk);
-            done = true;
-          } catch (e) {
-            await reload();
-          }
+        if (!writer) {
+          await reload();
+        }
+
+        try {
+          await writer!.write(chunk);
+        } catch {
+          await reload();
         }
       },
       async close() {
-        await writer.close();
+        stop = true;
+        await writer?.close();
       },
       async abort(reason) {
-        await writer.abort(reason);
+        await writer?.abort(reason);
       },
     },
     new CountQueuingStrategy({ highWaterMark: 50 })
@@ -104,22 +109,26 @@ export async function durable<R, W>(builder: () => Promise<ReadableWritablePair<
     async pull(controller) {
       let error = true;
       while (error) {
+        if (!reader) {
+          await reload();
+          continue;
+        }
         try {
           let { done, value } = await reader.read();
           if (done) {
             console.log("HUH");
-            await reload();
+            reader = undefined;
           } else {
             controller.enqueue(value);
           }
           error = false;
         } catch (e) {
-          await reload();
+          reader = undefined;
         }
       }
     },
     async cancel(reason) {
-      await reader.cancel(reason);
+      await reader?.cancel(reason);
     },
   });
 

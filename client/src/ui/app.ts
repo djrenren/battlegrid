@@ -10,6 +10,9 @@ import { first } from "../util/iter";
 import { Client } from "../net/client";
 import { Server } from "../net/server";
 import { PeerId } from "../net/peer";
+import "./tooltip";
+import "./network-status";
+import { timeout } from "../util/promises";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -38,7 +41,7 @@ class App extends LitElement {
 
   render() {
     let error =
-      this.client?.status === "closed"
+      this.client?.status.current === "closed"
         ? html` <div class="message error">
             <div>
               <h1>Error connecting to remote grid</h1>
@@ -47,7 +50,7 @@ class App extends LitElement {
           </div>`
         : null;
     let connecting =
-      this.client?.status === "checking"
+      this.client?.status.current === "opening"
         ? html` <div class="message">
             <div>
               <h1>Connecting to grid...</h1>
@@ -55,7 +58,7 @@ class App extends LitElement {
           </div>`
         : null;
     let disconnected =
-      this.client?.status === "disconnected"
+      this.client?.status.current === "closed"
         ? html` <div class="message">
             <div>
               <h1>Disconnected from host</h1>
@@ -70,7 +73,10 @@ class App extends LitElement {
         <div class="group">
           <span>
             Grid:
-            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.tabletop.grid_dim[0] + ""} /> x
+            <with2-tooltip text="AHA!">
+              testing
+              <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.tabletop.grid_dim[0] + ""} /> x
+            </with2-tooltip>
             <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.#game.tabletop.grid_dim[1] + ""} />
           </span>
           ${this.selection.size === 1
@@ -93,6 +99,7 @@ class App extends LitElement {
             : null}
         </div>
         <div class="group">
+          <network-status status=${ifDefined(this.server?.signaler.status.current || this.client?.status.current)}></network-status>
           ${this.host_pending
             ? html`<img src="assets/loading.svg" />`
             : !this.client && !this.server
@@ -121,7 +128,7 @@ class App extends LitElement {
 
   updated(changedProperties: Map<string, any>) {
     if (changedProperties.has("client")) {
-      document.title = `BattleGrid${this.client && this.client.status === "connected" ? (this.server ? "- Hosting" : "- Connected") : ""}`;
+      document.title = `BattleGrid${this.client && this.client.status.current === "open" ? (this.server ? "- Hosting" : "- Connected") : ""}`;
     }
   }
 
@@ -199,34 +206,58 @@ class App extends LitElement {
       this.requestUpdate();
       this.canvas?.requestUpdate();
     });
-    let params = new URLSearchParams(window.location.search);
-    let game_id = params.get("game") as PeerId | undefined;
-    if (!game_id) return {};
+    // setTimeout( async () => {
+      console.log("debug now please");
+      
+      let params = new URLSearchParams(window.location.search);
+      let game_id = params.get("game") as PeerId | undefined;
+      if (!game_id) return await this.#new_local();
 
-    try {
-      this.client = await Client.establish(game_id, this.#game);
-    } catch {
-      this.#new_local();
-    }
+      try {
+        console.log("new client");
+        this.client = new Client(game_id, this.#game);
+        this.client.status.onstatus = () => this.requestUpdate();
+        console.log("waiting for connection");
+        await timeout(this.client.status.connected(), 5000);
+        console.log("connected");
+      } catch {
+        console.log("giving up");
+        await this.#new_local();
+      }
+
+    // }, 2000);
   }
 
-  #new_local = () => {
-    this.client?.shutdown();
+  #new_local = async () => {
+    console.log("new local...");
+    await this.client?.shutdown();
+    // this.client && (this.client.status.onstatus = undefined);
     this.client = undefined;
     window.history.pushState(null, "", window.location.href.split("?")[0]);
   };
 
   #host = async () => {
     try {
-      this.host_pending = true;
-      this.server = await Server.establish(this.#game);
       this.client?.shutdown();
       this.client = undefined;
-      this.host_pending = false;
+
+      this.host_pending = true;
+      this.server = new Server(this.#game);
+      this.server.signaler.status.onstatus = () => this.requestUpdate();
+      console.log("WAITING");
+      await timeout(this.server.signaler.status.connected(), 5000);
+
       window.history.pushState({}, "", "?game=" + this.server.signaler.peer_id);
       navigator.clipboard.writeText(window.location.toString());
     } catch (e) {
       console.error(e);
+      let s = this.server;
+      this.server = undefined;
+
+      await s?.shutdown();
+    } finally {
+      this.host_pending = false;
+
     }
   };
 }

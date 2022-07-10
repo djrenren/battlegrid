@@ -15,14 +15,16 @@ export const window_ev = <N extends keyof WindowEventMap>(name: N, detail: Custo
 
 export interface EventEmitter<EventMap> extends EventTarget {
   addEventListener<K extends keyof EventMap>(type: K, listener: (ev: EventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
-  addEventListener(type: string, listener: EventListener | EventListenerObject, useCapture?: boolean): void;
+  removeEventListener<K extends keyof EventMap>(type: K, listener: (ev: EventMap[K]) => any, options?: boolean | EventListenerOptions): void;
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+  removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
 }
 
-export function waitFor<K, E, ET extends { addEventListener(type: K, listener: (ev: E) => void, init: AddEventListenerOptions): void }>(
+export function waitFor<K extends string, E, ET extends EventEmitter<{K: E}>>(
   type: K,
   target: ET
 ): Promise<E> {
-  return new Promise((resolve) => {
-    target.addEventListener(type, resolve, { once: true });
+  return new Promise<E>((resolve) => {
+    target.addEventListener(type, (e) => resolve(e as any), { once: true });
   });
 }

@@ -1,12 +1,12 @@
 import { type RawData, WebSocket, WebSocketServer } from 'ws';
-import * as uuid from 'uuid';
 import { type IncomingMessage, createServer } from 'http';
-import { Socket } from 'dgram';
 
+const HEARTBEAT_INTERVAL = 3000;
 
 type PeerId = string & {__brand: 'peer_id'};
 
 let peers = new Map<PeerId, WebSocket>();
+let secrets = new Map<PeerId, string>();
 function get_suggested_id(req: IncomingMessage): PeerId | null {
     let suggested_id = req.url?.substring(1);
     if (suggested_id && suggested_id.length > 0) {
@@ -41,6 +41,20 @@ const wss = new WebSocketServer({
  noServer: true 
 });
 
+setInterval(() => pingAll(), HEARTBEAT_INTERVAL);
+function pingAll() {
+    wss.clients.forEach(((ws: WebSocket & {isAlive: boolean, peer_id: PeerId}) => {
+        console.log("PINGING", ws.isAlive);
+      if (ws.isAlive === false) {
+        peers.delete(ws.peer_id);
+        return ws.terminate()
+      };
+
+      ws.isAlive = false;
+      ws.ping();
+    }) as any);
+}
+
 server.on('upgrade', (req, socket, head) => {
     let suggested_id = get_suggested_id(req);
 
@@ -54,13 +68,27 @@ server.on('upgrade', (req, socket, head) => {
 
 
     wss.handleUpgrade(req, socket, head, (socket) => {
+        (socket as any).isAlive = true;
+        (socket as any).peer_id = id;
         peers.set(id, socket);
         console.log(id, "connected");
         //socket.send(JSON.stringify({type: "assignment", id}));
         socket.on('message', (data, isBinary) => {
             on_message.bind(socket)(id, data, isBinary);
         });
-        socket.on('close', () => peers.delete(id));
+        socket.on("pong", () => {
+            console.log("pong from", id);
+            let persisit = Math.random();
+            if (Math.random() < 0.1) {
+                console.log("Killing", id);
+            } else {
+                (socket as any).isAlive = true;
+            }
+        });
+        socket.on('close', () => {
+            console.log(id, "disconnected");
+            peers.delete(id)
+        });
     });
 })
 
@@ -70,15 +98,22 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
         return this.close(1011, "Signaling server does not support binary data");
     }
 
+    let txt = data.toString('utf8');
+
+    if (txt === '__ping__') {
+        console.log('ponging');
+        return this.send('__pong__');
+    }
+
     let msg;
 
     try {
-        msg = JSON.parse(data.toString('utf8'));
+        msg = JSON.parse(txt);
     } catch (e) {
+        console.log(txt);
         return this.close(1011, "All messages must be valid utf8 JSON");
     }
     console.log(msg);
-
     let to = msg.to as PeerId | undefined;
     if (to === undefined) {
         return this.close(1011, "All messages must have a `to` field");

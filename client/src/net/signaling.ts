@@ -1,17 +1,19 @@
-import { waitFor } from "../util/events";
-import { stream, open as socket_open } from "../util/socket";
+import { stream, open as socket_open, with_heartbeat } from "../util/socket";
 import { open as rtc_open } from "../util/rtc";
 import { durable, iter, json } from "../util/streams";
 import { Peer, PeerId } from "./peer";
+import { StatusEmitter } from "../util/net";
 
 const PEER_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-const DEFAULT_SIGNALER = new URL("wss://battlegrid-signaling.herokuapp.com");
+const DEFAULT_SIGNALER = "ws://localhost:8081";
 export type NewConnection = { id: PeerId; conn: RTCPeerConnection };
 
 export class Signaler {
   incoming_peers: ReadableStream<Peer>;
   peer_id: PeerId;
+  allow_connections = false;
+  status = new StatusEmitter();
 
   #conns = new Map<PeerId, Peer>();
   #sigs: ReadableWritablePair<Signal, Signal>;
@@ -19,8 +21,19 @@ export class Signaler {
   #server: WritableStreamDefaultWriter<Signal>;
   #abort: AbortController;
 
-  private constructor(sigs: ReadableWritablePair<Signal, Signal>, peer_id: PeerId) {
-    this.#sigs = sigs;
+  constructor(peer_id: PeerId, allow_connections = false) {
+    this.allow_connections = allow_connections;
+    this.#sigs = durable(async () => {
+      console.log("INNER BUILDER");
+      this.status.set('opening');
+      
+      console.log("HMMM");
+      let url = new URL(DEFAULT_SIGNALER);
+      url.pathname = peer_id;
+      let s = json<Signal>(stream<string, string>(with_heartbeat(await socket_open(new WebSocket(url)))));
+      this.status.set('open');
+      return s;
+    });
     this.peer_id = peer_id;
     const output = new TransformStream();
     this.incoming_peers = output.readable;
@@ -31,36 +44,33 @@ export class Signaler {
     this.#loop();
   }
 
-  static async establish(signaling_server: URL = DEFAULT_SIGNALER, peer_id = crypto.randomUUID() as PeerId) {
-    signaling_server.pathname = peer_id;
-    // Set up our durable stream of signaling events
-    let sigs = await durable(async () => json<Signal>(stream<string, string>(await socket_open(new WebSocket(signaling_server)))));
-
-    return new Signaler(sigs, peer_id);
-  }
-
-  async initiate(remote_id: PeerId): Promise<Peer> {
+  initiate(remote_id: PeerId): Peer {
+    
     let peer = this.#init_connection(remote_id);
-    let offer = await peer.rtc.createOffer();
-    await peer.rtc.setLocalDescription(offer);
 
-    this.#server.write({
-      type: "offer",
-      from: this.peer_id,
-      to: remote_id,
-      offer,
-    });
+    peer.rtc.createOffer().then(async offer =>{
+      await peer.rtc.setLocalDescription(offer);
+      console.log("WRITING");
+      return this.#server.write({
+        type: "offer",
+        from: this.peer_id,
+        to: remote_id,
+        offer,
+      });
+    }).catch(e => console.error("Intiation error: ", e));
 
-    // There's no reliable close event for RTCPeerConnection
-    // if we manually close it, so instead we watch for the close event
-    // on the events channel
-    await Promise.race([
-      waitFor("open", peer.events_dc),
-      waitFor("close", peer.events_dc).then(() => {
-        throw new Error("Unable to connect to host");
-      }),
-    ]);
 
+    // // There's no reliable close event for RTCPeerConnection
+    // // if we manually close it, so instead we watch for the close event
+    // // on the events channel
+    // await Promise.race([
+    //   waitFor("open", peer.events_dc),
+    //   waitFor("close", peer.events_dc).then(() => {
+    //     throw new Error("Unable to connect to host");
+    //   }),
+    // ]);
+
+    console.log("Initiated peer");
     return peer;
   }
 
@@ -103,7 +113,6 @@ export class Signaler {
       .pipeTo(
         new WritableStream({
           write: async (sig) => {
-            console.log(sig);
             if (sig.type === "error-not-exists") {
               let peer = this.#conns.get(sig.destination);
               peer?.rtc.close();
@@ -114,6 +123,7 @@ export class Signaler {
             switch (sig.type) {
               // A remote peer is trying to connect to us
               case "offer":
+                if (!this.allow_connections) return;
                 remote = this.#init_connection(sig.from);
                 remote.rtc.setRemoteDescription(new RTCSessionDescription(sig.offer));
                 let answer = await remote.rtc.createAnswer();
@@ -148,8 +158,13 @@ export class Signaler {
   async shutdown() {
     try {
       this.#abort.abort("shutting down signaler");
+      this.status.set('closed');
     } catch {}
-    await this.#server.close();
+    try {
+      console.log("closing server...");
+      this.#server.abort("Client shutting down");
+      console.log("closing server...");
+    } catch {}
   }
 }
 
@@ -175,5 +190,4 @@ type SignalError = {
 
 type Signal = SignalData | SignalError;
 
-export type Status = "connected" | "disconnected" | "closed";
-export type StatusEvent = CustomEvent<Status>;
+export type SignalingStatus = "connected" | "disconnected" | "closed";
