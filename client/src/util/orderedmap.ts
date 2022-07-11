@@ -39,13 +39,18 @@ export class OrderedMap<K, V> {
   }
 
   set_index(key: K, i: number): boolean {
+    debugger;
     const idx = this.map.get(key);
     if (idx === undefined || i >= this.order.length) return false;
     const val = this.order.splice(idx, 1)[0];
-    this.order.splice(i, 0, val);
+    this.order.splice(i > idx ? i - 1 : i, 0, val);
     this.map.forEach((val, key) => {
-      if (val >= i) {
+      if (val >= i && val < idx) {
         this.map.set(key, val + 1);
+      }
+
+      if (val <= i && val > idx) {
+        this.map.set(key, val - 1);
       }
     });
     this.map.set(key, i);

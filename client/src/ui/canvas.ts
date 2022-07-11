@@ -9,6 +9,7 @@ import { Game } from "../game/game";
 import { OrderedMap } from "../util/orderedmap";
 import { map } from "../util/iter";
 import { PPZ } from "./ppp";
+import { styleMap } from "lit/directives/style-map.js";
 
 const PIXEL_SCALE = 1;
 const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
@@ -91,7 +92,10 @@ export class Canvas extends LitElement {
         @dragover=${this.#drag_over}
         @drop=${this.#drop}
       >
-        <svg id="root" width=${width + PADDING * 2} height=${height + PADDING * 2}>
+        <svg id="root" width=${width + PADDING * 2} height=${height + PADDING * 2} style=${styleMap({
+          width: `${width + PADDING * 2}px`,
+          height: `${height + PADDING * 2}px`
+        })}>
           <defs>
             <clipPath id="canvasClip">
               <rect width=${width} height=${height} rx=${CANVAS_RADIUS}></rect>
@@ -156,6 +160,7 @@ export class Canvas extends LitElement {
                             width=${sbbox.bbox.end[0] - sbbox.bbox.start[0]}
                             height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
                             fill="transparent"
+                            @touchmove=${this.prevent_safari_scroll}
                             @pointerdown=${this.selection_drag_start}
                             @pointermove=${this.selection_drag}
                             @pointerup=${this.selection_drag_end}
@@ -206,6 +211,7 @@ export class Canvas extends LitElement {
               y=${sbbox.bbox.start[1]}
               width=${sbbox.bbox.end[0] - sbbox.bbox.start[0]}
               height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
+              @touchmove=${this.prevent_safari_scroll}
               @pointerdown=${this.selection_drag_start}
               @pointermove=${this.selection_drag}
               @pointerup=${this.selection_drag_end}>
@@ -281,6 +287,11 @@ export class Canvas extends LitElement {
     }
   };
 
+  @eventOptions({capture: true, passive: false})
+  prevent_safari_scroll(ev: TouchEvent) {
+    stop_ev(ev);
+  }
+
   #bg_drag_over = (ev: DragEvent) => {
     stop_ev(ev);
     this._drop_hint = undefined;
@@ -355,7 +366,8 @@ export class Canvas extends LitElement {
   }
 
   #sbox_stop(ev: PointerEvent) {
-    if (!this.#sbox) return;
+    // TODO: This causes mobile safari to lose selection on zoom
+    if (!this.#sbox) return this.dispatchEvent(window_ev("token-select", []));
     (ev.target as SVGElement).setPointerCapture(ev.pointerId);
     const loc = min_p(this.#sbox.pin, this.#sbox.mouse);
     const dim = abs_p(sub_p(this.#sbox.pin, this.#sbox.mouse));
@@ -409,6 +421,7 @@ export class Canvas extends LitElement {
 
   @eventOptions({ capture: true, passive: false })
   selection_drag(ev: PointerEvent) {
+    console.log("drag fired");
     if (!is_primary_down(ev)) return;
     if (!this.#drag_offset) {
       this.selection_drag_start(ev);
