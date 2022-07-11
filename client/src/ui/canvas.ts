@@ -158,7 +158,7 @@ export class Canvas extends LitElement {
                             fill="transparent"
                             @pointerdown=${this.selection_drag_start}
                             @pointermove=${this.selection_drag}
-                            @pointerup=${this.#selection_drag_end}
+                            @pointerup=${this.selection_drag_end}
                         ></rect>`
                         : null}
                     `;
@@ -208,7 +208,7 @@ export class Canvas extends LitElement {
               height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
               @pointerdown=${this.selection_drag_start}
               @pointermove=${this.selection_drag}
-              @pointerup=${this.#selection_drag_end}>
+              @pointerup=${this.selection_drag_end}>
               <rect class="selection-box" width="100%" height="100%"  ></rect>
             ${
               selected
@@ -479,7 +479,8 @@ export class Canvas extends LitElement {
     }
   };
 
-  #selection_drag_end = (ev: PointerEvent) => {
+  @eventOptions({capture: true, passive: false})
+  selection_drag_end(ev: PointerEvent) {
     stop_ev(ev);
     this.#drag_offset = undefined;
   };
