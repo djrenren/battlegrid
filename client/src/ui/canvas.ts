@@ -1,8 +1,8 @@
 import { css, html, LitElement, svg } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, eventOptions, property, query, state } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import { abs_p, add_c, add_p, BBox, clamp_p, div_c, eq_p, intersect, max_p, min_p, mul_c, Point, sub_p } from "../util/math";
-import { is_mouse_down, is_primary_down, stop_ev, window_ev } from "../util/events";
+import { is_mouse_down, is_primary_down, is_primary_touch, stop_ev, window_ev } from "../util/events";
 import { getImage, LocalOrRemoteImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
 import { Game } from "../game/game";
@@ -131,7 +131,8 @@ export class Canvas extends LitElement {
                         height=${height}
                         fill="transparent"
                         preserveAspectRatio="none"
-                        @pointerdown=${this.#focus}
+                        @pointerdown=${this.#mouse_focus}
+                        @pointerup=${this.#touch_focus}
                       >
                         <image
                           id=${t.id}
@@ -144,7 +145,7 @@ export class Canvas extends LitElement {
                           preserveAspectRatio="none"
                           @load=${mark_loaded}
                         ></image>
-                        <rect width="1" height="1" class="loading"></rect>
+                        <rect width="1" height="1" class="loading" ></rect>
                       </svg>
 
                       ${sbbox?.index === index
@@ -155,8 +156,8 @@ export class Canvas extends LitElement {
                             width=${sbbox.bbox.end[0] - sbbox.bbox.start[0]}
                             height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
                             fill="transparent"
-                            @pointerdown=${this.#selection_drag_start}
-                            @pointermove=${this.#selection_drag}
+                            @pointerdown=${this.selection_drag_start}
+                            @pointermove=${this.selection_drag}
                             @pointerup=${this.#selection_drag_end}
                         ></rect>`
                         : null}
@@ -205,8 +206,8 @@ export class Canvas extends LitElement {
               y=${sbbox.bbox.start[1]}
               width=${sbbox.bbox.end[0] - sbbox.bbox.start[0]}
               height=${sbbox.bbox.end[1] - sbbox.bbox.start[1]}
-              @pointerdown=${this.#selection_drag_start}
-              @pointermove=${this.#selection_drag}
+              @pointerdown=${this.selection_drag_start}
+              @pointermove=${this.selection_drag}
               @pointerup=${this.#selection_drag_end}>
               <rect class="selection-box" width="100%" height="100%"  ></rect>
             ${
@@ -313,8 +314,17 @@ export class Canvas extends LitElement {
     this.hovering = undefined;
   };
 
-  #focus = (ev: PointerEvent) => {
+  #mouse_focus = (ev: PointerEvent) => {
     if (!is_mouse_down(ev)) return;
+    this.#focus(ev);
+  };
+
+  #touch_focus = (ev: PointerEvent) => {
+    if (!is_primary_touch(ev)) return;
+    this.#focus(ev);
+  }
+
+  #focus = (ev: PointerEvent) => {
     ev.preventDefault();
     ev.stopPropagation();
     const id = (ev.target as SVGImageElement).id;
@@ -328,7 +338,7 @@ export class Canvas extends LitElement {
     } else {
       this.dispatchEvent(window_ev("token-select", [(ev.target as SVGImageElement).id]));
     }
-  };
+  }
 
   #sbox_start(ev: PointerEvent) {
     if (!is_mouse_down(ev)) return;
@@ -385,7 +395,9 @@ export class Canvas extends LitElement {
   }
 
   #drag_offset?: Point;
-  #selection_drag_start = (ev: PointerEvent) => {
+
+  @eventOptions({capture: true, passive: false})
+  selection_drag_start(ev: PointerEvent) {
     if (!is_primary_down(ev)) return;
     const svg_coord = this.#screen_to_svg(ev) as Point;
     stop_ev(ev);
@@ -394,10 +406,12 @@ export class Canvas extends LitElement {
   };
 
   #selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point, r: 0 };
-  #selection_drag = (ev: PointerEvent) => {
+
+  @eventOptions({capture: true, passive: false})
+  selection_drag(ev: PointerEvent) {
     if (!is_primary_down(ev)) return;
     if (!this.#drag_offset) {
-      this.#selection_drag_start(ev);
+      this.selection_drag_start(ev);
     }
     stop_ev(ev);
     const grid_loc = clamp_p([0, 0], this.#dim, this.#screen_to_svg(ev));
