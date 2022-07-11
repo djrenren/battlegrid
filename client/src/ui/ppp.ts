@@ -56,18 +56,17 @@ export class PPZ extends HTMLElement {
     this.addEventListener("scroll", () => (this.state.scroll_pos = [this.scrollLeft, this.scrollTop]));
     this.addEventListener("gesturestart", this.#gesture.start);
     this.addEventListener("gesturechange", this.#gesture.change);
-    document.addEventListener("keydown", this.#keyboard_zoom, {passive: false});
+    document.addEventListener("keydown", this.#keyboard_zoom, { passive: false });
   }
 
   #zoom_to_fit() {
-      let svg = (this.root.querySelector('slot') as HTMLSlotElement).assignedElements()[0] as SVGSVGElement;
-      let dim = this.getBoundingClientRect();
-      let vdim = [dim.width, dim.height] as Point;
-      let cdim = [svg.width.baseVal.value, svg.height.baseVal.value] as Point;
-      const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(vdim, cdim), AUTO_ZOOM_FILL)));
-      this.zoom([0, 0], zoom - this.state.z);
+    let svg = (this.root.querySelector("slot") as HTMLSlotElement).assignedElements()[0] as SVGSVGElement;
+    let dim = this.getBoundingClientRect();
+    let vdim = [dim.width, dim.height] as Point;
+    let cdim = [svg.width.baseVal.value, svg.height.baseVal.value] as Point;
+    const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(vdim, cdim), AUTO_ZOOM_FILL)));
+    this.zoom([0, 0], zoom - this.state.z);
   }
-
 
   #resize_observer = new ResizeObserver((entries) => {
     for (let e of entries) {
@@ -171,25 +170,22 @@ export class PPZ extends HTMLElement {
     this.addEventListener;
   };
 
-
-
-
   #keyboard_zoom = (ev: KeyboardEvent) => {
     console.log("zoom!", ev.ctrlKey, ev.key);
     if (!ev.ctrlKey) return;
-    if (ev.key === '-') {
+    if (ev.key === "-") {
       this.smooth = true;
-      this.zoom(this.coordToLocal(add_p(this.vloc, div_c(this.vdim, 2))), -.2 * this.state.z)
+      this.zoom(this.coordToLocal(add_p(this.vloc, div_c(this.vdim, 2))), -0.2 * this.state.z);
       stop_ev(ev);
-    } else if (ev.key === '=') {
+    } else if (ev.key === "=") {
       this.smooth = true;
-      this.zoom(this.coordToLocal(add_p(this.vloc, div_c(this.vdim, 2))), .2 * this.state.z)
+      this.zoom(this.coordToLocal(add_p(this.vloc, div_c(this.vdim, 2))), 0.2 * this.state.z);
       stop_ev(ev);
-    } else if (ev.key === '0') {
+    } else if (ev.key === "0") {
       this.smooth = true;
       this.#zoom_to_fit();
     }
-  }
+  };
 
   // Gesture-based scrolling
   // Safari records pinches as gesture events rather than wheel events

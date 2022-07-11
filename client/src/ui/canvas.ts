@@ -7,7 +7,7 @@ import { getImage, LocalOrRemoteImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
 import { Game } from "../game/game";
 import { OrderedMap } from "../util/orderedmap";
-import { map } from "../util/iter";
+import { filter, map } from "../util/iter";
 import { PPZ } from "./ppp";
 import { styleMap } from "lit/directives/style-map.js";
 
@@ -92,10 +92,15 @@ export class Canvas extends LitElement {
         @dragover=${this.#drag_over}
         @drop=${this.#drop}
       >
-        <svg id="root" width=${width + PADDING * 2} height=${height + PADDING * 2} style=${styleMap({
-          width: `${width + PADDING * 2}px`,
-          height: `${height + PADDING * 2}px`
-        })}>
+        <svg
+          id="root"
+          width=${width + PADDING * 2}
+          height=${height + PADDING * 2}
+          style=${styleMap({
+            width: `${width + PADDING * 2}px`,
+            height: `${height + PADDING * 2}px`,
+          })}
+        >
           <defs>
             <clipPath id="canvasClip">
               <rect width=${width} height=${height} rx=${CANVAS_RADIUS}></rect>
@@ -287,7 +292,7 @@ export class Canvas extends LitElement {
     }
   };
 
-  @eventOptions({capture: true, passive: false})
+  @eventOptions({ capture: true, passive: false })
   prevent_safari_scroll(ev: TouchEvent) {
     stop_ev(ev);
   }
@@ -377,17 +382,18 @@ export class Canvas extends LitElement {
       end: add_p(loc, dim),
     };
 
-    const sel = this.tokens.order
-      .filter((t) =>
+    const sel = map(
+      filter(this.tokens.values(), (t) =>
         intersect(box, {
           start: t.loc,
           end: add_p(t.loc, t.dim),
         })
-      )
-      .map((t) => t.id);
+      ),
+      (t) => t.id
+    );
 
     this.#sbox = undefined;
-    this.dispatchEvent(window_ev("token-select", sel));
+    this.dispatchEvent(window_ev("token-select", [...sel]));
     this.requestUpdate();
   }
 

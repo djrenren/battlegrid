@@ -1,10 +1,9 @@
 export class OrderedMap<K, V> {
-  order: V[] = [];
-  map: Map<K, number> = new Map();
+  order: K[] = [];
+  map: Map<K, V> = new Map();
 
   get(key: K): V | undefined {
-    const idx = this.map.get(key);
-    if (idx !== undefined) return this.order[idx];
+    return this.map.get(key);
   }
 
   has(key: K): boolean {
@@ -13,52 +12,46 @@ export class OrderedMap<K, V> {
 
   add(key: K, value: V) {
     if (!this.map.has(key)) {
-      this.map.set(key, this.order.length);
-      this.order.push(value);
+      this.map.set(key, value);
+      this.order.push(key);
     } else {
       this.set_index(key, this.order.length - 1);
     }
   }
 
   delete(key: K): boolean {
-    const idx = this.map.get(key);
-    if (idx === undefined) return false;
+    let value = this.map.get(key);
+    if (value === undefined) return false;
+
+    let res = this.map.delete(key);
+    let idx = this.order.indexOf(key);
+    if (idx === -1) {
+      return res;
+    }
 
     this.order.splice(idx, 1);
-    this.map.delete(key);
-    this.map.forEach((val, key) => {
-      if (val >= idx) {
-        this.map.set(key, val - 1);
-      }
-    });
-    return true;
+    return res;
   }
 
   index(key: K): number | undefined {
-    return this.map.get(key);
+    return this.order.indexOf(key);
   }
 
-  set_index(key: K, i: number): boolean {
-    debugger;
-    const idx = this.map.get(key);
-    if (idx === undefined || i >= this.order.length) return false;
-    const val = this.order.splice(idx, 1)[0];
-    this.order.splice(i > idx ? i - 1 : i, 0, val);
-    this.map.forEach((val, key) => {
-      if (val >= i && val < idx) {
-        this.map.set(key, val + 1);
-      }
+  set_index(key: K, new_idx: number): boolean {
+    const idx = this.order.indexOf(key);
+    if (idx === -1) {
+      return false;
+    }
 
-      if (val <= i && val > idx) {
-        this.map.set(key, val - 1);
-      }
-    });
-    this.map.set(key, i);
+    this.order.splice(new_idx, 0, ...this.order.splice(idx, 1));
+
     return true;
   }
 
-  values(): Iterable<V> {
-    return this.order;
+  *values(): Iterable<V> {
+    for (let key of this.order) {
+      yield this.map.get(key)!;
+    }
   }
 
   get size(): number {
