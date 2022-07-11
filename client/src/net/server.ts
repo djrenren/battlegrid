@@ -12,7 +12,7 @@ import { Signaler } from "./signaler";
 export class Server {
   signaler: Signaler;
   #game: Game;
-  #clients: Set<Peer> = new Set();
+  clients: Set<Peer> = new Set();
   #abort: AbortController;
 
   constructor(game: Game) {
@@ -22,7 +22,7 @@ export class Server {
     //@ts-ignore
     this.signaler.addEventListener("peer", ({ detail: peer }: CustomEvent<Peer>) => this.#add_client(peer));
     this.#game.addEventListener("game-event", ({ detail: ev }) => {
-      for (let client of this.#clients) {
+      for (let client of this.clients) {
         if (client.id === ev.remote) continue;
         client.write_event(ev);
       }
@@ -30,7 +30,7 @@ export class Server {
   }
 
   #add_client(peer: Peer) {
-    this.#clients.add(peer);
+    this.clients.add(peer);
 
     // It's a little weird that we're sending the JSON encoding
     // as a string. But we need to capture the state of the tabletop
@@ -51,7 +51,7 @@ export class Server {
 
     peer.events_dc.addEventListener("close", () => {
       console.log("PEEER EVENT DC");
-      this.#clients.delete(peer);
+      this.clients.delete(peer);
     });
 
     peer.ondatachannel = async (ev) => {
@@ -71,11 +71,11 @@ export class Server {
   }
 
   async shutdown() {
-    for (let c of this.#clients) {
+    for (let c of this.clients) {
       c.rtc.close();
     }
 
-    this.#clients.clear();
+    this.clients.clear();
     this.#abort.abort("Server shutting down");
     await this.signaler.shutdown();
   }

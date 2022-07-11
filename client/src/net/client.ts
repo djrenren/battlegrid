@@ -53,6 +53,7 @@ export class Client {
   }
 
   async shutdown() {
+    this.#game.removeEventListener('game-event', this.forward_events as any);
     this.#peer.rtc.close();
     console.log("Waiting for signaler shutdown");
     await this.#signaler.shutdown();

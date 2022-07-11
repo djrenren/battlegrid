@@ -1,5 +1,5 @@
 import { consume } from "../../util/streams";
-
+import * as fflate from "fflate";
 export const RESOURCE_PROTOCOL = "request-resource";
 
 export type Resource = {
@@ -25,11 +25,11 @@ export async function request(channel: ReadableWritablePair<ArrayBuffer | string
   } catch (e) {
     console.error("Error consuming", e);
   }
-
-  console.log(buffer);
+  
+  console.log("GOT EM ALL");
   let blob = new Blob(buffer, { type: header?.type });
 
-  console.log("GOT EM ALL!", blob);
+  console.log("Built buffer");
   return {
     blob,
   };
@@ -37,6 +37,8 @@ export async function request(channel: ReadableWritablePair<ArrayBuffer | string
 
 const MAX_MESSAGE_SIZE = 64 * 1000;
 export async function response(dc: ReadableWritablePair<ArrayBuffer | string, ArrayBuffer | string>, resource: Resource) {
+
+
   let blob = resource.blob;
   let writer = dc.writable.getWriter();
   console.log("BLOBL", blob);

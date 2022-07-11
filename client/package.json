@@ -49,6 +49,7 @@
     "watch": "rollup -c --watch"
   },
   "dependencies": {
+    "fflate": "^0.7.3",
     "lit": "^2.2.7"
   }
 }
