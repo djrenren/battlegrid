@@ -1,5 +1,5 @@
 import { css, html, LitElement } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { GameEvent } from "../game/game-events";
 import { BgDropEvent, Canvas, TokenDropEvent, TokenSelectEvent } from "./canvas";
 import "./buymeacoffee";
@@ -11,7 +11,6 @@ import { Client } from "../net/client";
 import { Server } from "../net/server";
 import { PeerId } from "../net/peer";
 import "./util/with-tooltip";
-import "./util/toggle";
 import "./host-toggle";
 import "./client-status";
 import { timeout } from "../util/promises";
