@@ -2,7 +2,7 @@ import { Game } from "../game/game";
 import { GameEvent } from "../game/game-events";
 import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";
-import { Signaler } from "./signaling";
+import { Signaler } from "./signaler";
 import { RESOURCE_PROTOCOL, request } from "./resources/protocol";
 import { dc_status, streams } from "../util/rtc";
 import { ResourceId, ResourceMessage, ResourceRequest } from "./resources/service-worker-protocol";
@@ -68,13 +68,13 @@ export class Client {
         this.status.set('open');
       }
     })
-    // peer.events_dc.addEventListener('close', () => this.status.set('closed'));
-    // peer.events_dc.addEventListener('open', () => this.status.set('open'));
-    // this.status.set(dc_status(peer.events_dc));
+    peer.events_dc.addEventListener('close', () => this.status.set('closed'));
+    peer.events_dc.addEventListener('open', () => this.status.set('open'));
+    this.status.set(dc_status(peer.events_dc));
 
-    // consume(peer.events, (ev) => {
-    //   return this.#game.apply(ev)
-    // });
+    consume(peer.events, (ev) => {
+      return this.#game.apply(ev)
+    });
 
     return peer;
   }

@@ -49,7 +49,6 @@ export class PPZ extends HTMLElement {
       let svg = slot.assignedElements()[0] as SVGSVGElement;
       this.#resize_observer.observe(svg);
 
-
       this.smooth = false;
       let dim = this.getBoundingClientRect();
       let vdim = [dim.width, dim.height] as Point;
@@ -91,7 +90,6 @@ export class PPZ extends HTMLElement {
 
       // Record the new z
       this.state.z += delta_scale;
-
 
       this.center();
 

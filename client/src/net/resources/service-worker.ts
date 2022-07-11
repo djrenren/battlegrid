@@ -131,7 +131,7 @@ async function fetch_resource(ev: FetchEvent): Promise<Response> {
 sw.addEventListener("fetch", (ev) => {
   let url = new URL(ev.request.url);
   if (!url.pathname.startsWith("/resources/")) {
-    return fetch(ev.request);
+    return false;
   }
   ev.respondWith(
     (async () => {

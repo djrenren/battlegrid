@@ -78,12 +78,12 @@ server.on('upgrade', (req, socket, head) => {
         });
         socket.on("pong", () => {
             console.log("pong from", id);
-            let persisit = Math.random();
-            if (Math.random() < 0.1) {
-                console.log("Killing", id);
-            } else {
+            // let persisit = Math.random();
+            // if (Math.random() < 0.1) {
+                // console.log("Killing", id);
+            // } else {
                 (socket as any).isAlive = true;
-            }
+            // }
         });
         socket.on('close', () => {
             console.log(id, "disconnected");
@@ -94,6 +94,7 @@ server.on('upgrade', (req, socket, head) => {
 
 
 function on_message(this: WebSocket, from: string, data: RawData, isBinary: boolean) {
+    console.log("MESSAGE:", data);
     if (isBinary) {
         return this.close(1011, "Signaling server does not support binary data");
     }

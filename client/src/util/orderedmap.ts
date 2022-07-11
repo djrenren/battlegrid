@@ -12,8 +12,12 @@ export class OrderedMap<K, V> {
   }
 
   add(key: K, value: V) {
-    this.map.set(key, this.order.length);
-    this.order.push(value);
+    if (!this.map.has(key)) {
+      this.map.set(key, this.order.length);
+      this.order.push(value);
+    } else {
+      this.set_index(key, this.order.length - 1);
+    }
   }
 
   delete(key: K): boolean {

@@ -42,7 +42,7 @@ const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
         controller.enqueue(data);
       };
       const onclose = () => {
-        controller.close();
+        setTimeout(() => controller.close(), 3000);
         dc.removeEventListener("close", onclose);
       };
       dc.addEventListener("close", onclose);
@@ -54,18 +54,17 @@ const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
   });
 };
 
-
 export const dc_status = (dc: RTCDataChannel): Status => {
   switch (dc.readyState) {
-    case 'open':
-    case 'closed':
+    case "open":
+    case "closed":
       return dc.readyState;
-    case 'closing':
-      return 'closed';
-    case 'connecting':
-      return 'opening';
+    case "closing":
+      return "closed";
+    case "connecting":
+      return "opening";
   }
-}
+};
 
 const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
   let resume: (() => void) | undefined;
@@ -74,7 +73,7 @@ const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
     {
       start(controller) {
         const onclose = () => {
-          console.log("stream closed by dc ending");
+          console.log("stream closed by dc ending", dc.label);
           controller.error("Closed foo");
           dc.removeEventListener("close", onclose);
         };
@@ -83,7 +82,6 @@ const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
         dc.onbufferedamountlow = () => resume && resume();
       },
       async write(chunk) {
-        
         if (dc.readyState === "connecting" || dc.bufferedAmount > dc.bufferedAmountLowThreshold) {
           console.log("waiting for resumptoin...");
           await new Promise<void>((r, _) => (resume = r));

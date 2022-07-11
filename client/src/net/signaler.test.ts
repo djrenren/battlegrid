@@ -9,8 +9,10 @@ for (var member in WebRTC) {
 
 import "web-streams-polyfill";
 import "abortcontroller-polyfill";
-import { Signaler } from "./signaling";
-import { hasUncaughtExceptionCaptureCallback } from "node:process";
+import { Signaler } from "./signaler";
+import { PeerId } from "./peer";
+import { open } from "../util/rtc";
+import { waitFor } from "../util/events";
 
 /**
  * @jest-environment jsdom
@@ -18,10 +20,14 @@ import { hasUncaughtExceptionCaptureCallback } from "node:process";
 
 describe(Signaler, () => {
   it("negotiates a connection", async () => {
-    let [x, y] = await Promise.all([Signaler.establish(new URL("ws://localhost:8080")), Signaler.establish(new URL("ws://localhost:8080"))]);
+    let [x, y] = [new Signaler("1" as PeerId, true, "ws://localhost:8081"), new Signaler("2" as PeerId, true, "ws://localhost:8081")];
 
     let peer = await x.initiate(y.peer_id);
 
-    expect(peer.rtc.iceConnectionState).toBe("connected");
+    await open(peer.rtc);
+
+    let close = waitFor("close", peer.events_dc);
+    peer.rtc.close();
+    await close;
   });
 });

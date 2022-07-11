@@ -1,3 +1,5 @@
+import { readBuilderProgram, resolveModuleName } from "typescript";
+
 export function pipe<T>(): [ReadableWritablePair<T, T>, ReadableWritablePair<T, T>] {
   let left_to_right = new TransformStream();
   let right_to_left = new TransformStream();
@@ -24,8 +26,8 @@ export async function* iter<R>(r: ReadableStream<R>): AsyncIterable<R> {
   }
 }
 
-export async function consume<R>(r: ReadableStream<R>, write: (chunk: R) => Promise<void>): Promise<void> {
-  return r.pipeTo(new WritableStream({ write }));
+export async function consume<R>(r: ReadableStream<R>, write: (chunk: R) => any, signal?: AbortSignal): Promise<void> {
+  return r.pipeTo(new WritableStream({ write }), { signal });
 }
 
 export function json<T>(r: ReadableWritablePair<string, string>): ReadableWritablePair<T, T> {
@@ -55,85 +57,111 @@ export interface AbortableStream<R, W> extends ReadableWritablePair<R, W> {
   abort(): Promise<void>;
 }
 
-/**
- * Creates a a stable stream by reproducing an underlying stream whenever it closes
- * @param builder the constructor for the underlying stream
- * @returns A stream
- */
-export function durable<R, W>(builder: () => Promise<ReadableWritablePair<R, W>>): ReadableWritablePair<R, W> {
-  let underlying;
+// export function pip(): ReadableWritablePair<any, any> {
+//   let reader;
+//   let writer;
+//   let controller: ReadableStreamDefaultController;
+//   reader = new ReadableStream({
+//     start(controller) {controller = controller}
+//   });
+//   writer = new WritableStream({
+//     write(chunk) {
+//       controller.enqueue
+//     }
+//   })
+// }
 
-  let writer: WritableStreamDefaultWriter<W> | undefined;
-  let reader: ReadableStreamDefaultReader<R> | undefined;
+// /**
+//  * Creates a a stable stream by reproducing an underlying stream whenever it closes
+//  * @param builder the constructor for the underlying stream
+//  * @returns A stream
+//  */
+// export function durable<R, W>(builder: () => Promise<ReadableWritablePair<R, W>>): ReadableWritablePair<R, W> {
+//   let underlying: Promise<{
+//     writer: WritableStreamDefaultWriter,
+//     reader: ReadableStreamDefaultReader,
+//   }>
 
-  let promise: Promise<any> | undefined;
-  let stop = false;
-  let reload = async () => {
-    if (stop) throw "No more reloading should occur";
-    if (promise) return promise;
-    return (promise = (async () => {
-      underlying = await builder();
-      writer = underlying.writable.getWriter();
-      reader = underlying.readable.getReader();
-      promise = undefined;
-    })());
-  };
+//   let timeout: Promise<void> = Promise.resolve();
+//   let nobuffer = new CountQueuingStrategy({highWaterMark: 0});
+//   let loading = false;
+//   let reload = () => {
+//     console.log('requesting a reload');
+//     if (loading) { return; }
+//     console.log('performing a reload');
+//     loading = true;
+//     underlying?.then(u => {
+//       u.reader.closed || u.reader.cancel("Restarting stream");
+//       u.writer.closed || u.writer.close();
+//     })
 
-  promise = reload();
+//     underlying = timeout.then(() => builder()).then(({readable, writable}) => ({
+//       reader: readable.getReader(),
+//       writer: writable.getWriter(),
+//     }))
+//     timeout = new Promise(resolve => setTimeout(resolve, 1000));
+//     underlying.finally(() => loading = false);
+//   }
 
-  let writable = new WritableStream(
-    {
-      async write(chunk, controller) {
-        if (!writer) {
-          await reload();
-        }
+//   reload();
 
-        try {
-          await writer!.write(chunk);
-        } catch {
-          await reload();
-        }
-      },
-      async close() {
-        stop = true;
-        await writer?.close();
-      },
-      async abort(reason) {
-        await writer?.abort(reason);
-      },
-    },
-    new CountQueuingStrategy({ highWaterMark: 50 })
-  );
+//   let writable = new WritableStream({
+//     async write(chunk) {
+//       while(true) {
+//         try {
+//           console.log("WRITING CHUNK", chunk);
+//           await ((await underlying).writer).write(chunk);
+//           console.log("CHUNK WRITTEN");
+//           return;
+//         } catch (e){
+//           console.error("Error writing: ", e, "... reloading");
+//           reload();
+//         }
+//       }
+//     },
+//     async abort(reason) {
+//       console.log("writable aborted");;
+//       try {
+//         await ((await underlying).writer).abort(reason);
 
-  let readable = new ReadableStream({
-    async pull(controller) {
-      let error = true;
-      while (error) {
-        if (!reader) {
-          await reload();
-          continue;
-        }
-        try {
-          let { done, value } = await reader.read();
-          if (done) {
-            console.log("HUH");
-            reader = undefined;
-          } else {
-            controller.enqueue(value);
-          }
-          error = false;
-        } catch (e) {
-          reader = undefined;
-        }
-      }
-    },
-    async cancel(reason) {
-      await reader?.cancel(reason);
-    },
-  });
+//       } catch {}
+//     },
 
-  return {
-    readable,
-    writable,
-  };
-}
+//     async close() {
+//       console.log("writable closed");;
+//       try {
+//         await ((await underlying).writer).close();
+//       } catch {}
+//     }
+//   }, nobuffer)
+
+//   let canceled = false;
+//   let readable = new ReadableStream({
+//     async pull(controller) {
+//       while(!canceled) {
+//         try {
+//           let {done, value} = await ((await underlying).reader).read();
+//           if (!done) {
+//             controller.enqueue(value);
+//             return;
+//           }
+//         } catch {}
+
+//         reload();
+//       }
+//     },
+
+//     async cancel(reason) {
+//       canceled = true;
+//       console.log("readable canceled");
+//       try {
+//         await ((await underlying).reader).cancel(reason);
+//       } catch {}
+//     }
+//   }, nobuffer);
+
+//   return {
+//     readable,
+//     writable,
+//   };
+// }

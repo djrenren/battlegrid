@@ -7,20 +7,20 @@ import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
 import { ResourceId } from "./resources/service-worker-protocol";
-import { Signaler } from "./signaling";
+import { Signaler } from "./signaler";
 
 export class Server {
   signaler: Signaler;
   #game: Game;
   #clients: Set<Peer> = new Set();
+  #abort: AbortController;
 
   constructor(game: Game) {
-    this.signaler = new Signaler(crypto.randomUUID() as PeerId);
-    this.signaler.allow_connections = true;
+    this.signaler = new Signaler(crypto.randomUUID() as PeerId, true);
     this.#game = game;
-
-    consume(this.signaler.incoming_peers, async (peer) => this.#add_client(peer));
-
+    this.#abort = new AbortController();
+    //@ts-ignore
+    this.signaler.addEventListener("peer", ({ detail: peer }: CustomEvent<Peer>) => this.#add_client(peer));
     this.#game.addEventListener("game-event", ({ detail: ev }) => {
       for (let client of this.#clients) {
         if (client.id === ev.remote) continue;
@@ -70,11 +70,13 @@ export class Server {
     return { blob: await resp.blob() };
   }
 
-  shutdown() {
+  async shutdown() {
     for (let c of this.#clients) {
       c.rtc.close();
     }
 
     this.#clients.clear();
+    this.#abort.abort("Server shutting down");
+    await this.signaler.shutdown();
   }
 }

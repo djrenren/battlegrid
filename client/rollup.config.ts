@@ -8,28 +8,27 @@ import minifyHTML from "rollup-plugin-minify-html-literals";
 import copy from "rollup-plugin-copy";
 
 let plugins = [
-  typescript({ sourceMap: true, inlineSourceMap: true, inlineSources: true}),
+  typescript({ sourceMap: true, inlineSourceMap: true, inlineSources: true }),
   resolve(),
-  // minifyHTML(),
-  // terser({
-  //   ecma: 2020,
-  //   module: true,
-  //   mangle: {
-  //     properties: {
-  //       regex: /^(#|__)/,
-  //     },
-  //     toplevel: true,
-  //   },
-  //   keep_classnames: false,
-  //   safari10: false,
-  //   drop_debugger: false,
-  // }),
-  // copy({
-  //   targets: [{ src: "static/**/*", dest: "build" }],
-  // }),
-  // visualizer(),
-  // // Print bundle summary
-  // summary({}),
+  minifyHTML(),
+  terser({
+    ecma: 2020,
+    module: true,
+    mangle: {
+      properties: {
+        regex: /^(#|__)/,
+      },
+      toplevel: true,
+    },
+    keep_classnames: false,
+    safari10: false,
+  }),
+  copy({
+    targets: [{ src: "static/**/*", dest: "build" }],
+  }),
+  visualizer(),
+  // Print bundle summary
+  summary({}),
 ];
 
 export default [
@@ -37,7 +36,7 @@ export default [
     plugins,
     input: "src/main.ts",
     output: {
-      sourcemap: 'inline',
+      sourcemap: "inline",
       file: "build/bundle.js",
       format: "es",
     },
