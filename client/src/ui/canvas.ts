@@ -123,7 +123,16 @@ export class Canvas extends LitElement {
                     const [width, height] = add_c(t.dim, -LINE_WIDTH);
                     const [x, y] = add_c(t.loc, LINE_WIDTH / 2);
                     return html`
-                      <svg viewBox="0 0 1 1" x=${x} y=${y} width=${width} height=${height} fill="transparent" preserveAspectRatio="none">
+                      <svg
+                        viewBox="0 0 1 1"
+                        x=${x}
+                        y=${y}
+                        width=${width}
+                        height=${height}
+                        fill="transparent"
+                        preserveAspectRatio="none"
+                        @pointerdown=${this.#focus}
+                      >
                         <image
                           id=${t.id}
                           class="token"
@@ -133,7 +142,6 @@ export class Canvas extends LitElement {
                           style=${`transform: rotate(${t.r}deg)`}
                           image-rendering="optimizeSpeed"
                           preserveAspectRatio="none"
-                          @pointerdown=${this.#focus}
                           @load=${mark_loaded}
                         ></image>
                         <rect width="1" height="1" class="loading"></rect>
