@@ -97,10 +97,10 @@ export class Canvas extends LitElement {
               <rect width=${width} height=${height} rx=${CANVAS_RADIUS}></rect>
             </clipPath>
             <pattern id="horiz" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height=${GRID_SIZE} patternUnits="userSpaceOnUse">
-              <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3"></rect>
+              <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" shape-rendering="geometricPrecision"></rect>
             </pattern>
             <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width=${GRID_SIZE} height="100%" patternUnits="userSpaceOnUse">
-              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3"></rect>
+              <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" shape-rendering="geometric precision"></rect>
             </pattern>
             <pattern id="loading" patternUnits="userSpaceOnUse" width="1" height="1">
               <rect width="1" height="1" fill="white"></rect>

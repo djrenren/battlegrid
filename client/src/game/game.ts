@@ -1,4 +1,3 @@
-import { ResourceMessage } from "../net/resources/service-worker-protocol";
 import { EventEmitter } from "../util/events";
 import { LocalOrRemoteImage } from "../util/files";
 import { Point } from "../util/math";

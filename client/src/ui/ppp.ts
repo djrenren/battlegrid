@@ -1,3 +1,4 @@
+import { stop_ev } from "../util/events";
 import { add_p, div_c, div_p, max_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 
 type State = {
@@ -57,6 +58,8 @@ export class PPZ extends HTMLElement {
       this.zoom([0, 0], zoom - this.state.z);
     };
     this.addEventListener("scroll", () => (this.state.scroll_pos = [this.scrollLeft, this.scrollTop]));
+    this.addEventListener("gesturestart", this.#gesture.start);
+    this.addEventListener("gesturechange", this.#gesture.change);
   }
 
   #resize_observer = new ResizeObserver((entries) => {
@@ -158,6 +161,30 @@ export class PPZ extends HTMLElement {
     this.smooth = Math.abs(delta) === 50;
 
     this.zoom([ev.clientX, ev.clientY], zoom);
+    this.addEventListener;
+  };
+
+  // Gesture-based scrolling
+  // Safari records pinches as gesture events rather than wheel events
+  // so we have to listen for these as well
+  #gesture = {
+    prev_scale: 0,
+    origin: [0, 0] as [number, number],
+    start: (ev: any) => {
+      stop_ev(ev);
+      this.#gesture.origin = this.coordToLocal([ev.clientX, ev.clientY]);
+      this.#gesture.prev_scale = 1;
+    },
+
+    change: (ev: any) => {
+      stop_ev(ev);
+      this.zoom(
+        this.#gesture.origin,
+        // I'll be real I'm not entirely sure why this is the magic number
+        this.state.z * (ev.scale - this.#gesture.prev_scale) * 1.5
+      );
+      this.#gesture.prev_scale = ev.scale;
+    },
   };
 
   /**
