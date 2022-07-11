@@ -3,7 +3,7 @@ import { StatusEmitter } from "../util/net";
 import { with_heartbeat } from "../util/socket";
 import { Peer, PeerId } from "./peer";
 
-const DEFAULT_SIGNALER = "ws://localhost:8081";
+const DEFAULT_SIGNALER = "wss://battlegrid-signaling.herokuapp.com";
 const PEER_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 const RECONNECT_TIMEOUT = 1000; //ms
 
