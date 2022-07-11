@@ -145,7 +145,7 @@ export class Canvas extends LitElement {
                           preserveAspectRatio="none"
                           @load=${mark_loaded}
                         ></image>
-                        <rect width="1" height="1" class="loading" ></rect>
+                        <rect width="1" height="1" class="loading"></rect>
                       </svg>
 
                       ${sbbox?.index === index
@@ -322,7 +322,7 @@ export class Canvas extends LitElement {
   #touch_focus = (ev: PointerEvent) => {
     if (!is_primary_touch(ev)) return;
     this.#focus(ev);
-  }
+  };
 
   #focus = (ev: PointerEvent) => {
     ev.preventDefault();
@@ -338,7 +338,7 @@ export class Canvas extends LitElement {
     } else {
       this.dispatchEvent(window_ev("token-select", [(ev.target as SVGImageElement).id]));
     }
-  }
+  };
 
   #sbox_start(ev: PointerEvent) {
     if (!is_mouse_down(ev)) return;
@@ -396,18 +396,18 @@ export class Canvas extends LitElement {
 
   #drag_offset?: Point;
 
-  @eventOptions({capture: true, passive: false})
+  @eventOptions({ capture: true, passive: false })
   selection_drag_start(ev: PointerEvent) {
     if (!is_primary_down(ev)) return;
     const svg_coord = this.#screen_to_svg(ev) as Point;
     stop_ev(ev);
     (ev.target as SVGElement).setPointerCapture(ev.pointerId);
     this.#drag_offset = svg_coord;
-  };
+  }
 
   #selection_transform = { move: [0, 0] as Point, resize: [0, 0] as Point, r: 0 };
 
-  @eventOptions({capture: true, passive: false})
+  @eventOptions({ capture: true, passive: false })
   selection_drag(ev: PointerEvent) {
     if (!is_primary_down(ev)) return;
     if (!this.#drag_offset) {
@@ -477,13 +477,13 @@ export class Canvas extends LitElement {
         })
       );
     }
-  };
+  }
 
-  @eventOptions({capture: true, passive: false})
+  @eventOptions({ capture: true, passive: false })
   selection_drag_end(ev: PointerEvent) {
     stop_ev(ev);
     this.#drag_offset = undefined;
-  };
+  }
 
   // Normally we'd use SVG machinery but it's broken in one browser...
   // ... I'll let you guess who...
@@ -695,17 +695,6 @@ export class Canvas extends LitElement {
 
     p-p-z {
       background-color: #ededf0;
-    }
-
-    bg-viewport::part(bar) {
-      background: rgb(75, 75, 75);
-      border: 1px solid white;
-      opacity: 0.75;
-      --thickness: 10px;
-    }
-
-    bg-viewport::part(bar):hover {
-      opacity: 1;
     }
 
     .token {
