@@ -21,7 +21,11 @@ export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array>
   return new ReadableStream({
     async pull(controller) {
       if (i >= b.size) return controller.close();
-      controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()));
+      try {
+        controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()));
+      } catch (e) {
+        console.log("Error enqueue slice", e);
+      }
       i += size;
     },
   });

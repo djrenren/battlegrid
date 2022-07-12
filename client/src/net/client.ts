@@ -4,7 +4,7 @@ import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";
 import { Signaler } from "./signaler";
 import { RESOURCE_PROTOCOL, request } from "./resources/protocol";
-import { dc_status, streams } from "../util/rtc";
+import { dc_status, MAX_MESSAGE_SIZE, streams } from "../util/rtc";
 import { ResourceId, ResourceMessage, ResourceRequest } from "./resources/service-worker-protocol";
 import { StatusEmitter } from "../util/net";
 import { preProcessFile } from "typescript";
@@ -27,7 +27,7 @@ export class Client {
       let id = ev.data.id as ResourceId;
       console.log("CLIENT ATTEMPTING TO FETCH", this.#peer.events_dc.readyState);
       await this.#peer.datachannel(id, {protocol: RESOURCE_PROTOCOL})
-        .then((dc) => {dc.bufferedAmountLowThreshold = 65535; return dc})
+        .then((dc) => {dc.bufferedAmountLowThreshold = this.#peer.rtc.sctp?.maxMessageSize ?? MAX_MESSAGE_SIZE; return dc})
         .then(streams<ArrayBuffer, ArrayBuffer>)
         .then(request)
         .then(async ({blob}) => {

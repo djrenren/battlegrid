@@ -2,6 +2,7 @@ import { Status } from "./net";
 
 export type RTCMessage = string | ArrayBuffer | ArrayBufferView | Blob;
 
+export const MAX_MESSAGE_SIZE = 256 * 1024;
 export const streams = <R extends RTCMessage, W extends RTCMessage>(dc: RTCDataChannel): ReadableWritablePair<R, W> => ({
   readable: read_stream(dc) as ReadableStream<R>,
   writable: write_stream(dc),
