@@ -149,7 +149,7 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
         break;
 
       case "icecandidate":
-        if (remote?.rtc.signalingState !== 'stable')
+        if (remote?.rtc.remoteDescription && remote?.rtc.remoteDescription.type)
           await remote?.rtc.addIceCandidate(sig.candidate);
         else if (remote) {
           let candidates = this.#buffered_candidates.get(sig.from);
