@@ -76,7 +76,10 @@ export class Server {
   }
 
   async #get_resource(id: ResourceId): Promise<Resource> {
-    let resp = await fetch(`/resources/${id}`);
+    let resp = await (await caches.open("resources")).match(`/resources/${id}`);
+    if (!resp) {
+      throw `Requested unknown resource ${id}`;
+    }
     return { blob: await resp.blob() };
   }
 

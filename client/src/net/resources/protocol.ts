@@ -19,7 +19,7 @@ export async function request(channel: ReadableWritablePair<ArrayBuffer | string
 
   let blob = await collect_blob(channel.readable as ReadableStream<ArrayBuffer>, header?.type);
 
-  console.log("Built buffer");
+  // console.log("Built buffer", blob);
   return {
     blob,
   };
