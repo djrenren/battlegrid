@@ -1,7 +1,6 @@
 import { Game } from "../game/game";
 import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
-import { StatusEmitter } from "../util/net";
 import { flush, streams } from "../util/rtc";
 import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";

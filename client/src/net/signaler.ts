@@ -4,7 +4,12 @@ import { with_heartbeat } from "../util/socket";
 import { Peer, PeerId } from "./peer";
 
 const DEFAULT_SIGNALER = "wss://battlegrid-signaling.herokuapp.com";
-const PEER_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+const PEER_CONFIG = { iceServers: [{ urls: [
+  "stun:stun1.l.google.com:19302",
+  "stun:stun2.l.google.com:19302",
+  "stun:stun3.l.google.com:19302",
+  "stun:stun4.l.google.com:19302",
+  ]}] };
 const RECONNECT_TIMEOUT = 1000; //ms
 
 export class Signaler extends EventTarget implements EventEmitter<{ peer: CustomEvent<Peer> }> {
@@ -75,14 +80,12 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
     this.#conns.set(remote_id, peer);
 
     const onicecandidate = ({ candidate }: RTCPeerConnectionIceEvent) => {
-      if (candidate !== null) {
-        this.#send({
-          type: "icecandidate",
-          from: this.peer_id,
-          to: remote_id,
-          candidate,
-        });
-      }
+      this.#send({
+        type: "icecandidate",
+        from: this.peer_id,
+        to: remote_id,
+        candidate,
+      });
     };
 
     // Forward all ice candidates
@@ -137,7 +140,10 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
         break;
 
       case "icecandidate":
-        await remote?.rtc.addIceCandidate(sig.candidate);
+        if (remote?.rtc.iceGatheringState === 'gathering')
+          await remote?.rtc.addIceCandidate(sig.candidate);
+        else
+          console.log("Received ice candidate in wrong state: ", remote?.rtc.iceGatheringState);
         break;
     }
   };
@@ -164,7 +170,7 @@ type SignalData = { from: PeerId; to: PeerId } & (
     }
   | {
       type: "icecandidate";
-      candidate: RTCIceCandidate;
+      candidate: RTCIceCandidate | null;
     }
 );
 
