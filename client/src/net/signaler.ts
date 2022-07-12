@@ -20,6 +20,7 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
   #signal_url: string;
   #allow_connections: boolean;
   #conns = new Map<PeerId, Peer>();
+  #buffered_candidates = new Map<PeerId, RTCIceCandidate[]>();
   #shutting_down = false;
 
   constructor(peer_id: PeerId, allow_connections = false, signal_url = DEFAULT_SIGNALER) {
@@ -93,7 +94,7 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
 
     peer.events_dc.addEventListener("close", () => {
       peer.rtc.removeEventListener("icecandidate", onicecandidate);
-      this.#conns.delete(remote_id);
+      this.#remove(remote_id);
     });
 
     peer.events_dc.addEventListener("open", async () => {
@@ -123,7 +124,7 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
         remote.rtc.setRemoteDescription(new RTCSessionDescription(sig.offer));
         let answer = await remote.rtc.createAnswer();
         await remote.rtc.setLocalDescription(answer);
-
+        this.#drain_buffered_candidates(sig.from);
         this.#socket.send(
           JSON.stringify({
             type: "answer",
@@ -136,17 +137,41 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
         break;
 
       case "answer":
-        remote?.rtc.setRemoteDescription(new RTCSessionDescription(sig.answer));
+        await remote?.rtc.setRemoteDescription(new RTCSessionDescription(sig.answer));
+        this.#drain_buffered_candidates(sig.from);
         break;
 
       case "icecandidate":
         if (remote?.rtc.iceGatheringState === 'gathering')
           await remote?.rtc.addIceCandidate(sig.candidate);
-        else
+        else if (remote) {
+          let candidates = this.#buffered_candidates.get(sig.from);
+          if (candidates) {
+            candidates.push(sig.candidate);
+          } else {
+            this.#buffered_candidates.set(sig.from, [sig.candidate])
+          }
           console.log("Received ice candidate in wrong state: ", remote?.rtc.iceGatheringState);
+        }
         break;
     }
   };
+
+  #drain_buffered_candidates(remote_id: PeerId) {
+    let candidates = this.#buffered_candidates.get(remote_id);
+    let remote = this.#conns.get(remote_id);
+
+    for (let candidate of  candidates || []) {
+      remote?.rtc.addIceCandidate(candidate);
+    }
+
+    this.#buffered_candidates.delete(remote_id);
+  }
+
+  #remove(id: PeerId) {
+    this.#conns.delete(id);
+    this.#buffered_candidates.delete(id);
+  }
 
   #reconnect() {
     setTimeout(() => this.#establish_socket(), RECONNECT_TIMEOUT);
