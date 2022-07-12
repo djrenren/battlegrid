@@ -149,7 +149,7 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
         break;
 
       case "icecandidate":
-        if (remote?.rtc.iceGatheringState === 'gathering')
+        if (remote?.rtc.signalingState !== 'stable')
           await remote?.rtc.addIceCandidate(sig.candidate);
         else if (remote) {
           let candidates = this.#buffered_candidates.get(sig.from);
@@ -158,7 +158,7 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
           } else {
             this.#buffered_candidates.set(sig.from, [sig.candidate])
           }
-          console.log("Received ice candidate in wrong state: ", remote?.rtc.iceGatheringState);
+          console.log("Received ice candidate in wrong state: ", remote?.rtc.signalingState);
         }
         break;
     }
