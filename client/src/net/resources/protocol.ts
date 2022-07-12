@@ -30,6 +30,5 @@ export async function response(dc: ReadableWritablePair<ArrayBuffer | string, Ar
   await writer.write(JSON.stringify({ type: resource.blob.type }));
   writer.releaseLock();
 
-  await buffer_chunks(resource.blob, MAX_MESSAGE_SIZE)
-        .pipeTo(dc.writable)
+  await buffer_chunks(resource.blob, MAX_MESSAGE_SIZE).pipeTo(dc.writable);
 }

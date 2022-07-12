@@ -21,9 +21,9 @@ export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array>
   return new ReadableStream({
     async pull(controller) {
       if (i >= b.size) return controller.close();
-      controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()))
+      controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()));
       i += size;
-    }
+    },
   });
 }
 
@@ -34,7 +34,7 @@ export async function collect_blob(s: ReadableStream<ArrayBuffer>, type?: string
     buffer.push(chunk as any);
   });
 
-  return new Blob(buffer, {type});
+  return new Blob(buffer, { type });
 }
 
 export async function* iter<R>(r: ReadableStream<R>): AsyncIterable<R> {

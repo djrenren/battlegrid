@@ -140,7 +140,9 @@ export class Game extends EventTarget implements EventEmitter<EventMap> {
 
     let url = new URL(window.location.toString());
     url.search = "";
-    let id = await crypto.subtle.digest('SHA-1', await img.arrayBuffer()) 
+    let hash = await crypto.subtle.digest("SHA-1", await img.arrayBuffer());
+    let id = btoa(String.fromCharCode(...new Uint8Array(hash)));
+    console.log("RESOURCE ID: ", id);
     url.pathname = `/resources/${id}`;
     let cache = await caches.open("resources");
     await cache.put(url, new Response(img));

@@ -28,12 +28,9 @@ sw.addEventListener("install", (ev) => {
 sw.addEventListener("message", (ev: ExtendableMessageEvent) => {
   ev.waitUntil(
     (async () => {
-      let cache = caches.open("resources");
       let data = ev.data as ResourceMessage;
       switch (data.type) {
         case "found":
-          let r = new Response(data.blob);
-          await (await cache).put(`/resources/${data.id}`, r);
           pending.get(data.id)?.resolve();
           break;
         case "notfound":
@@ -135,7 +132,7 @@ sw.addEventListener("fetch", (ev) => {
   }
   ev.respondWith(
     (async () => {
-      console.log(ev.request.headers)
+      console.log(ev.request.headers);
       console.log("RESPONDING");
       return fetch_resource(ev);
     })()

@@ -22,7 +22,7 @@ export class Client {
     this.#game_id = game_id;
     this.#game.addEventListener('game-event', this.forward_events);
     this.#peer = this.#setup_peer();
-
+    let cache = caches.open('resources');
     navigator.serviceWorker.onmessage = async (ev: MessageEvent<ResourceRequest>) => {
       let id = ev.data.id as ResourceId;
       console.log("CLIENT ATTEMPTING TO FETCH", this.#peer.events_dc.readyState);
@@ -32,7 +32,9 @@ export class Client {
         .then(async ({blob}) => {
           console.log(blob);
           console.log("COMMUNICATING WITH SERVICE WORKER");
-          navigator.serviceWorker.controller!.postMessage({type: 'found', id, blob} as ResourceMessage)
+          let r = new Response(blob);
+          await (await cache).put(`/resources/${id}`, r);
+          navigator.serviceWorker.controller!.postMessage({type: 'found', id} as ResourceMessage)
         })
         .catch(e => {
           console.error("Error fetching resource: ", e);

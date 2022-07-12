@@ -2,7 +2,6 @@ export type ResourceMessage =
   | {
       type: "found";
       id: string;
-      blob: Blob;
     }
   | {
       type: "notfound";

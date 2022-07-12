@@ -26,7 +26,7 @@ export const open = async (conn: RTCPeerConnection): Promise<RTCPeerConnection> 
         resolve(conn);
         conn.removeEventListener("iceconnectionstatechange", listener);
       }
-    }
+    };
     conn.addEventListener("signalingstatechange", (ev) => {
       console.log("SIGNAL", ev);
     });
@@ -46,13 +46,13 @@ const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
           console.log("Underlying datachannel closed");
           controller.close();
         } else {
-          dc.addEventListener('bufferedamountlow', () => {
+          dc.addEventListener("bufferedamountlow", () => {
             console.log("Underlying datachannel closed");
             controller.close();
-          })
+          });
         }
       };
-      dc.addEventListener("close", onclose, {once: true});
+      dc.addEventListener("close", onclose, { once: true });
     },
 
     cancel() {
