@@ -150,7 +150,6 @@ export class Canvas extends LitElement {
                           height="1"
                           href=${t.url}
                           style=${`transform: rotate(${t.r}deg)`}
-                          image-rendering="optimizeSpeed"
                           preserveAspectRatio="none"
                           @load=${mark_loaded}
                         ></image>
