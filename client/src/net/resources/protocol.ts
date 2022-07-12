@@ -1,5 +1,4 @@
-import { consume } from "../../util/streams";
-import * as fflate from "fflate";
+import { buffer_chunks, collect_blob } from "../../util/streams";
 export const RESOURCE_PROTOCOL = "request-resource";
 
 export type Resource = {
@@ -11,23 +10,13 @@ type Header = {
 };
 
 export async function request(channel: ReadableWritablePair<ArrayBuffer | string, ArrayBuffer | string>): Promise<Resource> {
-  let buffer: ArrayBuffer[] = [];
-  let header: Header | undefined;
-  try {
-    await consume(channel.readable, (chunk) => {
-      if (typeof chunk === "string") {
-        header = JSON.parse(chunk);
-        return;
-      }
-      console.log("READING resource CHUNK");
-      buffer.push(chunk);
-    });
-  } catch (e) {
-    console.error("Error consuming", e);
-  }
-  
-  console.log("GOT EM ALL");
-  let blob = new Blob(buffer, { type: header?.type });
+  let reader = channel.readable.getReader();
+  let first = await reader.read();
+  console.log("header? ", first);
+  let header: Header = JSON.parse(first.value as any);
+  reader.releaseLock();
+
+  let blob = await collect_blob(channel.readable as ReadableStream<ArrayBuffer>, header?.type);
 
   console.log("Built buffer");
   return {
@@ -37,20 +26,10 @@ export async function request(channel: ReadableWritablePair<ArrayBuffer | string
 
 const MAX_MESSAGE_SIZE = 64 * 1000;
 export async function response(dc: ReadableWritablePair<ArrayBuffer | string, ArrayBuffer | string>, resource: Resource) {
-
-
-  let blob = resource.blob;
   let writer = dc.writable.getWriter();
-  console.log("BLOBL", blob);
+  await writer.write(JSON.stringify({ type: resource.blob.type }));
+  writer.releaseLock();
 
-  writer.write(JSON.stringify({ type: blob.type }));
-  // Then send the chunks
-  for (let i = 0; i < blob.size; i += MAX_MESSAGE_SIZE) {
-    console.log("WRITING FIRST ChUNK");
-    //@ts-ignore
-    await writer.write(await blob.slice(i, Math.min(i + MAX_MESSAGE_SIZE, blob.size)).arrayBuffer());
-  }
-
-  console.error("closing");
-  await writer.close();
+  await buffer_chunks(resource.blob, MAX_MESSAGE_SIZE)
+        .pipeTo(dc.writable)
 }

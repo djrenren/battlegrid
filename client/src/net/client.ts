@@ -30,6 +30,7 @@ export class Client {
         .then(streams<ArrayBuffer, ArrayBuffer>)
         .then(request)
         .then(async ({blob}) => {
+          console.log(blob);
           console.log("COMMUNICATING WITH SERVICE WORKER");
           navigator.serviceWorker.controller!.postMessage({type: 'found', id, blob} as ResourceMessage)
         })

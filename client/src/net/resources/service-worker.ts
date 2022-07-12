@@ -135,6 +135,7 @@ sw.addEventListener("fetch", (ev) => {
   }
   ev.respondWith(
     (async () => {
+      console.log(ev.request.headers)
       console.log("RESPONDING");
       return fetch_resource(ev);
     })()

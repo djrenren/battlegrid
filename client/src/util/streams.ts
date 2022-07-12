@@ -16,6 +16,27 @@ export function pipe<T>(): [ReadableWritablePair<T, T>, ReadableWritablePair<T, 
   ];
 }
 
+export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array> {
+  let i = 0;
+  return new ReadableStream({
+    async pull(controller) {
+      if (i >= b.size) return controller.close();
+      controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()))
+      i += size;
+    }
+  });
+}
+
+export async function collect_blob(s: ReadableStream<ArrayBuffer>, type?: string): Promise<Blob> {
+  let buffer = [] as ArrayBuffer[];
+  await consume(s, (chunk) => {
+    console.log("CHUNK?");
+    buffer.push(chunk as any);
+  });
+
+  return new Blob(buffer, {type});
+}
+
 export async function* iter<R>(r: ReadableStream<R>): AsyncIterable<R> {
   let done,
     value,
