@@ -38,7 +38,6 @@ const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
   return new ReadableStream({
     start(controller) {
       dc.onmessage = ({ data }) => {
-        console.log("RECEIVED", data);
         controller.enqueue(data);
       };
       const onclose = () => {

@@ -30,7 +30,6 @@ export class Client {
         .then(streams<ArrayBuffer, ArrayBuffer>)
         .then(request)
         .then(async ({blob}) => {
-          console.log(blob);
           console.log("COMMUNICATING WITH SERVICE WORKER");
           let r = new Response(blob);
           await (await cache).put(`/resources/${id}`, r);
