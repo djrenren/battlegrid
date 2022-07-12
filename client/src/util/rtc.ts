@@ -112,7 +112,6 @@ const write_stream = (dc: RTCDataChannel): WritableStream<RTCMessage> => {
           await new Promise<void>((r, _) => (resume = r));
           console.log("resumed!");
         }
-        console.log("writing", chunk);
         dc.send(chunk);
       },
       abort() {
