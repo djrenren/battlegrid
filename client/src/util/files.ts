@@ -12,12 +12,6 @@ export const getImage = async (ev: DragEvent): Promise<LocalOrRemoteImage> => {
       if (dataItems[i].type === "text/html") {
         dataItems[i].getAsString((s) => resolve(extractURLFromHTML(s)!));
         return;
-      }
-      if (dataItems[i].type === "application/x-moz-file-promise-url") {
-        dataItems[i].getAsString((s) => {
-          url: resolve;
-        });
-        return;
       } else if (dataItems[i].kind === "string") {
         let t = dataItems[i].type;
         dataItems[i].getAsString((s) => console.log(t, s));

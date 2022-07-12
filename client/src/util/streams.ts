@@ -33,10 +33,12 @@ export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array>
 
 export async function collect_blob(s: ReadableStream<ArrayBuffer>, type?: string): Promise<Blob> {
   let buffer = [] as ArrayBuffer[];
+  console.log("collectin blob");
   await consume(s, (chunk) => {
     console.log("CHUNK?");
     buffer.push(chunk as any);
   });
+  console.log("got all bytes");
 
   return new Blob(buffer, { type });
 }

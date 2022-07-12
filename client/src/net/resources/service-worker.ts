@@ -53,11 +53,12 @@ sw.addEventListener("activate", (ev) => {
 
 function which_resource(url: string): ResourceId | null {
   let segs = new URL(url).pathname.split("/");
-  if (segs.length !== 3 && segs[1] != "resources") {
+  console.log(segs);
+  if (segs.length < 3 || segs[1] != "resources") {
     return null;
   }
 
-  return segs[2] as ResourceId;
+  return segs.slice(2).join("/") as ResourceId;
 }
 
 async function fetch_resource(ev: FetchEvent): Promise<Response> {
