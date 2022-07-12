@@ -18,18 +18,11 @@ export function pipe<T>(): [ReadableWritablePair<T, T>, ReadableWritablePair<T, 
 
 export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array> {
   let i = 0;
-
-  let chunks = [] as any[];
-  for (let i = 0; i < b.size; i += size) {
-    chunks.push(b.slice(i, Math.min(i + size, b.size)).arrayBuffer());
-  }
-
-  let chunk_i = 0;
   return new ReadableStream({
     async pull(controller) {
-      if (chunk_i >= chunks.length) return controller.close();
-      controller.enqueue(new Uint8Array(chunks[chunk_i]));
-      chunk_i++;
+      if (i >= b.size) return controller.close();
+      controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()));
+      i += size;
     },
   });
 }

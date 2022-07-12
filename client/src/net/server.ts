@@ -2,7 +2,7 @@ import { Game } from "../game/game";
 import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
 import { StatusEmitter } from "../util/net";
-import { streams } from "../util/rtc";
+import { flush, streams } from "../util/rtc";
 import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
@@ -57,10 +57,20 @@ export class Server {
     peer.ondatachannel = async (ev) => {
       console.log("INCOMING DC", ev.channel);
       const channel = ev.channel;
-      await waitFor("open", channel);
-      console.log("new dc", channel);
-      if (channel.protocol === RESOURCE_PROTOCOL) {
-        response(streams<ArrayBuffer, ArrayBuffer>(channel), await this.#get_resource(channel.label as ResourceId));
+      try {
+        await waitFor("open", channel);
+        console.log("new dc", channel);
+        if (channel.protocol === RESOURCE_PROTOCOL) {
+          await response(
+            streams<ArrayBuffer, ArrayBuffer>(channel),
+            await this.#get_resource(channel.label as ResourceId),
+            peer.rtc.sctp?.maxMessageSize
+          );
+          console.log("FLUSHING");
+          await flush(channel);
+        }
+      } finally {
+        channel.close();
       }
     };
   }

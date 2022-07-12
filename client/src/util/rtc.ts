@@ -60,6 +60,24 @@ const read_stream = (dc: RTCDataChannel): ReadableStream<RTCMessage> => {
   });
 };
 
+export const flush = (dc: RTCDataChannel): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
+    const try_close = () => {
+      if (dc.bufferedAmount === 0) {
+        return resolve();
+      }
+
+      if (dc.readyState === "closed" || dc.readyState === "closing") {
+        return reject("Buffer closed before flushing");
+      }
+    };
+
+    dc.bufferedAmountLowThreshold = 0;
+    dc.addEventListener("bufferedamountlow", try_close);
+    try_close();
+  });
+};
+
 export const dc_status = (dc: RTCDataChannel): Status => {
   switch (dc.readyState) {
     case "open":

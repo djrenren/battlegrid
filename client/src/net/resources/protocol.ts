@@ -1,3 +1,4 @@
+import { flush } from "../../util/rtc";
 import { buffer_chunks, collect_blob } from "../../util/streams";
 export const RESOURCE_PROTOCOL = "request-resource";
 
@@ -25,10 +26,14 @@ export async function request(channel: ReadableWritablePair<ArrayBuffer | string
 }
 
 const MAX_MESSAGE_SIZE = 64 * 1000;
-export async function response(dc: ReadableWritablePair<ArrayBuffer | string, ArrayBuffer | string>, resource: Resource) {
+export async function response(
+  dc: ReadableWritablePair<ArrayBuffer | string, ArrayBuffer | string>,
+  resource: Resource,
+  msg_size: number = MAX_MESSAGE_SIZE
+) {
   let writer = dc.writable.getWriter();
   await writer.write(JSON.stringify({ type: resource.blob.type }));
   writer.releaseLock();
 
-  await buffer_chunks(resource.blob, MAX_MESSAGE_SIZE).pipeTo(dc.writable);
+  await buffer_chunks(resource.blob, msg_size).pipeTo(dc.writable, { preventClose: true });
 }

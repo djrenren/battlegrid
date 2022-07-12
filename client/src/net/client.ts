@@ -27,6 +27,7 @@ export class Client {
       let id = ev.data.id as ResourceId;
       console.log("CLIENT ATTEMPTING TO FETCH", this.#peer.events_dc.readyState);
       await this.#peer.datachannel(id, {protocol: RESOURCE_PROTOCOL})
+        .then((dc) => {dc.bufferedAmountLowThreshold = 65535; return dc})
         .then(streams<ArrayBuffer, ArrayBuffer>)
         .then(request)
         .then(async ({blob}) => {
