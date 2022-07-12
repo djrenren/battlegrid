@@ -20,7 +20,12 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
   #signal_url: string;
   #allow_connections: boolean;
   #conns = new Map<PeerId, Peer>();
+
+  // It's possible to receive candidates before the remote description,
+  // but we aren't allowed to apply the candidates until afterwards.
+  // so we buffer them here.
   #buffered_candidates = new Map<PeerId, RTCIceCandidate[]>();
+
   #shutting_down = false;
 
   constructor(peer_id: PeerId, allow_connections = false, signal_url = DEFAULT_SIGNALER) {
@@ -81,12 +86,14 @@ export class Signaler extends EventTarget implements EventEmitter<{ peer: Custom
     this.#conns.set(remote_id, peer);
 
     const onicecandidate = ({ candidate }: RTCPeerConnectionIceEvent) => {
-      this.#send({
-        type: "icecandidate",
-        from: this.peer_id,
-        to: remote_id,
-        candidate,
-      });
+      if (candidate !== null) {
+        this.#send({
+          type: "icecandidate",
+          from: this.peer_id,
+          to: remote_id,
+          candidate,
+        });
+      }
     };
 
     // Forward all ice candidates
