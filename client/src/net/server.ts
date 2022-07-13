@@ -1,7 +1,7 @@
 import { Game } from "../game/game";
 import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
-import { flush, streams } from "../util/rtc";
+import { flush, MAX_MESSAGE_SIZE, streams } from "../util/rtc";
 import { consume } from "../util/streams";
 import { Peer, PeerId } from "./peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
@@ -63,7 +63,7 @@ export class Server {
           await response(
             streams<ArrayBuffer, ArrayBuffer>(channel),
             await this.#get_resource(channel.label as ResourceId),
-            peer.rtc.sctp?.maxMessageSize
+            peer.rtc.sctp?.maxMessageSize || MAX_MESSAGE_SIZE
           );
           console.log("FLUSHING");
           await flush(channel);
