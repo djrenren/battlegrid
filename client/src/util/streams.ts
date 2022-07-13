@@ -28,7 +28,7 @@ export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array>
       }
       i += size;
     },
-  });
+  }, new CountQueuingStrategy({highWaterMark: 5}));
 }
 
 export async function collect_blob(s: ReadableStream<ArrayBuffer>, type?: string): Promise<Blob> {
