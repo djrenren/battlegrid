@@ -1,35 +1,30 @@
-import { map } from "../util/iter";
+import { Array, Doc, Map } from "yjs";
 import { Point } from "../util/math";
-import { OrderedMap } from "../util/orderedmap";
 import { Branded } from "../util/string";
-import { TokenData } from "./game-events";
+import { TypedMap, typed_map } from "../util/yjs";
 
-export type Tabletop = {
-  tokens: OrderedMap<string, TokenData>;
-  grid_dim: Point;
-  bg: string | null;
-};
+export type Tabletop = TypedMap<{
+  tokens: Map<TokenData>,
+  order: Array<string>,
+  grid_dim: Point,
+  bg: string | null
+}>;
+
+export type TokenData = TypedMap<{
+  loc: Point;
+  dim: Point;
+  url: string;
+  id: string;
+  r: number; // degrees!
+}>
+
+
 
 export type SerializedTabletop = Branded<"tabletop">;
 
-export const default_tabletop = (): Tabletop => ({
-  tokens: new OrderedMap(),
-  grid_dim: [30, 20] as Point,
-  bg: null,
-});
-
-export const serialize_tbt = (t: Tabletop): SerializedTabletop =>
-  JSON.stringify({
-    ...t,
-    tokens: [...map(t.tokens.values(), (t) => ({ ...t }))],
-  }) as SerializedTabletop;
-
-export const deserialize_tbt = (t: SerializedTabletop): Tabletop => {
-  let p = JSON.parse(t) as any;
-  let om = new OrderedMap();
-  p.tokens.forEach((t: TokenData) => om.add(t.id, t));
-  return {
-    ...p,
-    tokens: om,
-  };
-};
+export const default_tabletop = (): Tabletop => typed_map({
+  tokens: new Map(),
+  order: new Array(),
+  grid_dim: [30,40],
+  bg: null as null | string,
+})

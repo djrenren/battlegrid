@@ -1,7 +1,10 @@
+import { Doc, YArrayEvent } from "yjs";
+import { PeerId } from "../net/rtc/signaler";
 import { EventEmitter } from "../util/events";
 import { LocalOrRemoteImage } from "../util/files";
 import { Point } from "../util/math";
 import { consume } from "../util/streams";
+import { TypedMap } from "../util/yjs";
 import { GameEvent, game_event, TokenData } from "./game-events";
 import { default_tabletop, deserialize_tbt } from "./tabletop";
 
@@ -10,9 +13,29 @@ const CALLOUT_TIMER = 1500;
 type EventMap = {
   "game-event": CustomEvent<GameEvent>;
 };
+
+type Board = TypedMap<{
+  width: number,
+  height: number,
+  bg: string | null,
+  tokens: TypedMap<{
+    [s: string]: TypedMap<TokenData>
+  }>,
+  order: Array<string>
+}>;
+
 export class Game extends EventTarget implements EventEmitter<EventMap> {
+  doc = new Doc();
   tabletop = default_tabletop();
   callouts = new Set<Point>();
+
+  get board(): Board {
+    return this.doc.get('board') as any;
+  }
+
+  get tokens(): IterableIterator<TypedMap<TokenData>> {
+    return iteratorMap(this.board.order,  this.board.get('tokens').values(), this.board.get('')
+  }
 
   #event_writer: WritableStreamDefaultWriter<GameEvent>;
 
