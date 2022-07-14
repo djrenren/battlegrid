@@ -3,23 +3,23 @@ import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
 import { flush, MAX_MESSAGE_SIZE, streams } from "../util/rtc";
 import { consume } from "../util/streams";
-import { Peer, PeerId } from "./peer";
+import { GamePeer } from "./game_peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
 import { ResourceId } from "./resources/service-worker-protocol";
-import { Signaler } from "./signaler";
+import { Peer } from "./rtc/peer";
+import { Signaler, PeerId } from "./rtc/signaler";
 
 export class Server {
   signaler: Signaler;
   #game: Game;
-  clients: Set<Peer> = new Set();
+  clients: Set<GamePeer> = new Set();
   #abort: AbortController;
 
   constructor(game: Game) {
     this.signaler = new Signaler(crypto.randomUUID() as PeerId, true);
     this.#game = game;
     this.#abort = new AbortController();
-    //@ts-ignore
-    this.signaler.addEventListener("peer", ({ detail: peer }: CustomEvent<Peer>) => this.#add_client(peer));
+    this.signaler.on('peer', this.#add_client);
     this.#game.addEventListener("game-event", ({ detail: ev }) => {
       for (let client of this.clients) {
         if (client.id === ev.remote) continue;
@@ -28,8 +28,9 @@ export class Server {
     });
   }
 
-  #add_client(peer: Peer) {
-    this.clients.add(peer);
+  #add_client = (id: PeerId, peer: Peer) => {
+    let gp = new GamePeer(id, peer);
+    this.clients.add(gp);
 
     // It's a little weird that we're sending the JSON encoding
     // as a string. But we need to capture the state of the tabletop
@@ -38,20 +39,20 @@ export class Server {
     //
     // We aim for idempotency so this *shouldn't* be a problem, but lets
     // just avoid it
-    peer.write_event({
+    gp.write_event({
       type: "state-sync",
       tabletop: serialize_tbt(this.#game.tabletop),
     });
 
-    consume(peer.events, (ev) => {
+    consume(gp.events, (ev) => {
       ev.remote = peer.id;
       return this.#game.apply(ev);
     });
 
-    peer.events_dc.addEventListener("close", () => {
-      console.log("PEEER EVENT DC");
-      this.clients.delete(peer);
-    });
+    // peer.events_dc.addEventListener("close", () => {
+    //   console.log("PEEER EVENT DC");
+    //   this.clients.delete(peer);
+    // });
 
     peer.ondatachannel = async (ev) => {
       console.log("INCOMING DC", ev.channel);
@@ -63,7 +64,7 @@ export class Server {
           await response(
             streams<ArrayBuffer, ArrayBuffer>(channel),
             await this.#get_resource(channel.label as ResourceId),
-            peer.rtc.sctp?.maxMessageSize || MAX_MESSAGE_SIZE
+            peer.sctp?.maxMessageSize || MAX_MESSAGE_SIZE
           );
           console.log("FLUSHING");
           await flush(channel);
@@ -84,7 +85,7 @@ export class Server {
 
   async shutdown() {
     for (let c of this.clients) {
-      c.rtc.close();
+      c.peer.close();
     }
 
     this.clients.clear();

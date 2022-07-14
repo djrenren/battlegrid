@@ -2,8 +2,6 @@
 /// <reference lib="es2020" />
 /// <reference lib="WebWorker" />
 
-import { CachedKeyDecoder } from "@msgpack/msgpack/dist/CachedKeyDecoder";
-import { timeout } from "../../util/promises";
 import { ResourceMessage } from "./service-worker-protocol";
 
 type ResourceId = string;

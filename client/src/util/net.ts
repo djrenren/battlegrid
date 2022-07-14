@@ -1,3 +1,4 @@
+import { Observable } from "lib0/observable";
 import { EventEmitter, waitFor } from "./events";
 
 export type Status = "open" | "closed" | "opening";
@@ -18,45 +19,29 @@ export function connected(i: HasStatus): Promise<void> {
   });
 }
 
-export class StatusEmitter
-  extends EventTarget
-  implements
-    EventEmitter<{
-      status: CustomEvent<Status>;
-    }>
-{
+export class StatusEmitter extends Observable<'status'> {
   #value: Status = "opening";
   get current() {
     return this.#value;
   }
 
   set(s: Status) {
+    let should_emit = this.#value !== s;
     this.#value = s;
-    setTimeout(() => this.onstatus && this.onstatus(s), 0);
-    this.dispatchEvent(new CustomEvent("status", { detail: s }));
+    if (should_emit) this.emit('status', []);
   }
 
-  async connected(): Promise<void> {
-    if (this.#value === "closed") throw "closed";
-    if (this.#value === "open") return;
-    if (this.#value === "opening") {
-      return new Promise((resolve, reject) => {
-        let handler: EventListener = (e: Event) => {
-          let s = (e as CustomEvent).detail;
-          if (s === "opening") return;
-
-          if (s === "closed") {
-            reject("closed");
-          } else if (s === "open") {
-            resolve();
-          }
-
-          this.removeEventListener("status", handler);
-        };
-        this.addEventListener("status", handler);
-      });
-    }
+  connected(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let complete = () => {
+        if (this.#value === "closed") reject("closed");
+        if (this.#value === "open") resolve();
+      }
+      if (this.#value === 'opening') {
+          this.once('status', complete);
+      } else {
+        complete();
+      }
+    });
   }
-
-  onstatus?: (s: Status) => void;
 }

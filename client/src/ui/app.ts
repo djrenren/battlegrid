@@ -9,11 +9,11 @@ import { max_p } from "../util/math";
 import { first } from "../util/iter";
 import { Client } from "../net/client";
 import { Server } from "../net/server";
-import { PeerId } from "../net/peer";
 import "./util/with-tooltip";
 import "./host-toggle";
 import "./client-status";
 import { timeout } from "../util/promises";
+import { PeerId } from "../net/rtc/signaler";
 
 @customElement("bg-app")
 class App extends LitElement {
@@ -215,7 +215,7 @@ class App extends LitElement {
     try {
       console.log("new client");
       this.client = new Client(game_id, this.game);
-      this.client.status.onstatus = () => this.requestUpdate();
+      this.client.status.on('status', () => this.requestUpdate());
       console.log("waiting for connection");
       await timeout(this.client.status.connected(), 5000);
       console.log("connected");
