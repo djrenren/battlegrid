@@ -18,17 +18,20 @@ export function pipe<T>(): [ReadableWritablePair<T, T>, ReadableWritablePair<T, 
 
 export function buffer_chunks(b: Blob, size: number): ReadableStream<Uint8Array> {
   let i = 0;
-  return new ReadableStream({
-    async pull(controller) {
-      if (i >= b.size) return controller.close();
-      try {
-        controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()));
-      } catch (e) {
-        console.log("Error enqueue slice", e);
-      }
-      i += size;
+  return new ReadableStream(
+    {
+      async pull(controller) {
+        if (i >= b.size) return controller.close();
+        try {
+          controller.enqueue(new Uint8Array(await b.slice(i, Math.min(i + size, b.size)).arrayBuffer()));
+        } catch (e) {
+          console.log("Error enqueue slice", e);
+        }
+        i += size;
+      },
     },
-  }, new CountQueuingStrategy({highWaterMark: 5}));
+    new CountQueuingStrategy({ highWaterMark: 5 })
+  );
 }
 
 export async function collect_blob(s: ReadableStream<ArrayBuffer>, type?: string): Promise<Blob> {

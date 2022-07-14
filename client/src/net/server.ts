@@ -1,3 +1,4 @@
+import { createImportSpecifier } from "typescript";
 import { Game } from "../game/game";
 import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
@@ -6,7 +7,6 @@ import { consume } from "../util/streams";
 import { GamePeer } from "./game_peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
 import { ResourceId } from "./resources/service-worker-protocol";
-import { Peer } from "./rtc/peer";
 import { Signaler, PeerId } from "./rtc/signaler";
 
 export class Server {
@@ -19,16 +19,18 @@ export class Server {
     this.signaler = new Signaler(crypto.randomUUID() as PeerId, true);
     this.#game = game;
     this.#abort = new AbortController();
-    this.signaler.on('peer', this.#add_client);
+    this.signaler.on("peer", this.#add_client);
     this.#game.addEventListener("game-event", ({ detail: ev }) => {
+      ev.remote ??= this.signaler.peer_id;
       for (let client of this.clients) {
+        console.log("ECHOING", client.id, ev.remote);
         if (client.id === ev.remote) continue;
         client.write_event(ev);
       }
     });
   }
 
-  #add_client = (id: PeerId, peer: Peer) => {
+  #add_client = (id: PeerId, peer: RTCPeerConnection) => {
     let gp = new GamePeer(id, peer);
     this.clients.add(gp);
 
@@ -42,10 +44,12 @@ export class Server {
     gp.write_event({
       type: "state-sync",
       tabletop: serialize_tbt(this.#game.tabletop),
+      remote: this.signaler.peer_id,
     });
 
     consume(gp.events, (ev) => {
-      ev.remote = peer.id;
+      console.log("RECEIVED EVENT FROM ");
+      ev.remote = id;
       return this.#game.apply(ev);
     });
 
@@ -73,7 +77,7 @@ export class Server {
         channel.close();
       }
     };
-  }
+  };
 
   async #get_resource(id: ResourceId): Promise<Resource> {
     let resp = await (await caches.open("resources")).match(`/resources/${id}`);

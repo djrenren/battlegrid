@@ -19,7 +19,7 @@ export function connected(i: HasStatus): Promise<void> {
   });
 }
 
-export class StatusEmitter extends Observable<'status'> {
+export class StatusEmitter extends Observable<"status"> {
   #value: Status = "opening";
   get current() {
     return this.#value;
@@ -28,7 +28,7 @@ export class StatusEmitter extends Observable<'status'> {
   set(s: Status) {
     let should_emit = this.#value !== s;
     this.#value = s;
-    if (should_emit) this.emit('status', []);
+    if (should_emit) this.emit("status", []);
   }
 
   connected(): Promise<void> {
@@ -36,9 +36,9 @@ export class StatusEmitter extends Observable<'status'> {
       let complete = () => {
         if (this.#value === "closed") reject("closed");
         if (this.#value === "open") resolve();
-      }
-      if (this.#value === 'opening') {
-          this.once('status', complete);
+      };
+      if (this.#value === "opening") {
+        this.once("status", complete);
       } else {
         complete();
       }

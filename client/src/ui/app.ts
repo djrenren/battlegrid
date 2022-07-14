@@ -215,7 +215,7 @@ class App extends LitElement {
     try {
       console.log("new client");
       this.client = new Client(game_id, this.game);
-      this.client.status.on('status', () => this.requestUpdate());
+      this.client.status.on("status", () => this.requestUpdate());
       console.log("waiting for connection");
       await timeout(this.client.status.connected(), 5000);
       console.log("connected");
@@ -230,10 +230,12 @@ class App extends LitElement {
   #new_local = async () => {
     console.log("new local...");
     await this.client?.shutdown();
-    // this.client && (this.client.status.onstatus = undefined);
+    this.client && this.client.status.off("status", this.requestUpdate);
     this.client = undefined;
     window.history.pushState(null, "", window.location.href.split("?")[0]);
   };
+
+  #update = () => this.requestUpdate();
 
   #host = async () => {
     try {
@@ -242,7 +244,7 @@ class App extends LitElement {
 
       this.host_pending = true;
       this.server = new Server(this.game);
-      this.server.signaler.status.onstatus = () => this.requestUpdate();
+      this.server.signaler.status.on("status", this.#update);
       console.log("WAITING");
       await timeout(this.server.signaler.status.connected(), 5000);
 
@@ -260,7 +262,6 @@ class App extends LitElement {
     let s = this.server;
     this.server = undefined;
 
-    s && (s.signaler.status.onstatus = undefined);
     await s?.shutdown();
 
     window.history.replaceState({}, "", window.location.pathname);

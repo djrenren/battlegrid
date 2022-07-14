@@ -24,9 +24,12 @@ export class GamePeer {
         this.events = readable;
         this.#event_writer = writable.getWriter();
 
+        // This is gross but the manual close from the signaler won't fire any handlers
+        let old_close = peer.close;
+        peer.close = () => {this.status.set('closed'); old_close.bind(peer)()}
 
         peer.addEventListener('iceconnectionstatechange', () => {
-            console.log(peer.iceConnectionState);
+            console.log("STATE CHANGE");
             switch (peer.iceConnectionState) {
                 case "closed":
                     this.status.set('closed');
@@ -45,7 +48,6 @@ export class GamePeer {
     }
 
     write_event(ev: GameEvent) {
-        ev.remote = this.id;
         return this.#event_writer.write(ev);
     }
 

@@ -62,6 +62,7 @@ export class Game extends EventTarget implements EventEmitter<EventMap> {
   }
 
   async #handle_event(ev: GameEvent): Promise<void> {
+    console.log("handling event", ev);
     switch (ev.type) {
       case "token-manipulated":
         for (let t of ev.tokens) {

@@ -1,4 +1,4 @@
-import { PeerId } from "../net/peer";
+import { PeerId } from "../net/rtc/signaler";
 import { Point } from "../util/math";
 import { SerializedTabletop } from "./tabletop";
 
