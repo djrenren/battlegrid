@@ -38,6 +38,9 @@ class App extends LitElement {
   @state()
   host_pending = false;
 
+  @state()
+  client_pending = false;
+
   game: Game = new Game();
 
   render() {
@@ -50,14 +53,13 @@ class App extends LitElement {
             </div>
           </div>`
         : null;
-    let connecting =
-      this.client?.status.current === "opening"
-        ? html` <div class="message">
-            <div>
-              <h1>Connecting to grid...</h1>
-            </div>
-          </div>`
-        : null;
+    let connecting = this.client_pending
+      ? html` <div class="message">
+          <div>
+            <h1>Connecting to grid...</h1>
+          </div>
+        </div>`
+      : null;
     let disconnected =
       this.client?.status.current === "closed"
         ? html` <div class="message">
@@ -221,11 +223,14 @@ class App extends LitElement {
       this.client = new Client(game_id, this.game);
       this.client.status.on("status", () => this.requestUpdate());
       console.log("waiting for connection");
+      this.client_pending = true;
       await timeout(this.client.status.connected(), 5000);
       console.log("connected");
     } catch {
       console.log("giving up");
       await this.#new_local();
+    } finally {
+      this.client_pending = false;
     }
 
     // }, 2000);

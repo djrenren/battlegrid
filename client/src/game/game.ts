@@ -90,7 +90,7 @@ export class Game extends EventTarget implements EventEmitter<EventMap> {
     await this.#event_writer.write(ev);
   }
 
-  async #handle_event(ev: GameEvent): Promise<void> {
+  #handle_event(ev: GameEvent): void {
     console.log("handling event", ev);
     this.doc.transact(() => {
       switch (ev.type) {

@@ -62,7 +62,6 @@ export class Client {
     let peer = new GamePeer(this.#signaler.peer_id, this.#signaler.initiate(this.#game_id));
 
     consume(peer.events, (ev) => {
-      console.log("applying update", logUpdate(ev));
       return applyUpdate(this.#game.doc, ev, "remote");
     });
 
