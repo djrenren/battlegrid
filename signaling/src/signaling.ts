@@ -110,7 +110,7 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
     }
 
     if (msg.type === "ping") {
-        return this.send({type: 'pong'});
+        return this.send(JSON.stringify({type: 'pong'}));
     }
 
     console.log(msg);
