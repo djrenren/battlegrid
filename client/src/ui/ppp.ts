@@ -51,7 +51,6 @@ export class PPZ extends HTMLElement {
       this.#resize_observer.observe(svg);
 
       this.smooth = false;
-      this.#zoom_to_fit();
     };
     this.addEventListener("scroll", () => (this.state.scroll_pos = [this.scrollLeft, this.scrollTop]));
     this.addEventListener("gesturestart", this.#gesture.start);
@@ -62,9 +61,9 @@ export class PPZ extends HTMLElement {
   #zoom_to_fit() {
     let svg = (this.root.querySelector("slot") as HTMLSlotElement).assignedElements()[0] as SVGSVGElement;
     let dim = this.getBoundingClientRect();
-    let vdim = [dim.width, dim.height] as Point;
-    let cdim = [svg.width.baseVal.value, svg.height.baseVal.value] as Point;
-    const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(vdim, cdim), AUTO_ZOOM_FILL)));
+    this.vdim = [dim.width, dim.height] as Point;
+    this.cdim = [svg.width.baseVal.value, svg.height.baseVal.value] as Point;
+    const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(this.vdim, this.cdim), AUTO_ZOOM_FILL)));
     this.zoom([0, 0], zoom - this.state.z);
   }
 
@@ -77,6 +76,7 @@ export class PPZ extends HTMLElement {
       } else {
         //@ts-ignore;
         this.cdim = [e.target.width.baseVal.value, e.target.height.baseVal.value];
+        this.#zoom_to_fit();
       }
     }
 

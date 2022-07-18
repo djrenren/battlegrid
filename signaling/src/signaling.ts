@@ -100,12 +100,6 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
     }
 
     let txt = data.toString('utf8');
-
-    if (txt === '__ping__') {
-        console.log('ponging');
-        return this.send('__pong__');
-    }
-
     let msg;
 
     try {
@@ -114,6 +108,11 @@ function on_message(this: WebSocket, from: string, data: RawData, isBinary: bool
         console.log(txt);
         return this.close(1011, "All messages must be valid utf8 JSON");
     }
+
+    if (msg.type === "ping") {
+        return this.send({type: 'pong'});
+    }
+
     console.log(msg);
     let to = msg.to as PeerId | undefined;
     if (to === undefined) {

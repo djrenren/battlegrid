@@ -7,6 +7,7 @@ import { dc_status, MAX_MESSAGE_SIZE, streams } from "../util/rtc";
 import { ResourceId, ResourceMessage, ResourceRequest } from "./resources/service-worker-protocol";
 import { StatusEmitter } from "../util/net";
 import { GamePeer } from "./game_peer";
+import { applyUpdate, logUpdate } from "yjs";
 
 export class Client {
   #game: Game;
@@ -21,7 +22,7 @@ export class Client {
     this.#signaler = new Signaler(crypto.randomUUID() as PeerId);
     this.#game = game;
     this.#game_id = game_id;
-    this.#game.addEventListener("game-event", this.forward_events);
+    this.#game.doc.on("update", this.forward_updates);
     this.#peer = this.#setup_peer();
     let cache = caches.open("resources");
     navigator.serviceWorker.onmessage = async (ev: MessageEvent<ResourceRequest>) => {
@@ -39,11 +40,9 @@ export class Client {
     };
   }
 
-  forward_events = ({ detail: ev }: CustomEvent<GameEvent>) => {
-    console.log("CALLBACK", ev);
-    if (ev.remote) return;
-    ev.remote = this.#peer.id;
-    this.#peer.write_event(ev);
+  forward_updates = (update: Uint8Array, origin: any) => {
+    if (origin === "remote") return;
+    this.#peer.write_event(update);
   };
 
   async reconnect(): Promise<void> {
@@ -51,7 +50,7 @@ export class Client {
   }
 
   async shutdown() {
-    this.#game.removeEventListener("game-event", this.forward_events as any);
+    this.#game.doc.off("update", this.forward_updates);
     this.#peer.peer.close();
     console.log("Waiting for signaler shutdown");
     await this.#signaler.shutdown();
@@ -63,7 +62,8 @@ export class Client {
     let peer = new GamePeer(this.#signaler.peer_id, this.#signaler.initiate(this.#game_id));
 
     consume(peer.events, (ev) => {
-      return this.#game.apply(ev);
+      console.log("applying update", logUpdate(ev));
+      return applyUpdate(this.#game.doc, ev, "remote");
     });
 
     return peer;

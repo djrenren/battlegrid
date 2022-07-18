@@ -4,10 +4,10 @@ import { Branded } from "../util/string";
 import { TypedMap, typed_map } from "../util/yjs";
 
 export type Tabletop = TypedMap<{
-  tokens: Map<TokenData>,
-  order: Array<string>,
-  grid_dim: Point,
-  bg: string | null
+  tokens: Map<TokenData>;
+  order: Array<string>;
+  grid_dim: Point;
+  bg: string | null;
 }>;
 
 export type TokenData = TypedMap<{
@@ -16,15 +16,14 @@ export type TokenData = TypedMap<{
   url: string;
   id: string;
   r: number; // degrees!
-}>
-
-
+}>;
 
 export type SerializedTabletop = Branded<"tabletop">;
 
-export const default_tabletop = (): Tabletop => typed_map({
-  tokens: new Map(),
-  order: new Array(),
-  grid_dim: [30,40],
-  bg: null as null | string,
-})
+export const default_tabletop = (): Tabletop =>
+  typed_map({
+    tokens: new Map(),
+    order: new Array(),
+    grid_dim: [30, 40],
+    bg: null as null | string,
+  });

@@ -1,6 +1,3 @@
-import { createImportSpecifier } from "typescript";
-import { Game } from "../game/game";
-import { serialize_tbt } from "../game/tabletop";
 import { waitFor } from "../util/events";
 import { flush, MAX_MESSAGE_SIZE, streams } from "../util/rtc";
 import { consume } from "../util/streams";
@@ -8,6 +5,8 @@ import { GamePeer } from "./game_peer";
 import { Resource, RESOURCE_PROTOCOL, response } from "./resources/protocol";
 import { ResourceId } from "./resources/service-worker-protocol";
 import { Signaler, PeerId } from "./rtc/signaler";
+import { applyUpdate, encodeStateAsUpdate, encodeStateVector, logUpdate } from "yjs";
+import { Game } from "../game/game";
 
 export class Server {
   signaler: Signaler;
@@ -20,12 +19,12 @@ export class Server {
     this.#game = game;
     this.#abort = new AbortController();
     this.signaler.on("peer", this.#add_client);
-    this.#game.addEventListener("game-event", ({ detail: ev }) => {
-      ev.remote ??= this.signaler.peer_id;
+    this.#game.doc.on("update", (update, origin) => {
+      // todo, prevent echo
       for (let client of this.clients) {
-        console.log("ECHOING", client.id, ev.remote);
-        if (client.id === ev.remote) continue;
-        client.write_event(ev);
+        console.log("ECHO", client.id, origin);
+        if (client.id === origin) continue;
+        client.write_event(update);
       }
     });
   }
@@ -34,23 +33,10 @@ export class Server {
     let gp = new GamePeer(id, peer);
     this.clients.add(gp);
 
-    // It's a little weird that we're sending the JSON encoding
-    // as a string. But we need to capture the state of the tabletop
-    // at this exact moment. If we didn't JSON encode now, the tabletop
-    // could be mutated before being written to the wire.
-    //
-    // We aim for idempotency so this *shouldn't* be a problem, but lets
-    // just avoid it
-    gp.write_event({
-      type: "state-sync",
-      tabletop: serialize_tbt(this.#game.tabletop),
-      remote: this.signaler.peer_id,
-    });
+    gp.write_event(encodeStateAsUpdate(this.#game.doc));
 
     consume(gp.events, (ev) => {
-      console.log("RECEIVED EVENT FROM ");
-      ev.remote = id;
-      return this.#game.apply(ev);
+      applyUpdate(this.#game.doc, ev, id);
     });
 
     // peer.events_dc.addEventListener("close", () => {

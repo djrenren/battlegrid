@@ -2,6 +2,7 @@ import typescript from "@rollup/plugin-typescript";
 import { terser } from "rollup-plugin-terser";
 import sourcemaps from "rollup-plugin-sourcemaps";
 import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
 import summary from "rollup-plugin-summary";
 import visualizer from "rollup-plugin-visualizer";
 import minifyHTML from "rollup-plugin-minify-html-literals";
@@ -10,6 +11,7 @@ import copy from "rollup-plugin-copy";
 let plugins = [
   typescript({ sourceMap: true, inlineSourceMap: true, inlineSources: true }),
   resolve(),
+  commonjs(),
   minifyHTML(),
   terser({
     ecma: 2020,

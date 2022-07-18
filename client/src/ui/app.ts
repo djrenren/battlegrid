@@ -81,21 +81,21 @@ class App extends LitElement {
               ></host-toggle>`}
           <span>
             Grid:
-            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.game.tabletop.grid_dim[0] + ""} /> x
-            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.game.tabletop.grid_dim[1] + ""} />
+            <input id="width" type="number" min="1" @input=${this.#updateDim} .value=${this.game.board.get("width") + ""} /> x
+            <input id="height" type="number" min="1" @input=${this.#updateDim} .value=${this.game.board.get("height") + ""} />
           </span>
           ${this.selection.size === 1
             ? html`
                 <div>
                   <button
                     @click=${() => this.game.apply({ type: "token-reorder", id: first(this.selection)!, idx: "down" })}
-                    ?disabled=${this.game.tabletop.tokens.index(first(this.selection)!) === 0}
+                    ?disabled=${true /*this.game.tabletop.tokens.index(first(this.selection)!) === 0*/}
                   >
                     Move Down
                   </button>
                   <button
                     @click=${() => this.game.apply({ type: "token-reorder", id: first(this.selection)!, idx: "up" })}
-                    ?disabled=${this.game.tabletop.tokens.index(first(this.selection)!) === this.game.tabletop.tokens.size - 1}
+                    ?disabled=${true /*this.game.tabletop.tokens.index(first(this.selection)!) === this.game.tabletop.tokens.size - 1*/}
                   >
                     Move Up
                   </button>
@@ -108,11 +108,11 @@ class App extends LitElement {
         </div>
       </section>
       <bg-canvas
-        bg=${ifDefined(this.game.tabletop.bg ?? undefined)}
+        bg=${ifDefined(this.game.board.get("bg") ?? undefined)}
         .selection=${this.selection}
-        width=${this.game.tabletop.grid_dim[0]}
-        height=${this.game.tabletop.grid_dim[1]}
-        .tokens=${this.game.tabletop.tokens}
+        width=${this.game.board.get("width")}
+        height=${this.game.board.get("height")}
+        .board=${this.game.board}
         .callouts=${this.game.callouts}
         @token-drop=${({ detail }: TokenDropEvent) => this.game.add_token(detail.img, { loc: detail.loc, r: 0, dim: detail.dim })}
         @bg-drop=${({ detail }: BgDropEvent) => this.game.set_bg(detail)}
@@ -197,12 +197,16 @@ class App extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback();
-    //@ts-ignore
-    this.game.addEventListener("game-event", () => {
+    console.log(this.game.board);
+    this.game.doc.on("update", () => {
+      console.log("UPDATEING");
       for (const id of this.selection) {
-        this.game.tabletop.tokens.has(id) || this.selection.delete(id);
+        this.game.board.get("tokens").has(id) || this.selection.delete(id);
       }
       this.requestUpdate();
+      this.canvas?.requestUpdate();
+    });
+    this.game.doc.on("afterTransaction", () => {
       this.canvas?.requestUpdate();
     });
     // setTimeout( async () => {
@@ -229,6 +233,7 @@ class App extends LitElement {
 
   #new_local = async () => {
     console.log("new local...");
+    this.game.initialize_board();
     await this.client?.shutdown();
     this.client && this.client.status.off("status", this.requestUpdate);
     this.client = undefined;

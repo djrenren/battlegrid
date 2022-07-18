@@ -6,22 +6,30 @@ import { request, Resource, RESOURCE_PROTOCOL } from "./resources/protocol";
 import { ResourceId } from "./resources/service-worker-protocol";
 import { PeerId } from "./rtc/signaler";
 
+export type GameUpdate = Uint8Array;
+
 export class GamePeer {
     peer: RTCPeerConnection;
     status = new StatusEmitter();
     id: PeerId;
 
-    events: ReadableStream<GameEvent>;
-    #event_writer: WritableStreamDefaultWriter<GameEvent>;
+    events: ReadableStream<GameUpdate>;
+    #event_writer: WritableStreamDefaultWriter<GameUpdate>;
 
     constructor(id: PeerId, peer: RTCPeerConnection) {
         this.id = id;
         this.peer = peer;
 
         let dc = peer.createDataChannel("events", {negotiated: true, id: 1});
-        let {readable, writable} = json<GameEvent>(streams(dc))
+        dc.binaryType = "arraybuffer"; 
+        let {readable, writable} = streams<ArrayBuffer, ArrayBuffer>(dc);
 
-        this.events = readable;
+        this.events = readable.pipeThrough(new TransformStream<ArrayBuffer, Uint8Array>({
+            transform(chunk, controller) {
+                console.log('chunk', chunk);
+                controller.enqueue(new Uint8Array(chunk))
+            }
+        }));
         this.#event_writer = writable.getWriter();
 
         // This is gross but the manual close from the signaler won't fire any handlers
@@ -47,7 +55,7 @@ export class GamePeer {
         peer.ondatachannel = (ev) => this.ondatachannel(ev);
     }
 
-    write_event(ev: GameEvent) {
+    write_event(ev: GameUpdate) {
         return this.#event_writer.write(ev);
     }
 

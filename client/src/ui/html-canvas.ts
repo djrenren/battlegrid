@@ -5,12 +5,11 @@ import { abs_p, add_c, add_p, BBox, clamp_p, div_c, eq_p, intersect, max_p, min_
 import { is_mouse_down, is_primary_down, is_primary_touch, stop_ev, window_ev } from "../util/events";
 import { getImage, LocalOrRemoteImage } from "../util/files";
 import { GameEvent, game_event, StateSync, TokenData, uuidv4 } from "../game/game-events";
-import { Board, Game } from "../game/game";
+import { Game } from "../game/game";
 import { OrderedMap } from "../util/orderedmap";
 import { filter, map } from "../util/iter";
 import { PPZ } from "./ppp";
 import { styleMap } from "lit/directives/style-map.js";
-import { TypedMap } from "../util/yjs";
 
 const PIXEL_SCALE = 1;
 const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
@@ -26,6 +25,7 @@ type SelectionBox = {
   index: number;
   bbox: BBox;
 };
+
 @customElement("bg-canvas")
 export class Canvas extends LitElement {
   @property({ type: Number })
@@ -34,55 +34,8 @@ export class Canvas extends LitElement {
   @property({ type: Number })
   readonly height = 40;
 
-  @property()
-  readonly bg?: string;
-
-  @property({ attribute: false })
-  //@ts-ignore
-  readonly board: Board;
-
-  @property({ attribute: false })
-  readonly selection: Set<string> = new Set();
-
-  @property({ attribute: false })
-  readonly callouts: Set<Point> = new Set();
-
-  #sbox?: { pin: Point; mouse: Point };
-
-  @property({ attribute: false })
-  sel_bbox?: BBox;
-
-  @query("root", true)
-  root?: SVGElement;
-
-  @query("p-p-z", true)
-  viewport?: PPZ;
-
-  #mouse_loc?: Pick<MouseEvent, "clientX" | "clientY">;
-
-  constructor() {
-    super();
-  }
-
-  get #dim() {
-    return mul_c([this.width, this.height], GRID_SIZE);
-  }
-
-  connectedCallback(): void {
-    super.connectedCallback();
-    document.addEventListener("keydown", this.#keydown);
-  }
-
-  disconnectedCallback(): void {
-    super.disconnectedCallback();
-    document.removeEventListener("keydown", this.#keydown);
-  }
   render() {
-    console.log("canvas render");
-    if (!this.board) return html``;
     let [width, height] = this.#dim;
-    let sbbox = this.#selection_bbox();
-    let selected = this.selection.size === 1 ? this.board.get("tokens").get(this.selection.values().next().value) : undefined;
     return html`
       <p-p-z
         @pointerdown=${this.#sbox_start}
@@ -96,10 +49,8 @@ export class Canvas extends LitElement {
         @dragover=${this.#drag_over}
         @drop=${this.#drop}
       >
-        <svg
+        <div
           id="root"
-          width=${width + PADDING * 2}
-          height=${height + PADDING * 2}
           style=${styleMap({
             width: `${width + PADDING * 2}px`,
             height: `${height + PADDING * 2}px`,
@@ -123,19 +74,20 @@ export class Canvas extends LitElement {
           <svg x=${PADDING} y=${PADDING} width=${width} height=${height} id="surface">
             <rect class="shadow" width="100%" height="100%" fill="white" rx=${CANVAS_RADIUS}></rect>
             <svg clip-path="url(#canvasClip)">
-              ${this.bg
-                ? svg`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none" style="will-change: transform"></image>`
-                : null}
+              ${
+                this.bg
+                  ? svg`<image href=${this.bg} width="100%" height="100%" preserveAspectRatio="none" style="will-change: transform"></image>`
+                  : null
+              }
               <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
               <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
               <svg id="tokens">
                 ${repeat(
-                  this.board.get("order") ?? [],
-                  (t) => t,
-                  (tid, index) => {
-                    const t = this.board.get("tokens").get(tid)!;
-                    const [width, height] = add_c(t.get("dim"), -LINE_WIDTH);
-                    const [x, y] = add_c(t.get("loc"), LINE_WIDTH / 2);
+                  this.tokens.values(),
+                  (t) => t.id,
+                  (t, index) => {
+                    const [width, height] = add_c(t.dim, -LINE_WIDTH);
+                    const [x, y] = add_c(t.loc, LINE_WIDTH / 2);
                     return html`
                       <svg
                         viewBox="0 0 1 1"
@@ -149,12 +101,12 @@ export class Canvas extends LitElement {
                         @pointerup=${this.#touch_focus}
                       >
                         <image
-                          id=${tid}
+                          id=${t.id}
                           class="token"
                           width="1"
                           height="1"
-                          href=${t.get("url")}
-                          style=${`transform: rotate(${t.get("r")}deg)`}
+                          href=${t.url}
+                          style=${`transform: rotate(${t.r}deg)`}
                           preserveAspectRatio="none"
                           @load=${mark_loaded}
                         ></image>
@@ -179,8 +131,9 @@ export class Canvas extends LitElement {
                   }
                 )}
               </svg>
-              ${this._drop_hint
-                ? svg`
+              ${
+                this._drop_hint
+                  ? svg`
             <rect
                 class="drop_hint"
                 x=${this._drop_hint[0]}
@@ -189,10 +142,12 @@ export class Canvas extends LitElement {
                 height=${GRID_SIZE}
                 ></rect>
           `
-                : null}
+                  : null
+              }
             </svg>
-            ${this.#sbox
-              ? svg`
+            ${
+              this.#sbox
+                ? svg`
               <rect id="sbox"
                 x=${Math.min(this.#sbox.pin[0], this.#sbox.mouse[0])}
                 y=${Math.min(this.#sbox.pin[1], this.#sbox.mouse[1])}
@@ -200,7 +155,8 @@ export class Canvas extends LitElement {
                 height=${Math.abs(this.#sbox.pin[1] - this.#sbox.mouse[1])}
                 ></rect>
               `
-              : null}
+                : null
+            }
             ${repeat(
               this.callouts,
               (id) => id,
@@ -212,8 +168,9 @@ export class Canvas extends LitElement {
                 `;
               }
             )}
-            ${sbbox
-              ? svg`
+            ${
+              sbbox
+                ? svg`
             <svg
               id="selection"
               x=${sbbox.bbox.start[0]}
@@ -228,8 +185,8 @@ export class Canvas extends LitElement {
             ${
               selected
                 ? svg`
-            <g style=${`transform-origin: center; transform: rotate(${selected.get("r")}deg) translateY(${
-              (Math.sign((selected.get("r") - 180) % 180) * (selected.get("dim")[0] - selected.get("dim")[1])) / 2
+            <g style=${`transform-origin: center; transform: rotate(${selected.r}deg) translateY(${
+              (Math.sign((selected.r - 180) % 180) * (selected.dim[0] - selected.dim[1])) / 2
             }px)`}>
               <line class="ro" x1="50%" x2="50%" y2=${-ROTATE_DISTANCE}></line>
               <circle class="ro handle" cx="50%" cy=${-ROTATE_DISTANCE} r=${ROTATE_SIZE / 2}></circle>
@@ -246,7 +203,8 @@ export class Canvas extends LitElement {
             </svg>`
                 : null
             }`
-              : null}
+                : null
+            }
           </svg>
         </svg>
       </p-p-z>
@@ -321,7 +279,6 @@ export class Canvas extends LitElement {
     stop_ev(ev);
     try {
       const img = await getImage(ev);
-      console.log("Emitting drop");
       // TODO EMIT DROPPED TOKEN
       this.dispatchEvent(
         window_ev("token-drop", {
@@ -388,13 +345,13 @@ export class Canvas extends LitElement {
     };
 
     const sel = map(
-      filter(this.board.get("tokens").values(), (t: TypedMap<TokenData>) =>
+      filter(this.tokens.values(), (t) =>
         intersect(box, {
-          start: t.get("loc"),
-          end: add_p(t.get("loc"), t.get("dim")),
+          start: t.loc,
+          end: add_p(t.loc, t.dim),
         })
       ),
-      (t) => t.get("id")
+      (t) => t.id
     );
 
     this.#sbox = undefined;
@@ -404,14 +361,14 @@ export class Canvas extends LitElement {
 
   #selection_bbox(): SelectionBox | undefined {
     if (this.selection.size === 0) return;
-    const s = Array.from(this.selection, (t) => this.board.get("tokens").get(t)).filter((t) => t) as TypedMap<TokenData>[];
-    const index = Math.max(...map(this.selection.values(), (id) => this.board.get("order").toJSON().indexOf(id)!));
-    let start = s[0]!.get("loc");
-    let end = add_p(s[0]!.get("loc"), s[0]!.get("dim"));
+    const s = Array.from(this.selection, (t) => this.tokens.get(t)).filter((t) => t) as TokenData[];
+    const index = Math.max(...map(this.selection.values(), (id) => this.tokens.index(id)!));
+    let start = s[0]!.loc;
+    let end = add_p(s[0]!.loc, s[0]!.dim);
 
     s.forEach((t) => {
-      start = min_p(start, t.get("loc"));
-      end = max_p(end, add_p(t.get("loc"), t.get("dim")));
+      start = min_p(start, t.loc);
+      end = max_p(end, add_p(t.loc, t.dim));
     });
 
     return { index, bbox: { start, end } };
@@ -432,15 +389,16 @@ export class Canvas extends LitElement {
 
   @eventOptions({ capture: true, passive: false })
   selection_drag(ev: PointerEvent) {
+    console.log("drag fired");
     if (!is_primary_down(ev)) return;
     if (!this.#drag_offset) {
       this.selection_drag_start(ev);
     }
     stop_ev(ev);
     const grid_loc = clamp_p([0, 0], this.#dim, this.#screen_to_svg(ev));
-    const selection = this.board.get("tokens").get(this.selection.values().next().value)!;
-    const dim = selection.get("dim");
-    const loc = selection.get("loc");
+    const selection = this.tokens.get(this.selection.values().next().value)!;
+    const dim = selection.dim;
+    const loc = selection.loc;
     const classes = (ev.target as SVGGraphicsElement).classList;
     let move = [0, 0] as Point;
     let resize = [0, 0] as Point;
@@ -469,10 +427,11 @@ export class Canvas extends LitElement {
       const rel = sub_p(grid_loc, center);
       const angle = Math.atan2(rel[0], -rel[1]);
       const deg = (angle * 180) / Math.PI;
-      r = Math.round(deg / 90) * 90 - (selection.get("r") % 360);
+      r = Math.round(deg / 90) * 90 - (selection.r % 360);
     }
 
     if (classes.contains("selection-drag-target")) {
+      console.log("move");
       move = sub_p(grid_loc, this.#drag_offset!).map(nearest_corner) as Point;
     } else {
       // Don't let top-left drags cause movement pas the dimensions
@@ -488,12 +447,12 @@ export class Canvas extends LitElement {
         game_event({
           type: "token-manipulated",
           tokens: Array.from(this.selection, (id) => {
-            let selection = this.board.get("tokens").get(id)!;
+            let selection = this.tokens.get(id)!;
             return {
-              id: selection.get("id"),
-              loc: add_p(selection.get("loc"), move),
-              dim: add_p(selection.get("dim"), resize),
-              r: selection.get("r") + r,
+              id: selection.id,
+              loc: add_p(selection.loc, move),
+              dim: add_p(selection.dim, resize),
+              r: selection.r + r,
             };
           }),
         })
@@ -539,7 +498,7 @@ export class Canvas extends LitElement {
       );
     }
 
-    let s = this.board.get("tokens").get(this.selection.values().next().value)!;
+    let s = this.tokens.get(this.selection.values().next().value)!;
     const movements: { [key: string]: Point } = {
       ArrowUp: [0, -GRID_SIZE],
       ArrowDown: [0, GRID_SIZE],
@@ -553,13 +512,13 @@ export class Canvas extends LitElement {
         game_event({
           type: "token-manipulated",
           tokens: Array.from(this.selection, (id) => {
-            const s = this.board.get("tokens").get(id)!;
-            const loc = clamp_p([0, 0], sub_p(this.#dim, s.get("dim")), add_p(s.get("loc"), move!));
+            const s = this.tokens.get(id)!;
+            const loc = clamp_p([0, 0], sub_p(this.#dim, s.dim), add_p(s.loc, move!));
             return {
-              id: s.get("id"),
+              id: s.id,
               loc: loc,
-              dim: s.get("dim"),
-              r: s.get("r"),
+              dim: s.dim,
+              r: s.r,
             };
           }),
         })
