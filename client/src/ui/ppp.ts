@@ -62,7 +62,8 @@ export class PPZ extends HTMLElement {
     let svg = (this.root.querySelector("slot") as HTMLSlotElement).assignedElements()[0] as SVGSVGElement;
     let dim = this.getBoundingClientRect();
     this.vdim = [dim.width, dim.height] as Point;
-    this.cdim = [svg.width.baseVal.value, svg.height.baseVal.value] as Point;
+    dim = svg.getBoundingClientRect();
+    this.cdim = [dim.width, dim.height] as Point;
     const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(this.vdim, this.cdim), AUTO_ZOOM_FILL)));
     this.zoom([0, 0], zoom - this.state.z);
   }
@@ -75,7 +76,7 @@ export class PPZ extends HTMLElement {
         this.vloc = [rect.x, rect.y];
       } else {
         //@ts-ignore;
-        this.cdim = [e.target.width.baseVal.value, e.target.height.baseVal.value];
+        this.cdim = [e.contentRect.width, e.contentRect.height];
         this.#zoom_to_fit();
       }
     }

@@ -1,6 +1,5 @@
 {
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^22.0.1",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-typescript": "^8.3.3",
     "@types/jest": "^27.5.2",
@@ -49,7 +48,7 @@
     "watch": "rollup -c --watch"
   },
   "dependencies": {
-    "lib0": "^0.2.49",
+    "lib0": "0.2.49",
     "lit": "^2.2.7",
     "yjs": "^13.5.39"
   }

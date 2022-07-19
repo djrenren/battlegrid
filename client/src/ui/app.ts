@@ -12,6 +12,7 @@ import { Server } from "../net/server";
 import "./util/with-tooltip";
 import "./host-toggle";
 import "./client-status";
+import "./html-canvas";
 import { timeout } from "../util/promises";
 import { PeerId } from "../net/rtc/signaler";
 
@@ -109,7 +110,7 @@ class App extends LitElement {
           <buy-me-a-coffee class="right"></buy-me-a-coffee>
         </div>
       </section>
-      <bg-canvas
+      <html-canvas
         bg=${ifDefined(this.game.board.get("bg") ?? undefined)}
         .selection=${this.selection}
         width=${this.game.board.get("width")}
@@ -122,7 +123,7 @@ class App extends LitElement {
           this.selection = new Set(detail);
         }}
         @game-event=${({ detail }: CustomEvent<GameEvent>) => this.game.apply(detail)}
-      ></bg-canvas>
+      ></html-canvas>
       ${overlay}
     `;
   }
@@ -159,7 +160,7 @@ class App extends LitElement {
       justify-self: end;
     }
 
-    bg-canvas {
+    html-canvas {
       grid-area: viewport;
       z-index: 1;
     }
