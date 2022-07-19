@@ -6,7 +6,7 @@ import { ResourceMessage } from "./service-worker-protocol";
 
 type ResourceId = string;
 
-const sw = self as ServiceWorkerGlobalScope & typeof globalThis;
+const sw = self as unknown as ServiceWorkerGlobalScope & typeof globalThis;
 
 let pending = new Map<
   ResourceId,

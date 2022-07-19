@@ -1,30 +1,29 @@
 import typescript from "@rollup/plugin-typescript";
-// import { terser } from "rollup-plugin-terser";
+import { terser } from "rollup-plugin-terser";
 // import nodePolyfills from 'rollup-plugin-node-polyfills';
 // import sourcemaps from "rollup-plugin-sourcemaps";
 import resolve from "@rollup/plugin-node-resolve";
-// import commonjs from "@rollup/plugin-commonjs";
 import summary from "rollup-plugin-summary";
 import visualizer from "rollup-plugin-visualizer";
-// import minifyHTML from "rollup-plugin-minify-html-literals";
+import minifyHTML from "rollup-plugin-minify-html-literals";
 import copy from "rollup-plugin-copy";
 
 let plugins = [
+  resolve({browser: true, exportConditions: ['browser']}),
   typescript(),
-  resolve(),
-  // minifyHTML(),
-  // terser({
-  //   ecma: 2020,
-  //   module: true,
-  //   mangle: {
-  //     properties: {
-  //       regex: /^(#|__)/,
-  //     },
-  //     toplevel: true,
-  //   },
-  //   keep_classnames: false,
-  //   safari10: false,
-  // }),
+  minifyHTML(),
+  terser({
+    ecma: 2020,
+    module: true,
+    mangle: {
+      properties: {
+        regex: /^(#|__)/,
+      },
+      toplevel: true,
+    },
+    keep_classnames: false,
+    safari10: false,
+  }),
   copy({
     targets: [{ src: "static/**/*", dest: "build" }],
   }),
