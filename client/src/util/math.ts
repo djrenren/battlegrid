@@ -18,6 +18,7 @@ export const max_p = (a: Point, b: Point): Point => [Math.max(a[0], b[0]), Math.
 export const min_p = (a: Point, b: Point): Point => [Math.min(a[0], b[0]), Math.min(a[1], b[1])];
 export const clamp_p = (min: Point, max: Point, p: Point): Point => max_p(min, min_p(max, p));
 export const abs_p = (a: Point): Point => [Math.abs(a[0]), Math.abs(a[1])];
+export const snap_c = (a: Point, c: number): Point => [a[0] - (a[0] % c), a[1] - (a[1] % c)];
 
 export const eq_p = (a: Point, b: Point): boolean => a[0] === b[0] && a[1] === b[1];
 

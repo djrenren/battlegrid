@@ -24,7 +24,7 @@ class App extends LitElement {
   @query("#height", true)
   height?: HTMLInputElement;
 
-  @query("bg-canvas", true)
+  @query("html-canvas", false)
   canvas?: Canvas;
 
   @state()
@@ -207,6 +207,7 @@ class App extends LitElement {
         this.game.board.get("tokens").has(id) || this.selection.delete(id);
       }
       this.requestUpdate();
+      console.log("CANVAS", this.canvas);
       this.canvas?.requestUpdate();
     });
     this.game.doc.on("afterTransaction", () => {

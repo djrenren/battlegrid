@@ -11,7 +11,7 @@ export const stop_ev = (ev: Event) => {
 
 type CustomEventType<T extends Event> = T extends CustomEvent<infer U> ? U : never;
 export const window_ev = <N extends keyof WindowEventMap>(name: N, detail: CustomEventType<WindowEventMap[N]>): WindowEventMap[N] =>
-  new CustomEvent(name, { detail }) as any;
+  new CustomEvent(name, { detail, cancelable: true, bubbles: true, composed: true }) as any;
 
 export interface EventEmitter<EventMap> extends EventTarget {
   addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;

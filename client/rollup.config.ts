@@ -9,7 +9,7 @@ import minifyHTML from "rollup-plugin-minify-html-literals";
 import copy from "rollup-plugin-copy";
 
 let plugins = [
-  resolve({browser: true, exportConditions: ['browser']}),
+  resolve({ browser: true, exportConditions: ["browser"] }),
   typescript(),
   minifyHTML(),
   terser({

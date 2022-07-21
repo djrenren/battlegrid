@@ -51,7 +51,17 @@ export class Game extends EventTarget implements EventEmitter<EventMap> {
       this.board.set("width", 30);
       this.board.set("height", 30);
       this.board.set("bg", null);
-      this.board.set("tokens", new Map());
+      this.board.set(
+        "tokens",
+        new Map([
+          // ["1", new Map([
+          //   ["dim", [1,1]],
+          //   ["loc", [28,28]],
+          //   ["url", "red"],
+          //   ["r", 0]
+          // ])]
+        ])
+      );
       this.board.set("order", new Array<string>());
     });
   }
@@ -65,6 +75,7 @@ export class Game extends EventTarget implements EventEmitter<EventMap> {
   }
 
   async add_token(img: LocalOrRemoteImage, t: Omit<TokenData, "url" | "id">) {
+    console.log("ADDING TOKEN");
     const id = crypto.randomUUID();
     const url = await this.#register_resource(img);
     const token = {

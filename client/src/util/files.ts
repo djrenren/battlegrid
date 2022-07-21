@@ -1,6 +1,7 @@
 export type LocalOrRemoteImage = Blob | string;
 
 export const getImage = async (ev: DragEvent): Promise<LocalOrRemoteImage> => {
+  if (!ev.dataTransfer) throw "No compatible drop type found";
   let dataItems = ev.dataTransfer?.items ?? [];
   return new Promise(async (resolve, reject) => {
     console.log("DataItems", dataItems.length);
@@ -12,7 +13,16 @@ export const getImage = async (ev: DragEvent): Promise<LocalOrRemoteImage> => {
       if (dataItems[i].type === "text/html") {
         dataItems[i].getAsString((s) => resolve(extractURLFromHTML(s)!));
         return;
-      } else if (dataItems[i].kind === "string") {
+      }
+
+      if (dataItems[i].type === "application/x-moz-file-promise-url") {
+        dataItems[i].getAsString((s) => {
+          url: resolve;
+        });
+        return;
+      }
+
+      if (dataItems[i].kind === "string") {
         let t = dataItems[i].type;
         dataItems[i].getAsString((s) => console.log(t, s));
       }
