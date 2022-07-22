@@ -114,7 +114,7 @@ export class PPZ extends HTMLElement {
    * This updates the `offset` member accordingly
    */
   center() {
-    this.offset = max_p([0, 0], mul_c(sub_p(this.vdim, mul_c(this.cdim, this.state.z)), 0.5));
+    this.offset = round_p(max_p([0, 0], mul_c(sub_p(this.vdim, mul_c(this.cdim, this.state.z)), 0.5)));
     this.container.style.transform = `translate(${this.offset[0]}px, ${this.offset[1]}px) scale(${this.state.z})`;
   }
 
@@ -132,7 +132,7 @@ export class PPZ extends HTMLElement {
    */
   zoom = (origin: [number, number], inc: number) => {
     // Step 1: Bound the proposed delta by the min and max scale
-    this.desired_state.z = Math.min(MAX_SCALE, Math.max(MIN_SCALE, this.desired_state.z + inc));
+    this.desired_state.z = round(Math.min(MAX_SCALE, Math.max(MIN_SCALE, this.desired_state.z + inc)));
 
     // Step 2: Record the current scroll position.
     //          TODO: Determine if we still need this when we record on scroll event
@@ -252,4 +252,8 @@ export class PPZ extends HTMLElement {
 
 const next_frame = (): Promise<DOMHighResTimeStamp> => new Promise((res) => window.requestAnimationFrame(res));
 
+// We use round to prevent small rendering errors that occur when transforms are highly precise.
+// Two decimals seems to be pretty safe
+const round = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const round_p = ([a, b]: Point) => [round(a), round(b)] as Point;
 customElements.define("p-p-z", PPZ);

@@ -14,8 +14,9 @@ import "./html-canvas/drop-layer";
 import { styleMap } from "lit/directives/style-map.js";
 
 const PIXEL_SCALE = 1;
-const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
-const LINE_WIDTH = 0.02 * PIXEL_SCALE; // scale-dependent px
+const LINE_WIDTH = 1 * PIXEL_SCALE;
+const GRID_SIZE = 25 * PIXEL_SCALE; // scale-dependent px
+const TOKEN_SIZE = GRID_SIZE - LINE_WIDTH;
 const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
 const ROTATE_DISTANCE = 10 * PIXEL_SCALE;
 const ROTATE_SIZE = HANDLE_SIZE / 2;
@@ -34,7 +35,7 @@ export class Canvas extends LitElement {
   readonly board: Board;
 
   get screen_dim(): Point {
-    return mul_c(this.grid_dim, GRID_SIZE);
+    return add_c(mul_c(this.grid_dim, GRID_SIZE), -LINE_WIDTH);
   }
 
   get grid_dim(): Point {
@@ -42,6 +43,7 @@ export class Canvas extends LitElement {
   }
 
   render() {
+    let [width, height] = this.grid_dim;
     let [px_width, px_height] = this.screen_dim;
     return html` <p-p-z>
       <div
@@ -54,17 +56,20 @@ export class Canvas extends LitElement {
         })}
       >
         <div id="board">
-          <svg style="width: 100%; height: 100%; position: absolute;" viewBox=${"0 0 " + this.board.get("width") + " " + this.board.get("height")}>
-            <defs>
-              <pattern id="horiz" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height="1" patternUnits="userSpaceOnUse">
-                <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" shape-rendering="geometricPrecision"></rect>
-              </pattern>
-              <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="1" height="100%" patternUnits="userSpaceOnUse">
-                <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" shape-rendering="geometric precision"></rect>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
-            <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+
+          <svg> 
+              <defs>
+                  <pattern id="horiz" width="100%" height="25px" patternUnits="userSpaceOnUse">
+                      <rect class="gridline" width="100%" y="24px" height="1px" fill="#d3d3d3"
+                          shape-rendering="geometricPrecision"></rect>
+                  </pattern>
+                  <pattern id="vert" height="100%" width="25px" patternUnits="userSpaceOnUse">
+                      <rect class="gridline" x="24px" height="100%" width="1px" fill="#d3d3d3"
+                          shape-rendering="geometricPrecision"></rect>
+                  </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+              <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
           </svg>
           ${repeat(
             this.board.get("order").toJSON() ?? [],
@@ -98,6 +103,7 @@ export class Canvas extends LitElement {
       return [occupied_cell(p[0]), occupied_cell(p[1])] as Point;
     },
     dim: GRID_SIZE,
+    line: LINE_WIDTH,
   };
 
   #snap_to_grid(p: Point) {}
@@ -116,20 +122,46 @@ export class Canvas extends LitElement {
       width: 100%;
       height: 100%;
       border-radius: ${unsafeCSS(GRID_SIZE / 4 + "px")};
+      /* border: 1px solid #d3d3d3; */
+      /* background: white url('assets/grid.svg'); */
       background: white;
       position: relative;
       overflow: hidden;
       box-shadow: 5px solid #dddddddd;
     }
 
+    svg {
+      position: absolute;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
     .token {
       position: absolute;
       background-size: 100% 100%;
+      filter: drop-shadow(0 0 2px #333);
     }
 
     .full-bleed {
       position: absolute;
       inset: 0 0 0 0;
+    }
+
+    .line {
+      background-color: #d3d3d3;
+      position: absolute;
+      contain: none;
+    }
+
+    .vert {
+      height: 100%;
+      width: ${unsafeCSS(LINE_WIDTH + "px")}
+    }
+
+    .horiz {
+      width: 100%;
+      height: ${unsafeCSS(LINE_WIDTH + "px")}
     }
 
     :host {
@@ -144,6 +176,7 @@ export class Canvas extends LitElement {
 export interface Grid {
   snap(p: Point): Point;
   dim: number;
+  line: number;
 }
 
 export type TokenDropEvent = CustomEvent<{ loc: Point; dim: Point; img: LocalOrRemoteImage }>;
@@ -162,3 +195,16 @@ declare global {
 const nearest_corner = (n: number) => Math.round(n / GRID_SIZE) * GRID_SIZE;
 const occupied_cell = (n: number) => n - (n % GRID_SIZE);
 const mark_loaded = (ev: any) => ev.target.classList.add("loaded");
+
+          // <svg style="width: 100%; height: 100%; position: absolute;" viewBox=${"0 0 " + this.board.get("width") + " " + this.board.get("height")}>
+          //   <defs>
+          //     <pattern id="horiz" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height="1" patternUnits="userSpaceOnUse">
+          //       <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" shape-rendering="geometricPrecision"></rect>
+          //     </pattern>
+          //     <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="1" height="100%" patternUnits="userSpaceOnUse">
+          //       <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" shape-rendering="geometric precision"></rect>
+          //     </pattern>
+          //   </defs>
+          //   <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
+          //   <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+          // </svg>

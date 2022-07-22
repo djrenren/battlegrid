@@ -3,7 +3,7 @@ import { customElement } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
 import { stop_ev, window_ev } from "../../util/events";
 import { getImage } from "../../util/files";
-import { Point, snap_c } from "../../util/math";
+import { add_c, Point, snap_c, sub_p } from "../../util/math";
 import { Grid } from "../html-canvas";
 import { DragAndDropMixin } from "../util/drag-and-drop-mixin";
 
@@ -36,7 +36,7 @@ export class DropLayer extends DragAndDropMixin(LitElement) {
       let x = this.dispatchEvent(
         window_ev("token-drop", {
           loc: this.grid.snap([ev.offsetX, ev.offsetY]),
-          dim: [this.grid.dim, this.grid.dim],
+          dim: add_c([this.grid.dim, this.grid.dim], -this.grid.line),
           img,
         })
       );
