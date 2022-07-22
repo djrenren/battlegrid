@@ -119,6 +119,7 @@ export class Canvas extends LitElement {
       background: white;
       position: relative;
       overflow: hidden;
+      box-shadow: 5px solid #dddddddd;
     }
 
     .token {

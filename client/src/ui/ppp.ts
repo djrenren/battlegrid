@@ -150,6 +150,7 @@ export class PPZ extends HTMLElement {
    */
   wheel = (ev: WheelEvent) => {
     if (!ev.ctrlKey) return;
+    console.log(ev.target);
     ev.preventDefault();
 
     // Firefox scrolls by lines, chrome scrolls by pixels, there's no formal
