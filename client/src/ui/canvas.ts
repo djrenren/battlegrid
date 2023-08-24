@@ -13,7 +13,7 @@ import { styleMap } from "lit/directives/style-map.js";
 import { TypedMap } from "../util/yjs";
 
 const PIXEL_SCALE = 1;
-const GRID_SIZE = 24 * PIXEL_SCALE; // scale-dependent px
+const GRID_SIZE = 72 * PIXEL_SCALE; // scale-dependent px
 const LINE_WIDTH = 0.5 * PIXEL_SCALE; // scale-dependent px
 const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
 const CANVAS_RADIUS = 5 * PIXEL_SCALE;
@@ -582,6 +582,8 @@ export class Canvas extends LitElement {
       left: 0;
       right: 0;
       bottom: 0;
+      max-width: 100%;
+      max-height: 100%;
     }
     #root {
       backface-visibility: hidden;

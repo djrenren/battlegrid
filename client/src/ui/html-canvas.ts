@@ -10,12 +10,14 @@ import { OrderedMap } from "../util/orderedmap";
 import { filter, map } from "../util/iter";
 import { PPZ } from "./ppp";
 
+import "./html-canvas/grid-lines";
 import "./html-canvas/drop-layer";
+
 import { styleMap } from "lit/directives/style-map.js";
 
 const PIXEL_SCALE = 1;
 const LINE_WIDTH = 1 * PIXEL_SCALE;
-const GRID_SIZE = 25 * PIXEL_SCALE; // scale-dependent px
+const GRID_SIZE = 72 * PIXEL_SCALE; // scale-dependent px
 const TOKEN_SIZE = GRID_SIZE - LINE_WIDTH;
 const HANDLE_SIZE = 8 * PIXEL_SCALE; // scale-independent px
 const ROTATE_DISTANCE = 10 * PIXEL_SCALE;
@@ -56,21 +58,8 @@ export class Canvas extends LitElement {
         })}
       >
         <div id="board">
+          <grid-lines width=${width} height=${height} grid_size=${GRID_SIZE}></grid-lines>
 
-          <svg> 
-              <defs>
-                  <pattern id="horiz" width="100%" height="25px" patternUnits="userSpaceOnUse">
-                      <rect class="gridline" width="100%" y="24px" height="1px" fill="#d3d3d3"
-                          shape-rendering="geometricPrecision"></rect>
-                  </pattern>
-                  <pattern id="vert" height="100%" width="25px" patternUnits="userSpaceOnUse">
-                      <rect class="gridline" x="24px" height="100%" width="1px" fill="#d3d3d3"
-                          shape-rendering="geometricPrecision"></rect>
-                  </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
-              <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
-          </svg>
           ${repeat(
             this.board.get("order").toJSON() ?? [],
             (t) => t,
@@ -117,17 +106,28 @@ export class Canvas extends LitElement {
       right: 0;
       bottom: 0;
     }
+    #grid {
+      background-image: ${unsafeCSS(`
+        repeating-linear-gradient(#ccc 0 ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px 100%),
+        repeating-linear-gradient(90deg, #ccc 0 ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px 100%);
+      `)};
+      background-size: ${unsafeCSS(GRID_SIZE + "px " + GRID_SIZE + "px")};
+      background-position: ${unsafeCSS(`-${LINE_WIDTH}px -${LINE_WIDTH}px`)};
+      width: 100%;
+      height: 100%;
+      position: absolute;
+    }
 
     #board {
       width: 100%;
       height: 100%;
       border-radius: ${unsafeCSS(GRID_SIZE / 4 + "px")};
       /* border: 1px solid #d3d3d3; */
-      /* background: white url('assets/grid.svg'); */
-      background: white;
+      background: white url('/assets/thornwood.jpg');
+      background-size: cover;
       position: relative;
       overflow: hidden;
-      box-shadow: 5px solid #dddddddd;
+      box-shadow: 0 0 20px #ddddddFF;
     }
 
     svg {

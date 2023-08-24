@@ -1,5 +1,5 @@
 import { stop_ev } from "../util/events";
-import { add_p, div_c, div_p, max_p, mul_c, mul_p, Point, sub_p } from "../util/math";
+import { add_p, clamp_p, div_c, div_p, max_p, mul_c, mul_p, Point, sub_p } from "../util/math";
 
 type State = {
   offset: [0, 0];
@@ -15,6 +15,14 @@ const SPEED = 0.002; // 100 px per second
 export class PPZ extends HTMLElement {
   root: ShadowRoot;
   container: HTMLDivElement;
+
+  get max_scale() {
+    return 1;
+  }
+
+  get min_scale() {
+    return Math.min(...div_p(this.vdim, this.cdim))
+  }
 
   state = { z: 1, scroll_pos: [0, 0] as [number, number] };
   desired_state = { z: 1 };
@@ -47,7 +55,8 @@ export class PPZ extends HTMLElement {
     this.#resize_observer.observe(this);
     this.root.querySelector("slot")!.onslotchange = ({ target }) => {
       let slot = target as HTMLSlotElement;
-      let svg = slot.assignedElements()[0] as SVGSVGElement;
+      let svg = slot.assignedElements()[0] as HTMLElement;
+      console.log("svg", svg)
       this.#resize_observer.observe(svg);
 
       this.smooth = false;
@@ -59,12 +68,11 @@ export class PPZ extends HTMLElement {
   }
 
   #zoom_to_fit() {
-    let svg = (this.root.querySelector("slot") as HTMLSlotElement).assignedElements()[0] as SVGSVGElement;
+    let svg = (this.root.querySelector("slot") as HTMLSlotElement).assignedElements()[0] as HTMLDivElement;
     let dim = this.getBoundingClientRect();
     this.vdim = [dim.width, dim.height] as Point;
-    dim = svg.getBoundingClientRect();
-    this.cdim = [dim.width, dim.height] as Point;
-    const zoom = Math.max(MIN_SCALE, Math.min(MAX_SCALE, ...mul_c(div_p(this.vdim, this.cdim), AUTO_ZOOM_FILL)));
+    this.cdim = [svg.offsetWidth, svg.offsetHeight] as Point;
+    const zoom = Math.max(this.min_scale, Math.min(this.max_scale, ...mul_c(div_p(this.vdim, this.cdim), AUTO_ZOOM_FILL)));
     this.zoom([0, 0], zoom - this.state.z);
   }
 
@@ -76,7 +84,7 @@ export class PPZ extends HTMLElement {
         this.vloc = [rect.x, rect.y];
       } else {
         //@ts-ignore;
-        this.cdim = [e.contentRect.width, e.contentRect.height];
+        this.cdim = [e.target.offsetWidth, e.target.offsetHeight];
         this.#zoom_to_fit();
       }
     }
@@ -132,7 +140,7 @@ export class PPZ extends HTMLElement {
    */
   zoom = (origin: [number, number], inc: number) => {
     // Step 1: Bound the proposed delta by the min and max scale
-    this.desired_state.z = round(Math.min(MAX_SCALE, Math.max(MIN_SCALE, this.desired_state.z + inc)));
+    this.desired_state.z = round(Math.min(this.max_scale, Math.max(this.min_scale, this.desired_state.z + inc)));
 
     // Step 2: Record the current scroll position.
     //          TODO: Determine if we still need this when we record on scroll event
@@ -239,6 +247,7 @@ export class PPZ extends HTMLElement {
                     display: block;
                     width: fit-content;
                     height: fit-content;
+                    position: absolute;
                 }
             </style>
                 <div id="container">
