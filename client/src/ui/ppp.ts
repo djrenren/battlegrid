@@ -10,18 +10,18 @@ const MAX_SCALE = 4;
 const MIN_SCALE = 1;
 const AUTO_ZOOM_FILL = 0.95; // Percentage of the viewport to fill on first load
 
-const SPEED = 0.002; // 100 px per second
+const SPEED = 0.005; // 100 px per second
 
 export class PPZ extends HTMLElement {
   root: ShadowRoot;
   container: HTMLDivElement;
 
   get max_scale() {
-    return 1;
+    return 1.5;
   }
 
   get min_scale() {
-    return Math.min(...div_p(this.vdim, this.cdim))
+    return Math.min(...div_p(this.vdim, this.cdim)) * .75
   }
 
   state = { z: 1, scroll_pos: [0, 0] as [number, number] };
@@ -144,7 +144,7 @@ export class PPZ extends HTMLElement {
 
     // Step 2: Record the current scroll position.
     //          TODO: Determine if we still need this when we record on scroll event
-    this.state.scroll_pos = [this.scrollLeft, this.scrollTop];
+    // this.state.scroll_pos = [this.scrollLeft, this.scrollTop];
 
     // Step 3: Record the origin the zoom in content-local coordinates.
     //          The goal of zooming is to keep this coordinate in the same client location
@@ -158,7 +158,6 @@ export class PPZ extends HTMLElement {
    */
   wheel = (ev: WheelEvent) => {
     if (!ev.ctrlKey) return;
-    console.log(ev.target);
     ev.preventDefault();
 
     // Firefox scrolls by lines, chrome scrolls by pixels, there's no formal
@@ -166,7 +165,7 @@ export class PPZ extends HTMLElement {
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 10 : 1;
 
     // Don't let any weird inputs cause a jump of more than 50px / 5 lines
-    const delta = Math.min(50, Math.max(-50, -ev.deltaY * multiplier));
+    const delta = Math.min(30, Math.max(-30, -ev.deltaY * multiplier));
 
     // Turn the scroll delta into a zoom delta. We use a magic scalar,
     //  but note that we zoom *more* the more zoomed in we are.
@@ -174,7 +173,7 @@ export class PPZ extends HTMLElement {
 
     // Only do smoothing if the delta is large.
     // This should correspond to using a scroll wheel as opposed to a touchpad
-    this.smooth = Math.abs(delta) === 50;
+    this.smooth = true //Math.abs(delta) === 30;
 
     this.zoom([ev.clientX, ev.clientY], zoom);
     this.addEventListener;
@@ -248,6 +247,7 @@ export class PPZ extends HTMLElement {
                     width: fit-content;
                     height: fit-content;
                     position: absolute;
+                    will-change: transform;
                 }
             </style>
                 <div id="container">

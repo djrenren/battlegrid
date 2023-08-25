@@ -58,7 +58,7 @@ export class Canvas extends LitElement {
         })}
       >
         <div id="board">
-          <grid-lines width=${width} height=${height} grid_size=${GRID_SIZE}></grid-lines>
+          <grid-lines class="full-bleed" background="/assets/thornwood.jpg" width=${width} height=${height} grid_size=${GRID_SIZE}></grid-lines>
 
           ${repeat(
             this.board.get("order").toJSON() ?? [],
@@ -123,7 +123,7 @@ export class Canvas extends LitElement {
       height: 100%;
       border-radius: ${unsafeCSS(GRID_SIZE / 4 + "px")};
       /* border: 1px solid #d3d3d3; */
-      background: white url('/assets/thornwood.jpg');
+      background: white;
       background-size: cover;
       position: relative;
       overflow: hidden;
@@ -145,7 +145,8 @@ export class Canvas extends LitElement {
 
     .full-bleed {
       position: absolute;
-      inset: 0 0 0 0;
+      width: 100%;
+      height: 100%;
     }
 
     .line {
