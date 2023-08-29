@@ -58,7 +58,7 @@ export class Canvas extends LitElement {
         })}
       >
         <div id="board">
-          <grid-lines class="full-bleed" background="/assets/thornwood.jpg" width=${width} height=${height} grid_size=${GRID_SIZE}></grid-lines>
+          <grid-lines class="full-bleed" background="assets/thornwood.jpg" width=${width} height=${height} grid_size=${GRID_SIZE}></grid-lines>
 
           ${repeat(
             this.board.get("order").toJSON() ?? [],
