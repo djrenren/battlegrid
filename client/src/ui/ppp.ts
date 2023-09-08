@@ -17,11 +17,11 @@ export class PPZ extends HTMLElement {
   container: HTMLDivElement;
 
   get max_scale() {
-    return 1.5;
+    return 1;
   }
 
   get min_scale() {
-    return Math.min(...div_p(this.vdim, this.cdim)) * .75
+    return Math.min(...div_p(this.vdim, this.cdim)) * 0.75;
   }
 
   state = { z: 1, scroll_pos: [0, 0] as [number, number] };
@@ -56,7 +56,7 @@ export class PPZ extends HTMLElement {
     this.root.querySelector("slot")!.onslotchange = ({ target }) => {
       let slot = target as HTMLSlotElement;
       let svg = slot.assignedElements()[0] as HTMLElement;
-      console.log("svg", svg)
+      console.log("svg", svg);
       this.#resize_observer.observe(svg);
 
       this.smooth = false;
@@ -92,16 +92,12 @@ export class PPZ extends HTMLElement {
     this.center();
   });
 
-  loop = async () => {
-    let prv;
-    let ts;
-    while (((prv = ts) || true) && (ts = await next_frame())) {
-      if (!prv) continue;
-      let delta = this.desired_state.z - this.state.z;
-      if (delta === 0) {
-        continue;
-      }
-      let elapsed = ts - prv;
+  #prv?: DOMHighResTimeStamp;
+  loop = (ts: DOMHighResTimeStamp) => {
+    let delta = this.desired_state.z - this.state.z;
+    if (delta !== 0) {
+      let elapsed = this.#prv ? ts - this.#prv : 16;
+      this.#prv = ts;
 
       // If it's smooth, we'll move in increments, otherwise perform all adjustments in one frame
       let delta_scale = this.smooth ? Math.sign(delta) * Math.min(elapsed * SPEED * this.state.z, Math.abs(delta)) : delta;
@@ -114,7 +110,11 @@ export class PPZ extends HTMLElement {
       // Be sure to prevent negative scroll positions
       this.state.scroll_pos = max_p([0, 0], add_p(mul_c(this.origin, delta_scale), this.state.scroll_pos));
       this.scrollTo({ left: this.state.scroll_pos[0], top: this.state.scroll_pos[1] });
+    } else {
+      this.#prv = undefined;
     }
+
+    window.requestAnimationFrame(this.loop);
   };
 
   /**
@@ -125,14 +125,13 @@ export class PPZ extends HTMLElement {
     this.offset = round_p(max_p([0, 0], mul_c(sub_p(this.vdim, mul_c(this.cdim, this.state.z)), 0.5)));
     this.container.style.transform = `translate(${this.offset[0]}px, ${this.offset[1]}px) scale(${this.state.z})`;
   }
-
   /**
    * Runs when the component is attached to the DOM.
    * Sets up our animation loop and event listenees
    */
   connectedCallback() {
-    this.loop();
-    this.addEventListener("wheel", this.wheel, { passive: false, capture: true });
+    window.requestAnimationFrame(this.loop);
+    this.addEventListener("wheel", this.wheel, { passive: true, capture: true });
   }
 
   /**
@@ -158,8 +157,6 @@ export class PPZ extends HTMLElement {
    */
   wheel = (ev: WheelEvent) => {
     if (!ev.ctrlKey) return;
-    ev.preventDefault();
-
     // Firefox scrolls by lines, chrome scrolls by pixels, there's no formal
     // definition of what a "line" is, but let's just say it's 10 px
     const multiplier = ev.deltaMode === WheelEvent.DOM_DELTA_LINE ? 10 : 1;
@@ -173,10 +170,9 @@ export class PPZ extends HTMLElement {
 
     // Only do smoothing if the delta is large.
     // This should correspond to using a scroll wheel as opposed to a touchpad
-    this.smooth = true //Math.abs(delta) === 30;
+    this.smooth = true; //Math.abs(delta) === 30;
 
     this.zoom([ev.clientX, ev.clientY], zoom);
-    this.addEventListener;
   };
 
   #keyboard_zoom = (ev: KeyboardEvent) => {
@@ -184,11 +180,11 @@ export class PPZ extends HTMLElement {
     if (!ev.ctrlKey) return;
     if (ev.key === "-") {
       this.smooth = true;
-      this.zoom(this.coordToLocal(add_p(this.vloc, div_c(this.vdim, 2))), -0.2 * this.state.z);
+      this.zoom(add_p(this.vloc, div_c(this.vdim, 2)), -0.4 * this.state.z);
       stop_ev(ev);
     } else if (ev.key === "=") {
       this.smooth = true;
-      this.zoom(this.coordToLocal(add_p(this.vloc, div_c(this.vdim, 2))), 0.2 * this.state.z);
+      this.zoom(add_p(this.vloc, div_c(this.vdim, 2)), 0.4 * this.state.z);
       stop_ev(ev);
     } else if (ev.key === "0") {
       this.smooth = true;
@@ -239,7 +235,7 @@ export class PPZ extends HTMLElement {
                 :host {
                     position: relative;
                     display: block;
-                    overflow: auto; 
+                    overflow: scroll; 
                 }
                 #container {
                     transform-origin: 0 0;
@@ -247,7 +243,6 @@ export class PPZ extends HTMLElement {
                     width: fit-content;
                     height: fit-content;
                     position: absolute;
-                    will-change: transform;
                 }
             </style>
                 <div id="container">

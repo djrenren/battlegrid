@@ -55,6 +55,7 @@ export class Canvas extends LitElement {
           height: `${px_height}px`,
           padding: `${PADDING}px`,
           fontSize: `${GRID_SIZE}px`,
+          filter: "drop-shadow(0 0  20px gray)",
         })}
       >
         <div id="board">
@@ -127,7 +128,7 @@ export class Canvas extends LitElement {
       background-size: cover;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 0 20px #ddddddFF;
+      box-shadow: 0 0 20px #ddddddff;
     }
 
     svg {
@@ -157,12 +158,12 @@ export class Canvas extends LitElement {
 
     .vert {
       height: 100%;
-      width: ${unsafeCSS(LINE_WIDTH + "px")}
+      width: ${unsafeCSS(LINE_WIDTH + "px")};
     }
 
     .horiz {
       width: 100%;
-      height: ${unsafeCSS(LINE_WIDTH + "px")}
+      height: ${unsafeCSS(LINE_WIDTH + "px")};
     }
 
     :host {
@@ -197,15 +198,15 @@ const nearest_corner = (n: number) => Math.round(n / GRID_SIZE) * GRID_SIZE;
 const occupied_cell = (n: number) => n - (n % GRID_SIZE);
 const mark_loaded = (ev: any) => ev.target.classList.add("loaded");
 
-          // <svg style="width: 100%; height: 100%; position: absolute;" viewBox=${"0 0 " + this.board.get("width") + " " + this.board.get("height")}>
-          //   <defs>
-          //     <pattern id="horiz" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height="1" patternUnits="userSpaceOnUse">
-          //       <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" shape-rendering="geometricPrecision"></rect>
-          //     </pattern>
-          //     <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="1" height="100%" patternUnits="userSpaceOnUse">
-          //       <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" shape-rendering="geometric precision"></rect>
-          //     </pattern>
-          //   </defs>
-          //   <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
-          //   <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
-          // </svg>
+// <svg style="width: 100%; height: 100%; position: absolute;" viewBox=${"0 0 " + this.board.get("width") + " " + this.board.get("height")}>
+//   <defs>
+//     <pattern id="horiz" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="100%" height="1" patternUnits="userSpaceOnUse">
+//       <rect class="gridline" width="100%" height=${LINE_WIDTH} fill="#d3d3d3" shape-rendering="geometricPrecision"></rect>
+//     </pattern>
+//     <pattern id="vert" x=${-LINE_WIDTH / 2} y=${-LINE_WIDTH / 2} width="1" height="100%" patternUnits="userSpaceOnUse">
+//       <rect class="gridline" width=${LINE_WIDTH} height="100%" fill="#d3d3d3" shape-rendering="geometric precision"></rect>
+//     </pattern>
+//   </defs>
+//   <rect width="100%" height="100%" fill="url(#horiz)" opacity="0.75" pointer-events="none"></rect>
+//   <rect width="100%" height="100%" fill="url(#vert)" opacity="0.75" pointer-events="none"></rect>
+// </svg>
