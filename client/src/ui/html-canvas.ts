@@ -73,10 +73,10 @@ export class Canvas extends LitElement {
                 <div
                   class="token"
                   style=${styleMap({
-                    width: width + "px",
-                    height: height + "px",
+                    width: (width - 1) + "px",
+                    height: (height - 1) + "px",
                     backgroundImage: `url("${t.get("url")}")`,
-                    transform: `translate(${x}px, ${y}px)`,
+                    transform: `translate(${x+1}px, ${y+1}px)`,
                   })}
                 ></div>
               `;
@@ -107,6 +107,7 @@ export class Canvas extends LitElement {
       right: 0;
       bottom: 0;
     }
+
     #grid {
       background-image: ${unsafeCSS(`
         repeating-linear-gradient(#ccc 0 ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px 100%),
@@ -124,6 +125,7 @@ export class Canvas extends LitElement {
       height: 100%;
       border-radius: ${unsafeCSS(GRID_SIZE / 4 + "px")};
       /* border: 1px solid #d3d3d3; */
+      isolation: isolate;
       background: white;
       background-size: cover;
       position: relative;

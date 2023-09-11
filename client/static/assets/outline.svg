@@ -1,0 +1,11 @@
+<svg version="1.1"
+     width="300" height="200"
+     xmlns="http://www.w3.org/2000/svg">
+
+<filter id="outline">
+        <feMorphology in="SourceAlpha" result="expanded" operator="dilate" radius="50"/>
+        <feFlood flood-color="red"/>
+        <feComposite in2="expanded" operator="in"/>
+        <feComposite in="SourceGraphic"/>
+    </filter>
+</svg>
