@@ -200,7 +200,7 @@ export class PPZ extends HTMLElement {
     origin: [0, 0] as [number, number],
     start: (ev: any) => {
       stop_ev(ev);
-      this.#gesture.origin = this.coordToLocal([ev.clientX, ev.clientY]);
+      this.#gesture.origin = [ev.clientX, ev.clientY];
       this.#gesture.prev_scale = 1;
     },
 
