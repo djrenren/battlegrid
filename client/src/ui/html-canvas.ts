@@ -55,7 +55,6 @@ export class Canvas extends LitElement {
           height: `${px_height}px`,
           padding: `${PADDING}px`,
           fontSize: `${GRID_SIZE}px`,
-          filter: "drop-shadow(0 0  20px gray)",
         })}
       >
         <div id="board">
