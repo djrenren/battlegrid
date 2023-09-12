@@ -90,6 +90,7 @@ export class PPZ extends HTMLElement {
     }
 
     this.center();
+    this.#animate();
   });
 
   #prv?: DOMHighResTimeStamp;
@@ -97,6 +98,7 @@ export class PPZ extends HTMLElement {
     let delta = this.desired_state.z - this.state.z;
     if (delta !== 0) {
       let elapsed = this.#prv ? ts - this.#prv : 16;
+      console.log("Elapsed", elapsed);
       this.#prv = ts;
 
       // If it's smooth, we'll move in increments, otherwise perform all adjustments in one frame
@@ -109,12 +111,14 @@ export class PPZ extends HTMLElement {
 
       // Be sure to prevent negative scroll positions
       this.state.scroll_pos = max_p([0, 0], add_p(mul_c(this.origin, delta_scale), this.state.scroll_pos));
-      this.scrollTo({ left: this.state.scroll_pos[0], top: this.state.scroll_pos[1] });
+      this.scrollLeft = this.state.scroll_pos[0];
+      this.scrollTop = this.state.scroll_pos[1];
+      // this.scrollTo({ left: this.state.scroll_pos[0], top: this.state.scroll_pos[1] });
+
+      window.requestAnimationFrame(this.loop);
     } else {
       this.#prv = undefined;
     }
-
-    window.requestAnimationFrame(this.loop);
   };
 
   /**
@@ -130,7 +134,6 @@ export class PPZ extends HTMLElement {
    * Sets up our animation loop and event listenees
    */
   connectedCallback() {
-    window.requestAnimationFrame(this.loop);
     this.addEventListener("wheel", this.wheel, { passive: true, capture: true });
   }
 
@@ -150,6 +153,7 @@ export class PPZ extends HTMLElement {
     this.origin = this.coordToLocal(origin);
 
     // Step 4: Do the zooming? We have an animation loop running for that
+    this.#animate()
   };
 
   /**
@@ -178,11 +182,11 @@ export class PPZ extends HTMLElement {
   #keyboard_zoom = (ev: KeyboardEvent) => {
     console.log("zoom!", ev.ctrlKey, ev.key);
     if (!ev.ctrlKey) return;
-    if (ev.key === "-") {
+    if (ev.key === "-" || ev.key === "-") {
       this.smooth = true;
       this.zoom(add_p(this.vloc, div_c(this.vdim, 2)), -0.4 * this.state.z);
       stop_ev(ev);
-    } else if (ev.key === "=") {
+    } else if (ev.key === "=" || ev.key === "+") {
       this.smooth = true;
       this.zoom(add_p(this.vloc, div_c(this.vdim, 2)), 0.4 * this.state.z);
       stop_ev(ev);
@@ -239,9 +243,7 @@ export class PPZ extends HTMLElement {
                 }
                 #container {
                     transform-origin: 0 0;
-                    display: block;
-                    width: fit-content;
-                    height: fit-content;
+                    overflow: visible;
                     position: absolute;
                 }
             </style>
@@ -251,6 +253,12 @@ export class PPZ extends HTMLElement {
             </div>
         `;
     return t;
+  }
+
+  #animate() {
+    if (this.#prv == undefined) {
+      window.requestAnimationFrame(this.loop);
+    }
   }
 }
 
